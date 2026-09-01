@@ -1,0 +1,1 @@
+"""FotoDown core package."""
