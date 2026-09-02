@@ -23,6 +23,7 @@ class ScanItem:
     status: str  # "Neu", "Bereits importiert", "Existiert im Ziel", "Fehler"
     index: int = 1
     error_msg: str = ""
+    selected: bool = True
 
 
 @dataclass
@@ -129,6 +130,7 @@ class ImporterEngine:
                     status="Fehler",
                     index=item_idx,
                     error_msg=err,
+                    selected=False,
                 ))
                 continue
 
@@ -151,6 +153,9 @@ class ImporterEngine:
             else:
                 status = "Neu"
 
+            # Default pre-selection (Vorauswahl): 'nur Neue' files selected
+            is_selected = (status == "Neu")
+
             items.append(ScanItem(
                 source_path=file_path,
                 metadata=meta,
@@ -159,6 +164,7 @@ class ImporterEngine:
                 file_hash=f_hash,
                 status=status,
                 index=item_idx,
+                selected=is_selected,
             ))
 
         return items
@@ -188,8 +194,8 @@ class ImporterEngine:
         """Copies/moves the scanned items to their designated targets and updates history."""
         stats = ImportStats(total_found=len(items))
 
-        # Filter items if only_new_files is enabled
-        to_process = [it for it in items if not (config.only_new_files and it.is_duplicate)]
+        # Filter items that are selected for download
+        to_process = [it for it in items if getattr(it, 'selected', True)]
         stats.new_files = len(to_process)
         stats.duplicates_skipped = len(items) - len(to_process)
 

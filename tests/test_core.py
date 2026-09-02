@@ -170,6 +170,8 @@ class TestHistoryAndImport(unittest.TestCase):
         self.assertEqual(len(items), 2)
         self.assertEqual(items[0].status, "Neu")
         self.assertEqual(items[1].status, "Neu")
+        self.assertTrue(items[0].selected)
+        self.assertTrue(items[1].selected)
 
         # 2. Execute Import
         stats = self.engine.execute_import(items, cfg)
@@ -180,17 +182,65 @@ class TestHistoryAndImport(unittest.TestCase):
         target_files = list(self.target_dir.glob("**/*.jpg"))
         self.assertEqual(len(target_files), 2)
 
-        # 3. Second scan: should mark as duplicate
+        # 3. Second scan: should mark as duplicate and selected=False
         items_second = self.engine.scan(self.source_dir, cfg)
         self.assertEqual(len(items_second), 2)
         self.assertTrue(items_second[0].is_duplicate)
         self.assertTrue(items_second[1].is_duplicate)
         self.assertEqual(items_second[0].status, "Bereits importiert")
+        self.assertFalse(items_second[0].selected)
+        self.assertFalse(items_second[1].selected)
 
         # 4. Import second time: should skip duplicates
         stats2 = self.engine.execute_import(items_second, cfg)
         self.assertEqual(stats2.copied_success, 0)
         self.assertEqual(stats2.duplicates_skipped, 2)
+
+    def test_selection_filtering(self):
+        img1 = self._create_dummy_image("IMG_0010.JPG", b"data_10")
+        img2 = self._create_dummy_image("IMG_0011.JPG", b"data_11")
+
+        cfg = AppConfig(
+            source_dir=str(self.source_dir),
+            target_dir=str(self.target_dir),
+        )
+
+        items = self.engine.scan(self.source_dir, cfg)
+        self.assertEqual(len(items), 2)
+
+        # Deselect img1 manually
+        items[0].selected = False
+
+        stats = self.engine.execute_import(items, cfg)
+        self.assertEqual(stats.copied_success, 1)
+        self.assertEqual(stats.duplicates_skipped, 1)
+
+    def test_item_filtering_predicates(self):
+        now = datetime.now()
+        meta_jpg = MediaMetadata(Path("IMG_100.JPG"), "IMG_100", ".jpg", 1000, now, "EXIF", camera_make="Sony", camera_model="A7IV", camera_name="Sony A7IV")
+        meta_raw = MediaMetadata(Path("IMG_100.ARW"), "IMG_100", ".arw", 5000, now, "EXIF", camera_make="Sony", camera_model="A7IV", camera_name="Sony A7IV")
+        meta_vid = MediaMetadata(Path("CLIP_001.MP4"), "CLIP_001", ".mp4", 20000, now, "Video", camera_make="Canon", camera_model="EOS R6", camera_name="Canon EOS R6")
+
+        item1 = ScanItem(Path("IMG_100.JPG"), meta_jpg, Path("2026/IMG_100.jpg"), False, "hash1", "Neu")
+        item2 = ScanItem(Path("IMG_100.ARW"), meta_raw, Path("2026/RAW/IMG_100.arw"), True, "hash2", "Bereits importiert")
+        item3 = ScanItem(Path("CLIP_001.MP4"), meta_vid, Path("2026/CLIP_001.mp4"), False, "hash3", "Neu")
+
+        items = [item1, item2, item3]
+
+        # Filter by media type RAW
+        raw_items = [it for it in items if it.metadata.media_type == "RAW"]
+        self.assertEqual(len(raw_items), 1)
+        self.assertEqual(raw_items[0].source_path.name, "IMG_100.ARW")
+
+        # Filter by camera Canon_EOS_R6
+        canon_items = [it for it in items if (it.metadata.formatted_camera or "") == "Canon_EOS_R6"]
+        self.assertEqual(len(canon_items), 1)
+        self.assertEqual(canon_items[0].source_path.name, "CLIP_001.MP4")
+
+        # Filter by extension .jpg
+        jpg_items = [it for it in items if it.source_path.suffix.lower() == ".jpg"]
+        self.assertEqual(len(jpg_items), 1)
+        self.assertEqual(jpg_items[0].source_path.name, "IMG_100.JPG")
 
 
 if __name__ == "__main__":
