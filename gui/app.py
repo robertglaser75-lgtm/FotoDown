@@ -22,12 +22,21 @@ from core.importer import ImporterEngine, ScanItem, ImportStats
 from core.naming import generate_sample_preview
 
 # Set CustomTkinter Appearance
+APP_VERSION = "0.2.5"
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
 
 def set_high_dpi():
     if sys.platform == "win32":
+        try:
+            import ctypes
+            # Set explicit AppUserModelID so Windows Taskbar shows custom app icon!
+            app_id = "RobertGlaser.FotoDown.App.0.2.5"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+        except Exception:
+            pass
+
         try:
             import ctypes
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -125,6 +134,121 @@ def extract_raw_embedded_jpeg(raw_path: Path) -> Optional[Image.Image]:
     return None
 
 
+class HelpWindow(ctk.CTkToplevel):
+    """Sub-window to display App Version & Walkthrough user guide."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("FotoDown - Hilfe & Anleitung")
+        self.geometry("720x580")
+        self.minsize(600, 480)
+
+        apply_window_icon(self)
+        self.transient(parent)
+        self.grab_set()
+        self.lift()
+        self.focus_force()
+
+        self._build_ui()
+
+    def _build_ui(self):
+        main_frame = ctk.CTkFrame(self, corner_radius=12, fg_color="#1e293b", border_width=1, border_color="#334155")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=14, pady=14)
+
+        # Header with App Title & Version Badge
+        header_f = ctk.CTkFrame(main_frame, fg_color="transparent")
+        header_f.pack(fill=tk.X, padx=16, pady=(16, 10))
+
+        lbl_title = ctk.CTkLabel(
+            header_f,
+            text="FotoDown",
+            font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"),
+            text_color="#38bdf8"
+        )
+        lbl_title.pack(side=tk.LEFT)
+
+        lbl_ver = ctk.CTkLabel(
+            header_f,
+            text=f"v{APP_VERSION} (Fluent Dark Edition)",
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            text_color="#4ade80",
+            fg_color="#064e3b",
+            corner_radius=6,
+            padx=8,
+            pady=2
+        )
+        lbl_ver.pack(side=tk.LEFT, padx=10)
+
+        # Credits Badge Frame
+        credits_f = ctk.CTkFrame(main_frame, fg_color="#0f172a", corner_radius=8, border_width=1, border_color="#334155")
+        credits_f.pack(fill=tk.X, padx=16, pady=(0, 10))
+
+        lbl_credits = ctk.CTkLabel(
+            credits_f,
+            text="💡 Idee & Anforderungserstellung: Robert Glaser   |   🤖 Entwickelt mittels: Antigravity (Google DeepMind)   |   📜 Lizenz: MIT",
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            text_color="#38bdf8"
+        )
+        lbl_credits.pack(padx=12, pady=6)
+
+        # Scrollable Walkthrough Content
+        scroll_content = ctk.CTkScrollableFrame(main_frame, corner_radius=8, fg_color="#0f172a", border_width=1, border_color="#334155")
+        scroll_content.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 12))
+
+        guide_text = (
+            "📖 FotoDown - Anleitung & Funktionsübersicht\n\n"
+            "1. 📂 Quelle & Zielordner wählen:\n"
+            "   • Eingesteckte SD-Karten oder DCIM-Ordner werden automatisch erkannt.\n"
+            "   • Zielordner für Fotos festlegen. Optional kann ein eigener Video-Zielordner aktiviert werden.\n\n"
+            "2. ⚙️ Umbenennung & Ordnerstruktur festlegen:\n"
+            "   • Flexible Platzhalter im Ordner- und Dateiname-Schema nutzen (z.B. {YYYY}-{MM}-{DD}, {camera}, {type}, {orig_name}).\n"
+            "   • Getrennte Ablage von JPG- und RAW-Dateien in Unter- oder Hauptordnern konfigurieren.\n\n"
+            "3. 🖼️ Gefundene Fotos & Galerie-Vorschau:\n"
+            "   • Scannen starten, um Fotos auf der Karte zu finden.\n"
+            "   • Umschalten zwischen der klassischen Listenansicht und der modernen Galerie-Ansicht.\n"
+            "   • Automatische Echte RAW-Vorschau (Thumbnails) für Sony ARW, Canon CR2/CR3, Nikon NEF, DNG u.v.m.\n\n"
+            "4. ⬇️ Download & Duplikatschutz:\n"
+            "   • Nur gewünschte Fotos auswählen oder per Klick auf '✨ Nur Neue auswählen'.\n"
+            "   • Fotos herunterladen: FotoDown merkt sich alle importierten Fotos in der Historie und verhindert doppelte Downloads.\n\n"
+            "5. ⏏️ Karte / Ordner aushängen:\n"
+            "   • Nach dem Import auf '⏏️ Karte / Ordner aushängen' klicken, um die SD-Karte sicher freizugeben und auszuwerfen.\n\n"
+            "──────────────────────────────────────────────────────────\n"
+            "📋 Anhang: Systemvoraussetzungen & Bibliotheken\n\n"
+            "• Python-Version:\n"
+            "    - Python 3.10 oder neuer (empfohlen)\n\n"
+            "• Externe Bibliotheken (requirements.txt):\n"
+            "    - customtkinter >= 6.0.0 (Fluent Dark UI Framework)\n"
+            "    - Pillow >= 10.0.0 (EXIF- & RAW-Bildverarbeitung)\n\n"
+            "• Mitgelieferte Python Standard-Bibliotheken:\n"
+            "    - tkinter & ttk (Basis GUI-Komponenten & Tabelle)\n"
+            "    - threading & queue (Thread-sichere Asynchrone Vorschau)\n"
+            "    - ctypes & wintypes (High-DPI Scaling & Win32 Eject APIs)\n"
+            "    - pathlib, os, sys, datetime, json, hashlib, subprocess"
+        )
+
+        lbl_guide = ctk.CTkLabel(
+            scroll_content,
+            text=guide_text,
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            text_color="#f8fafc",
+            justify=tk.LEFT,
+            anchor=tk.NW
+        )
+        lbl_guide.pack(fill=tk.BOTH, expand=True, padx=12, pady=12)
+
+        # Footer with OK Button
+        btn_close = ctk.CTkButton(
+            main_frame,
+            text="✓ Schließen",
+            width=120,
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            command=self.destroy
+        )
+        btn_close.pack(anchor=tk.E, padx=16, pady=(0, 16))
+
+
 class HistoryWindow(ctk.CTkToplevel):
     """Sub-window to inspect and manage import history."""
 
@@ -136,6 +260,8 @@ class HistoryWindow(ctk.CTkToplevel):
         self.on_cleared = on_cleared
 
         apply_window_icon(self)
+        self.transient(parent)
+        self.grab_set()
         self.lift()
         self.focus_force()
 
@@ -354,6 +480,18 @@ class FotoDownApp:
         btn_box = ctk.CTkFrame(header, fg_color="transparent")
         btn_box.pack(side=tk.RIGHT, padx=14, pady=10)
 
+        btn_help = ctk.CTkButton(
+            btn_box,
+            text="❓ Hilfe",
+            fg_color="#334155",
+            hover_color="#475569",
+            text_color="#f8fafc",
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            command=self._open_help,
+            width=90
+        )
+        btn_help.pack(side=tk.RIGHT, padx=4)
+
         btn_hist = ctk.CTkButton(
             btn_box,
             text="📋 Import-Historie",
@@ -487,7 +625,7 @@ class FotoDownApp:
             self.sec1_content.pack(fill=tk.X, padx=14, pady=(0, 10))
             self.lbl_sec1_arrow.configure(text="▼")
             self.lbl_sec1_summary.configure(text="")
-            self.is_sec1_open = False
+            self.is_sec1_open = True
 
     def _on_toggle_video_dir(self):
         is_sep = self.var_separate_video.get()
@@ -648,7 +786,7 @@ class FotoDownApp:
             self.sec2_content.pack(fill=tk.X, padx=14, pady=(0, 10))
             self.lbl_sec2_arrow.configure(text="▼")
             self.lbl_sec2_summary.configure(text="")
-            self.is_sec2_open = False
+            self.is_sec2_open = True
 
     def _build_action_section(self, parent: ctk.CTkFrame):
         act_frame = ctk.CTkFrame(parent, fg_color="transparent")
@@ -1504,6 +1642,10 @@ class FotoDownApp:
     def _update_history_status_bar(self):
         count = self.history.get_count()
         self.lbl_hist_count.configure(text=f"📋 Historie: {count} Fotos erfasst")
+
+    
+    def _open_help(self):
+        HelpWindow(self.root)
 
     def _open_history(self):
         HistoryWindow(self.root, self.history, on_cleared=self._on_history_cleared)
