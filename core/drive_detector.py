@@ -1,113 +1,143 @@
-"""Drive and memory card detector for Windows and cross-platform."""
+"""Drive detector module to scan Windows drives for SD cards and DCIM folders, with ejection support."""
 
-import ctypes
-from dataclasses import dataclass
 import os
-from pathlib import Path
 import sys
-from typing import List
-
+from pathlib import Path
+import subprocess
+from typing import List, Optional, Tuple
+from dataclasses import dataclass
 
 @dataclass
 class DriveInfo:
-    path: str
+    letter: str
     label: str
-    drive_type: str
-    is_removable: bool
+    path: Path
     has_dcim: bool
-    dcim_path: str
+    dcim_path: Optional[Path] = None
 
     @property
     def display_name(self) -> str:
-        parts = [self.path]
-        if self.label:
-            parts.append(f"[{self.label}]")
-        if self.has_dcim:
-            parts.append("(DCIM gefunden - Speicherkarte)")
-        elif self.is_removable:
-            parts.append("(Wechseldatenträger)")
-        return " ".join(parts)
+        tag = "[DCIM / Kamera-Fotos]" if self.has_dcim else "[Wechseldatenträger]"
+        lbl = f" ({self.label})" if self.label else ""
+        return f"{self.letter} {lbl} {tag}"
 
 
 def detect_drives() -> List[DriveInfo]:
-    """Detects available system drives, especially removable memory cards."""
-    results = []
+    """Detects available drives, identifying SD cards with DCIM folders."""
+    drives = []
+    if sys.platform != "win32":
+        return drives
 
+    try:
+        import ctypes
+        bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+        for letter_ascii in range(65, 91):  # A-Z
+            if bitmask & (1 << (letter_ascii - 65)):
+                drive_letter = f"{chr(letter_ascii)}:\\"
+                drive_path = Path(drive_letter)
+
+                try:
+                    drive_type = ctypes.windll.kernel32.GetDriveTypeW(drive_letter)
+                    # 2: REMOVABLE, 3: FIXED (some SD card readers identify as fixed)
+                    if drive_type in (2, 3):
+                        volume_name_buf = ctypes.create_unicode_buffer(1024)
+                        ctypes.windll.kernel32.GetVolumeInformationW(
+                            drive_letter,
+                            volume_name_buf,
+                            1024,
+                            None, None, None, None, 0
+                        )
+                        label = volume_name_buf.value
+
+                        # Skip C: system drive
+                        if drive_letter.upper().startswith("C:"):
+                            continue
+
+                        # Check DCIM
+                        dcim = drive_path / "DCIM"
+                        has_dcim = dcim.exists() and dcim.is_dir()
+
+                        drives.append(DriveInfo(
+                            letter=chr(letter_ascii) + ":",
+                            label=label,
+                            path=drive_path,
+                            has_dcim=has_dcim,
+                            dcim_path=dcim if has_dcim else None
+                        ))
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
+    return drives
+
+
+def eject_drive(drive_input: str | Path) -> Tuple[bool, str]:
+    """Safely ejects a removable drive in Windows. Returns (success, message)."""
+    path_str = str(drive_input).strip()
+    if not path_str:
+        return False, "Kein Pfad angegeben."
+
+    drive_letter = ""
+    if len(path_str) >= 2 and path_str[1] == ":":
+        drive_letter = path_str[:2].upper()
+
+    if not drive_letter:
+        return False, f"Der Pfad '{path_str}' befindet sich auf keinem Laufwerk mit Laufwerksbuchstaben."
+
+    # 1. Shell Application Verb "Eject" (standard Windows safe removal)
+    try:
+        ps_cmd = f'''
+        $shell = New-Object -ComObject Shell.Application
+        $drive = $shell.NameSpace(17).ParseName("{drive_letter}")
+        if ($drive) {{
+            $drive.InvokeVerb("Eject")
+            Write-Output "SUCCESS"
+        }} else {{
+            Write-Output "NOT_FOUND"
+        }}
+        '''
+        res = subprocess.run(["powershell", "-Command", ps_cmd], capture_output=True, text=True, timeout=5)
+        if "SUCCESS" in res.stdout:
+            return True, f"Speicherkarte / Laufwerk ({drive_letter}) wurde erfolgreich ausgehängt und kann sicher entfernt werden."
+    except Exception:
+        pass
+
+    # 2. Win32 API Fallback (CreateFileW + FSCTL_LOCK_VOLUME + FSCTL_DISMOUNT_VOLUME + IOCTL_STORAGE_EJECT_MEDIA)
     if sys.platform == "win32":
         try:
-            kernel32 = ctypes.windll.kernel32
-            # Get drive bitmask
-            bitmask = kernel32.GetLogicalDrives()
-            # DRIVE_REMOVABLE = 2, DRIVE_FIXED = 3, DRIVE_REMOTE = 4, DRIVE_CDROM = 5
-            for letter_idx in range(26):
-                if bitmask & (1 << letter_idx):
-                    drive_letter = f"{chr(65 + letter_idx)}:\\"
-                    drive_type_int = kernel32.GetDriveTypeW(drive_letter)
-                    is_removable = (drive_type_int == 2)
+            import ctypes
+            from ctypes import wintypes
 
-                    # Get Volume Label
-                    volume_name_buffer = ctypes.create_unicode_buffer(1024)
-                    file_system_name_buffer = ctypes.create_unicode_buffer(1024)
-                    kernel32.GetVolumeInformationW(
-                        drive_letter,
-                        volume_name_buffer,
-                        ctypes.sizeof(volume_name_buffer),
-                        None, None, None,
-                        file_system_name_buffer,
-                        ctypes.sizeof(file_system_name_buffer)
-                    )
-                    label = volume_name_buffer.value
+            GENERIC_READ = 0x80000000
+            GENERIC_WRITE = 0x40000000
+            FILE_SHARE_READ = 0x00000001
+            FILE_SHARE_WRITE = 0x00000002
+            OPEN_EXISTING = 3
 
-                    # Check for DCIM folder
-                    dcim_path = ""
-                    has_dcim = False
-                    p = Path(drive_letter)
-                    try:
-                        dcim_candidate = p / "DCIM"
-                        if dcim_candidate.exists() and dcim_candidate.is_dir():
-                            has_dcim = True
-                            dcim_path = str(dcim_candidate)
-                    except Exception:
-                        pass
+            FSCTL_LOCK_VOLUME = 0x00090018
+            FSCTL_DISMOUNT_VOLUME = 0x00090020
+            IOCTL_STORAGE_EJECT_MEDIA = 0x002d0808
 
-                    type_names = {
-                        2: "Wechseldatenträger (Removable)",
-                        3: "Lokaler Datenträger (Fixed)",
-                        4: "Netzlaufwerk (Network)",
-                        5: "CD/DVD-Laufwerk",
-                        6: "RAM-Disk"
-                    }
-                    type_str = type_names.get(drive_type_int, "Unbekannt")
+            volume_path = f"\\\\.\\{drive_letter}"
+            handle = ctypes.windll.kernel32.CreateFileW(
+                volume_path,
+                GENERIC_READ | GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                None,
+                OPEN_EXISTING,
+                0,
+                None
+            )
 
-                    results.append(DriveInfo(
-                        path=drive_letter,
-                        label=label,
-                        drive_type=type_str,
-                        is_removable=is_removable,
-                        has_dcim=has_dcim,
-                        dcim_path=dcim_path
-                    ))
-        except Exception as e:
-            print(f"[Warnung] Laufwerkserkennung fehlgeschlagen: {e}")
-    else:
-        # Fallback for Linux/macOS
-        mount_points = ["/Volumes", "/media", "/mnt"]
-        for mp in mount_points:
-            p = Path(mp)
-            if p.exists():
-                for sub in p.iterdir():
-                    if sub.is_dir():
-                        dcim = sub / "DCIM"
-                        has_dcim = dcim.exists() and dcim.is_dir()
-                        results.append(DriveInfo(
-                            path=str(sub),
-                            label=sub.name,
-                            drive_type="Mount",
-                            is_removable=True,
-                            has_dcim=has_dcim,
-                            dcim_path=str(dcim) if has_dcim else ""
-                        ))
+            if handle != -1 and handle != 0:
+                dwBytesReturned = wintypes.DWORD()
+                ctypes.windll.kernel32.DeviceIoControl(handle, FSCTL_LOCK_VOLUME, None, 0, None, 0, ctypes.byref(dwBytesReturned), None)
+                ctypes.windll.kernel32.DeviceIoControl(handle, FSCTL_DISMOUNT_VOLUME, None, 0, None, 0, ctypes.byref(dwBytesReturned), None)
+                ctypes.windll.kernel32.DeviceIoControl(handle, IOCTL_STORAGE_EJECT_MEDIA, None, 0, None, 0, ctypes.byref(dwBytesReturned), None)
+                ctypes.windll.kernel32.CloseHandle(handle)
+                return True, f"Speicherkarte / Laufwerk ({drive_letter}) wurde erfolgreich ausgehängt."
+        except Exception:
+            pass
 
-    # Sort so that drives with DCIM or Removable come first
-    results.sort(key=lambda d: (not d.has_dcim, not d.is_removable, d.path))
-    return results
+    return False, f"Laufwerk {drive_letter} konnte nicht ausgehängt werden. Möglicherweise wird eine Datei noch verwendet."

@@ -1,3 +1,4 @@
+from core.drive_detector import eject_drive
 """Unit tests for FotoDown core modules."""
 
 from datetime import datetime
@@ -242,6 +243,16 @@ class TestHistoryAndImport(unittest.TestCase):
         self.assertEqual(len(jpg_items), 1)
         self.assertEqual(jpg_items[0].source_path.name, "IMG_100.JPG")
 
+
+
+    def test_eject_drive_empty(self):
+        success, msg = eject_drive("")
+        self.assertFalse(success)
+        self.assertIn("Kein Pfad", msg)
+
+    def test_eject_drive_invalid_path(self):
+        success, msg = eject_drive("UNC_PATH_WITHOUT_LETTER")
+        self.assertFalse(success)
 
 if __name__ == "__main__":
     unittest.main()

@@ -15,7 +15,7 @@ import customtkinter as ctk
 from PIL import Image, ImageOps, ImageDraw
 
 from core.config import AppConfig
-from core.drive_detector import detect_drives, DriveInfo
+from core.drive_detector import detect_drives, DriveInfo, eject_drive
 from core.exif_reader import MediaMetadata
 from core.history import ImportHistory
 from core.importer import ImporterEngine, ScanItem, ImportStats
@@ -273,8 +273,8 @@ class FotoDownApp:
         self.is_busy = False
 
         # Collapsible state for sections 1 and 2
-        self.is_sec1_open = True
-        self.is_sec2_open = True
+        self.is_sec1_open = False
+        self.is_sec2_open = False
 
         # View mode state: "list" or "gallery"
         self.view_mode = "list"
@@ -404,7 +404,7 @@ class FotoDownApp:
 
         self.lbl_sec1_arrow = ctk.CTkLabel(
             header_f,
-            text="▼",
+            text="▶",
             font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             text_color="#38bdf8"
         )
@@ -413,9 +413,8 @@ class FotoDownApp:
         for widget in (header_f, self.lbl_sec1_title, self.lbl_sec1_summary, self.lbl_sec1_arrow):
             widget.bind("<Button-1>", lambda _: self._toggle_section1())
 
-        # Collapsible Content Frame
+        # Collapsible Content Frame (Collapsed by default)
         self.sec1_content = ctk.CTkFrame(self.grp_sec1, fg_color="transparent")
-        self.sec1_content.pack(fill=tk.X, padx=14, pady=(0, 10))
 
         # Drive selection row
         row0 = ctk.CTkFrame(self.sec1_content, fg_color="transparent")
@@ -488,7 +487,7 @@ class FotoDownApp:
             self.sec1_content.pack(fill=tk.X, padx=14, pady=(0, 10))
             self.lbl_sec1_arrow.configure(text="▼")
             self.lbl_sec1_summary.configure(text="")
-            self.is_sec1_open = True
+            self.is_sec1_open = False
 
     def _on_toggle_video_dir(self):
         is_sep = self.var_separate_video.get()
@@ -523,7 +522,7 @@ class FotoDownApp:
 
         self.lbl_sec2_arrow = ctk.CTkLabel(
             header_f,
-            text="▼",
+            text="▶",
             font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             text_color="#38bdf8"
         )
@@ -532,9 +531,8 @@ class FotoDownApp:
         for widget in (header_f, self.lbl_sec2_title, self.lbl_sec2_summary, self.lbl_sec2_arrow):
             widget.bind("<Button-1>", lambda _: self._toggle_section2())
 
-        # Collapsible Content Frame
+        # Collapsible Content Frame (Collapsed by default)
         self.sec2_content = ctk.CTkFrame(self.grp_sec2, fg_color="transparent")
-        self.sec2_content.pack(fill=tk.X, padx=14, pady=(0, 10))
 
         # Folder structure pattern
         f_row = ctk.CTkFrame(self.sec2_content, fg_color="transparent")
@@ -650,7 +648,7 @@ class FotoDownApp:
             self.sec2_content.pack(fill=tk.X, padx=14, pady=(0, 10))
             self.lbl_sec2_arrow.configure(text="▼")
             self.lbl_sec2_summary.configure(text="")
-            self.is_sec2_open = True
+            self.is_sec2_open = False
 
     def _build_action_section(self, parent: ctk.CTkFrame):
         act_frame = ctk.CTkFrame(parent, fg_color="transparent")
@@ -680,6 +678,18 @@ class FotoDownApp:
         )
         self.btn_import.pack(side=tk.LEFT, padx=(0, 10))
         self.btn_import.configure(state="disabled")
+
+        self.btn_eject = ctk.CTkButton(
+            act_frame,
+            text="⏏️ Karte / Ordner aushängen",
+            width=220,
+            height=36,
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            fg_color="#d97706",
+            hover_color="#b45309",
+            command=self._eject_source_drive
+        )
+        self.btn_eject.pack(side=tk.LEFT, padx=(0, 10))
 
         self.btn_cancel = ctk.CTkButton(
             act_frame,
@@ -1528,6 +1538,7 @@ class FotoDownApp:
         self.is_busy = busy
         state = "disabled" if busy else "normal"
         self.btn_scan.configure(state=state)
+        self.btn_eject.configure(state=state)
         self.btn_import.configure(state="disabled" if busy or not self.scan_items else "normal")
         self.btn_cancel.configure(state="normal" if busy else "disabled")
         self.ent_source.configure(state=state)
@@ -1662,6 +1673,25 @@ class FotoDownApp:
             msg += f"• Fehler: {stats.failed}\n"
 
         messagebox.showinfo("Import abgeschlossen", msg)
+
+
+
+    def _eject_source_drive(self):
+        src_path = self.var_source.get().strip()
+        if not src_path:
+            messagebox.showwarning("Hinweis", "Kein Quellordner ausgewählt.")
+            return
+
+        success, msg = eject_drive(src_path)
+        if success:
+            messagebox.showinfo("Laufwerk ausgehängt", msg)
+            self.scan_items = []
+            self.thumb_cache.clear()
+            self.lbl_status.configure(text="Speicherkarte ausgehängt.")
+            self._refresh_drives()
+            self._render_table_items()
+        else:
+            messagebox.showwarning("Aushängen fehlgeschlagen", msg)
 
 
 def run_gui():
