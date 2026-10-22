@@ -1,0 +1,1 @@
+﻿"""FotoDown Qt GUI Package."""

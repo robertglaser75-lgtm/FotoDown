@@ -1,12 +1,19 @@
 @echo off
+setlocal
 title FotoDown
-chcp 65001 > nul
 
-:: pushd unterstützt im Gegensatz zu 'cd' auch UNC-Netzwerkpfade (z.B. \\192.168.x.x\...)
-:: indem es temporär automatisch einen Laufwerksbuchstaben zuweist.
-pushd "%~dp0"
+cd /d "%~dp0" 2>nul || pushd "%~dp0"
 
-python fotodown.py
+set "PY_CMD=python"
+where python >nul 2>nul
+if errorlevel 1 (
+    where py >nul 2>nul
+    if not errorlevel 1 (
+        set "PY_CMD=py"
+    )
+)
+
+%PY_CMD% fotodown.py %*
 
 if errorlevel 1 (
     echo.
@@ -14,4 +21,4 @@ if errorlevel 1 (
     pause
 )
 
-popd
+popd 2>nul

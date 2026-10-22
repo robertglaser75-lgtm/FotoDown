@@ -1,14 +1,17 @@
-# FotoDown 📸
+﻿# FotoDown 📸
 
 **FotoDown** ist ein intelligentes, schnelles Werkzeug zum automatischen Importieren, Umbenennen und Sortieren von Fotos und Videos direkt von Speicherkarten (SD-Karten, USB-Laufwerken) oder beliebigen Quellordnern.
+
+Lauffähig unter **Windows** und **Linux**.
 
 ---
 
 ## ✨ Funktionen
 
-- 🔍 **Automatische Speicherkartenerkennung:** Erkennt eingesteckte SD-Karten und findet automatisch typische `DCIM`-Ordner.
-- 🧠 **Duplikaterkennung via Historie:** Merkt sich heruntergeladene Fotos (via Hash & Metadaten in einer SQLite-Datenbank). Speicherkarte erneut einstecken? Es werden **nur neue Fotos** geladen!
-- 🏷️ **Flexible EXIF-Umbenennung:** Frei definierbare Muster mit Direkt-Vorschau.
+- 🔍 **Automatische Speicherkartenerkennung:** Erkennt eingesteckte SD-Karten und findet automatisch typische `DCIM`-Ordner (unter Windows via Win32-API, unter Linux via `/media`, `/run/media` und `/proc/mounts`).
+- ⏏️ **Sicheres Auswerfen:** Ermöglicht das direkte und sichere Aushängen von Speicherkarten per Mausklick.
+- 🧠 **Duplikaterkennung via Historie:** Merkt sich heruntergeladene Fotos (via SHA-256-Hash in einer SQLite-Datenbank). Speicherkarte erneut einstecken? Es werden **nur neue Fotos** geladen!
+- 🏷️ **Flexible EXIF-Umbenennung:** Frei definierbare Muster mit Direkt-Vorschau und klickbaren Platzhalter-Chips.
 - 📁 **Strukturierte Ordnerablage:** Automatische Sortierung in Zielordner (z.B. nach Jahr/Monat/Tag/Kamera).
 - 🎥 **Eigener Ordner für Videos:** Option zur automatischen Trennung von Video-Dateien in einen separaten Zielordner.
 - 🎞️ **JPG- & RAW-Organisation:** Wählbar zwischen:
@@ -19,24 +22,44 @@
   - Standardformate: `.jpg`, `.jpeg`, `.png`, `.heic`, `.heif`, `.tiff`
   - RAW-Formate: Canon (`.cr2`, `.cr3`), Nikon (`.nef`), Sony (`.arw`), Adobe (`.dng`), Panasonic (`.rw2`), Olympus (`.orf`), Fuji (`.raf`), Pentax (`.pef`)
   - Videoformate: `.mp4`, `.mov`, `.mts`, `.m2ts`, `.avi`, `.mkv`
-- 🖥️ **Moderne Benutzeroberfläche & CLI:** Intuitive GUI (mit Fortschrittsbalken, Farbcodes & Vorschautabelle) sowie voller Kommandozeilensupport.
+- 🖥️ **Moderne Benutzeroberfläche (PySide6 / Qt 6):**
+  - Schnelle, virtualisierte Fotogalerie (`QListView` im `IconMode`) mit asynchronem Laden von Miniaturbildern (kein Einfrieren).
+  - Sortier- und filterbare Tabellenansicht (`QTableView` mit `QSortFilterProxyModel`).
+  - Fluent Dark Design optimiert für Windows 11 und moderne Linux-Desktops (GNOME, KDE Plasma).
+- ⚙️ **Kommandozeilen-Modus (CLI):** Voller CLI-Support für Scripting, Hintergrundjobs und Headless-Server.
 - 🛡️ **Kollisionssicher:** Vorhandene Zieldateien werden bei Bedarf automatisch nummeriert (`_1`, `_2`), um Überschreiben zu verhindern.
 
 ---
 
 ## 🚀 Schnellstart
 
-### 1. Starten per Doppelklick:
-Einfach die Datei **`FotoDown.bat`** doppelt anklicken.
+### Voraussetzungen
+Python 3.10 oder neuer mit den Paketen aus `requirements.txt`:
+```bash
+pip install -r requirements.txt
+```
 
-### 2. Starten über die Konsole:
+### 1. Unter Windows:
+Einfach die Datei **`FotoDown.bat`** per Doppelklick starten.
+
+### 2. Unter Linux:
+```bash
+chmod +x fotodown.sh
+./fotodown.sh
+```
+
+### 3. Starten über Python:
 ```bash
 python fotodown.py
 ```
 
-### 3. Starten im CLI-Modus (Kommandozeile):
+### 4. Starten im CLI-Modus (Kommandozeile):
 ```bash
+# Windows
 python fotodown.py --source E:\DCIM --target "D:\Meine Fotos"
+
+# Linux
+python fotodown.py --source /media/user/EOS_DIGITAL/DCIM --target /home/user/Pictures
 ```
 Für einen reinen Trockenlauf (Vorschau ohne Kopieren):
 ```bash

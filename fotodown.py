@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """FotoDown - Foto-Importeur, EXIF-Umbenennung & Duplikaterkennung.
 
-Startet standardmäßig die moderne grafische Benutzeroberfläche (GUI)
+Startet standardmäßig die moderne Qt-Benutzeroberfläche (PySide6)
 oder kann mit Argumenten als Kommandozeilenwerkzeug (CLI) betrieben werden.
+Lauffähig auf Windows und Linux.
 """
 
 import argparse
@@ -17,7 +19,25 @@ if str(script_dir) not in sys.path:
 from core.config import AppConfig
 from core.history import ImportHistory
 from core.importer import ImporterEngine
-from gui.app import run_gui
+from core.version import __version__
+
+
+def start_gui(engine: str = "qt"):
+    """Starts the graphical user interface (default: Qt/PySide6)."""
+    if engine == "tk":
+        try:
+            from gui.app import run_gui as run_tk_gui
+            return run_tk_gui()
+        except Exception as e:
+            print(f"[Warnung] Tkinter-GUI konnte nicht gestartet werden: {e}")
+
+    try:
+        from gui_qt.app import run_gui as run_qt_gui
+        return run_qt_gui()
+    except ImportError as e:
+        print(f"[Hinweis] PySide6 nicht gefunden ({e}). Weiche auf CustomTkinter-GUI aus...")
+        from gui.app import run_gui as run_tk_gui
+        return run_tk_gui()
 
 
 def main_cli(args):
@@ -41,7 +61,7 @@ def main_cli(args):
         print(f"[Fehler] Quellordner '{config.source_dir}' existiert nicht.")
         sys.exit(1)
 
-    print(f"=== FotoDown CLI ===")
+    print(f"=== FotoDown CLI v{__version__} ===")
     print(f"Quelle:         {config.source_dir}")
     print(f"Ziel Fotos:     {config.target_dir}")
     if config.separate_video_dir:
@@ -87,11 +107,13 @@ def main_cli(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="FotoDown - Foto-Importeur & EXIF-Manager")
+    parser = argparse.ArgumentParser(description=f"FotoDown v{__version__} - Foto-Importeur & EXIF-Manager")
+    parser.add_argument("--version", "-v", action="version", version=f"FotoDown {__version__}")
     parser.add_argument("--cli", action="store_true", help="Startet im Kommandozeilenmodus statt GUI")
+    parser.add_argument("--gui", choices=["qt", "tk"], default="qt", help="GUI-Engine: 'qt' (PySide6, Standard) oder 'tk' (Legacy CustomTkinter)")
     parser.add_argument("--source", "-s", type=str, help="Quellordner oder Speicherkarte")
     parser.add_argument("--target", "-t", type=str, help="Zielordner für sortierte Fotos")
-    parser.add_argument("--video-target", "-v", type=str, help="Separater Zielordner für Videos")
+    parser.add_argument("--video-target", type=str, help="Separater Zielordner für Videos")
     parser.add_argument("--type-org", choices=["same", "subfolders", "parent_folders"], default=None,
                         help="Organisation: 'same' (alle zusammen), 'subfolders' (.../JPG und .../RAW), 'parent_folders' (JPG/... und RAW/...)")
     parser.add_argument("--file-pattern", type=str, help="Namensmuster (z.B. '{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}')")
@@ -103,7 +125,7 @@ def main():
     if args.cli or args.source or args.dry_run:
         main_cli(args)
     else:
-        run_gui()
+        start_gui(engine=args.gui)
 
 
 if __name__ == "__main__":
