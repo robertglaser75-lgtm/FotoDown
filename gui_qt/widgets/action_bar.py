@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
     QPushButton, QVBoxLayout, QWidget
 )
 
+from core.drive_detector import format_size
+
 
 class ActionBarWidget(QWidget):
     scan_clicked = Signal()
@@ -25,11 +27,11 @@ class ActionBarWidget(QWidget):
         btn_box = QHBoxLayout()
         btn_box.setSpacing(12)
 
-        self.btn_scan = QPushButton("\U0001F50D Speicherkarte / Ordner scannen")
+        self.btn_scan = QPushButton("\U0001F50D Scannen")
         self.btn_scan.setObjectName("scanBtn")
         self.btn_scan.clicked.connect(self.scan_clicked.emit)
 
-        self.btn_import = QPushButton("\u2B07 Importieren starten")
+        self.btn_import = QPushButton("\u2B07 Importieren")
         self.btn_import.setObjectName("primaryBtn")
         self.btn_import.setEnabled(False)
         self.btn_import.clicked.connect(self.import_clicked.emit)
@@ -69,3 +71,25 @@ class ActionBarWidget(QWidget):
     def update_progress(self, percent: float, msg: str):
         self.progress_bar.setValue(int(percent))
         self.lbl_status.setText(msg)
+
+    def update_selection_stats(
+        self,
+        count: int,
+        total_bytes: int,
+        has_capacity: bool = True,
+        warning_msg: str = "",
+    ):
+        """Updates the import button label and enabled status based on selected items."""
+        if count > 0 and has_capacity:
+            size_str = format_size(total_bytes)
+            self.btn_import.setText(f"\u2B07 {count} Fotos importieren ({size_str})")
+            self.btn_import.setEnabled(True)
+            self.lbl_status.setText(f"{count} Medien ausgewählt ({size_str}).")
+        elif count > 0 and not has_capacity:
+            self.btn_import.setText("\u26A0 Nicht genügend Speicher")
+            self.btn_import.setEnabled(False)
+            self.lbl_status.setText(warning_msg or "Ziellaufwerk hat nicht genügend Speicherplatz!")
+        else:
+            self.btn_import.setText("\u2B07 Importieren")
+            self.btn_import.setEnabled(False)
+            self.lbl_status.setText("Keine Fotos zum Import ausgewählt.")

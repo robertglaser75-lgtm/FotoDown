@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""FotoDown Main Window implementation in PySide6."""
+"""FotoDown Main Window implementation in PySide6 with professional layout and storage visualization."""
 
 from pathlib import Path
 import sys
@@ -8,12 +8,13 @@ from typing import List, Optional
 from PySide6.QtCore import QThreadPool, Qt
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QLabel, QMainWindow, QMessageBox,
+    QApplication, QFrame, QLabel, QMainWindow, QMessageBox,
     QScrollArea, QSplitter, QStackedWidget, QStatusBar,
     QVBoxLayout, QWidget
 )
 
 from core.config import AppConfig
+from core.drive_detector import format_size
 from core.history import ImportHistory
 from core.importer import ImporterEngine, ScanItem, ImportStats
 from core.version import __version__
@@ -28,6 +29,7 @@ from .widgets.path_selector import PathSelectorWidget
 from .widgets.pattern_editor import PatternEditorWidget
 from .widgets.action_bar import ActionBarWidget
 from .widgets.filter_bar import FilterBarWidget
+from .widgets.splash_screen import FotoDownSplashScreen
 from .workers.scan_worker import ScanWorker
 from .workers.import_worker import ImportWorker
 from .workers.thumb_worker import ThumbnailTask
@@ -36,13 +38,16 @@ from .dialogs.help_dialog import HelpDialog
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, splash: Optional[FotoDownSplashScreen] = None):
         super().__init__()
         self.setWindowTitle(f"FotoDown v{__version__} - Foto-Importeur & EXIF-Manager")
-        self.resize(1200, 850)
-        self.setMinimumSize(950, 650)
+        self.resize(1280, 850)
+        self.setMinimumSize(1000, 680)
 
         self._set_app_icon()
+
+        if splash:
+            splash.set_status("Lade Konfiguration & Historie...", 2, 5)
 
         # Core logic setup
         self.config = AppConfig.load()
@@ -55,10 +60,16 @@ class MainWindow(QMainWindow):
         self._scan_worker: Optional[ScanWorker] = None
         self._import_worker: Optional[ImportWorker] = None
 
+        if splash:
+            splash.set_status("Initialisiere Datenmodelle...", 3, 5)
+
         # Data Models
         self.table_model = ScanTableModel()
         self.proxy_model = ScanFilterProxyModel()
         self.proxy_model.setSourceModel(self.table_model)
+
+        if splash:
+            splash.set_status("Erstelle Benutzeroberfläche...", 4, 5)
 
         self._setup_ui()
         self._connect_signals()
@@ -82,44 +93,52 @@ class MainWindow(QMainWindow):
         self.header_banner = HeaderBanner()
         main_layout.addWidget(self.header_banner)
 
-        # Splitter between Configuration/Controls and Item Views
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        splitter.setChildrenCollapsible(False)
+        # 2. Main Horizontal Splitter (Sidebar left, Workspace right)
+        main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        main_splitter.setChildrenCollapsible(False)
 
-        # Top Section Container
-        top_container = QWidget()
-        top_layout = QVBoxLayout(top_container)
-        top_layout.setContentsMargins(12, 10, 12, 6)
-        top_layout.setSpacing(8)
+        # Left Sidebar (Scrollable options and controls)
+        sidebar_scroll = QScrollArea()
+        sidebar_scroll.setWidgetResizable(True)
+        sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        # Collapsible Section 1: Paths & Organization
+        sidebar_container = QWidget()
+        sidebar_layout = QVBoxLayout(sidebar_container)
+        sidebar_layout.setContentsMargins(12, 10, 8, 10)
+        sidebar_layout.setSpacing(10)
+
+        # Collapsible Section 1: Paths & Storage
         self.box_paths = CollapsibleBox("1. Quell- und Zielordner festlegen", is_expanded=True)
         self.path_selector = PathSelectorWidget()
         self.box_paths.set_content_widget(self.path_selector)
-        top_layout.addWidget(self.box_paths)
+        sidebar_layout.addWidget(self.box_paths)
 
         # Collapsible Section 2: Patterns & Tags
-        self.box_patterns = CollapsibleBox("2. Dateinamen- und Ordnerstruktur-Muster", is_expanded=False)
+        self.box_patterns = CollapsibleBox("2. Namens- und Ordnerstruktur-Muster", is_expanded=False)
         self.pattern_editor = PatternEditorWidget()
         self.box_patterns.set_content_widget(self.pattern_editor)
-        top_layout.addWidget(self.box_patterns)
+        sidebar_layout.addWidget(self.box_patterns)
 
-        # Action Buttons & Progress
+        # Action Buttons, Capacity Info & Progress
         self.action_bar = ActionBarWidget()
-        top_layout.addWidget(self.action_bar)
+        sidebar_layout.addWidget(self.action_bar)
+        sidebar_layout.addStretch()
 
-        # Filter Bar
+        sidebar_scroll.setWidget(sidebar_container)
+        main_splitter.addWidget(sidebar_scroll)
+
+        # Right Section: Media Workspace (Filters + Views)
+        workspace_container = QWidget()
+        workspace_layout = QVBoxLayout(workspace_container)
+        workspace_layout.setContentsMargins(8, 10, 12, 8)
+        workspace_layout.setSpacing(8)
+
+        # Filter Bar (with Zoom Slider for Gallery)
         self.filter_bar = FilterBarWidget()
-        top_layout.addWidget(self.filter_bar)
+        workspace_layout.addWidget(self.filter_bar)
 
-        splitter.addWidget(top_container)
-
-        # Bottom Section: Views Stack (Table vs Gallery)
-        bottom_container = QWidget()
-        bottom_layout = QVBoxLayout(bottom_container)
-        bottom_layout.setContentsMargins(12, 0, 12, 8)
-        bottom_layout.setSpacing(0)
-
+        # View Stack (Table vs Gallery)
         self.view_stack = QStackedWidget()
 
         # View 0: Table View
@@ -133,14 +152,17 @@ class MainWindow(QMainWindow):
         self.gallery_view.setModel(self.proxy_model)
         self.view_stack.addWidget(self.gallery_view)
 
-        bottom_layout.addWidget(self.view_stack)
-        splitter.addWidget(bottom_container)
+        workspace_layout.addWidget(self.view_stack)
+        main_splitter.addWidget(workspace_container)
 
-        splitter.setStretchFactor(0, 0)
-        splitter.setStretchFactor(1, 1)
-        main_layout.addWidget(splitter)
+        # Splitter sizing: Left sidebar ~380px, Right workspace gets rest
+        main_splitter.setSizes([380, 850])
+        main_splitter.setStretchFactor(0, 0)
+        main_splitter.setStretchFactor(1, 1)
 
-        # Status Bar
+        main_layout.addWidget(main_splitter)
+
+        # 3. Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self.lbl_status_stats = QLabel("Bereit. Wählen Sie ein Quelllaufwerk und klicken Sie auf 'Scannen'.")
@@ -148,7 +170,7 @@ class MainWindow(QMainWindow):
 
     def _connect_signals(self):
         # Header signals
-        self.header_banner.drive_selected.connect(self.path_selector.edit_source.setText)
+        self.header_banner.drive_selected.connect(self._on_header_drive_selected)
         self.header_banner.open_history.connect(self._open_history_dialog)
         self.header_banner.open_help.connect(self._open_help_dialog)
 
@@ -166,6 +188,7 @@ class MainWindow(QMainWindow):
         self.filter_bar.status_filter_changed.connect(self.proxy_model.set_status_filter)
         self.filter_bar.type_filter_changed.connect(self.proxy_model.set_type_filter)
         self.filter_bar.search_changed.connect(self.proxy_model.set_search_term)
+        self.filter_bar.thumbnail_size_changed.connect(self.gallery_view.set_thumbnail_size)
 
         # Selection shortcuts
         self.filter_bar.select_all_clicked.connect(self.table_model.select_all)
@@ -175,6 +198,10 @@ class MainWindow(QMainWindow):
         # Model changes update stats
         self.table_model.selection_changed.connect(self._update_stats_bar)
         self.gallery_view.selection_toggled.connect(self._update_stats_bar)
+
+    def _on_header_drive_selected(self, path: str):
+        self.path_selector.edit_source.setText(path)
+        self.path_selector.source_storage_bar.set_path(path)
 
     def _load_config_to_ui(self):
         self.path_selector.load_config(self.config)
@@ -186,6 +213,7 @@ class MainWindow(QMainWindow):
         self.pattern_editor.sync_to_config(self.config)
         self.pattern_editor.update_preview(self.config.type_folder_organization)
         self.config.save()
+        self._update_stats_bar()
 
     def _on_view_mode_changed(self, mode: str):
         if mode == "gallery":
@@ -201,18 +229,31 @@ class MainWindow(QMainWindow):
         new_cnt = sum(1 for it in items if it.status == "Neu")
         dup_cnt = sum(1 for it in items if it.is_duplicate)
         total_bytes = sum(it.metadata.file_size for it in items if it.selected)
-        mb = total_bytes / (1024 * 1024)
 
-        self.lbl_status_stats.setText(
-            f"Gefunden: {total} | Ausgewählt: {selected} ({mb:.1f} MB) | Neu: {new_cnt} | Bereits importiert: {dup_cnt}"
+        # Check target capacity
+        has_space, warning_msg = self.path_selector.check_capacity(total_bytes)
+
+        # Update action bar button and message
+        self.action_bar.update_selection_stats(
+            selected,
+            total_bytes,
+            has_capacity=has_space,
+            warning_msg=warning_msg,
         )
-        self.action_bar.btn_import.setEnabled(selected > 0)
+
+        total_str = format_size(total_bytes)
+        self.lbl_status_stats.setText(
+            f"Gefunden: {total} | Ausgewählt: {selected} ({total_str}) | Neu: {new_cnt} | Bereits importiert: {dup_cnt}"
+        )
 
     def _start_scan(self):
         self._on_settings_changed()
         source_dir = Path(self.config.source_dir)
         if not self.config.source_dir or not source_dir.exists():
-            QMessageBox.warning(self, "Ungültiger Quellordner", f"Der Quellordner '{self.config.source_dir}' existiert nicht.")
+            QMessageBox.warning(
+                self, "Ungültiger Quellordner",
+                f"Der Quellordner '{self.config.source_dir}' existiert nicht."
+            )
             return
 
         self.action_bar.set_busy(True, "Scannen")
@@ -266,6 +307,12 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Keine Auswahl", "Es wurden keine Dateien zum Importieren ausgewählt.")
             return
 
+        total_bytes = sum(it.metadata.file_size for it in selected_items)
+        has_space, warning_msg = self.path_selector.check_capacity(total_bytes)
+        if not has_space:
+            QMessageBox.critical(self, "Speicherplatz unzureichend", warning_msg)
+            return
+
         self.action_bar.set_busy(True, "Importieren")
         self._import_worker = ImportWorker(self.engine, selected_items, self.config)
         self._import_worker.progress.connect(self._on_worker_progress)
@@ -276,14 +323,19 @@ class MainWindow(QMainWindow):
     def _on_import_finished(self, stats: ImportStats):
         self.action_bar.set_busy(False)
         mb = stats.bytes_copied / (1024 * 1024)
-        msg = f"Import abgeschlossen!\\n\\n✓ {stats.copied_success} Dateien kopiert ({mb:.1f} MB)\\n⚠️ {stats.duplicates_skipped} Duplikate übersprungen\\n✕ {stats.failed} Fehler"
+        msg = (
+            f"Import abgeschlossen!\n\n"
+            f"✓ {stats.copied_success} Dateien kopiert ({mb:.1f} MB)\n"
+            f"⚠️ {stats.duplicates_skipped} Duplikate übersprungen\n"
+            f"✕ {stats.failed} Fehler"
+        )
         QMessageBox.information(self, "Import abgeschlossen", msg)
         self.action_bar.lbl_status.setText(f"Fertig: {stats.copied_success} Dateien erfolgreich kopiert ({mb:.1f} MB).")
         self._start_scan()
 
     def _on_worker_error(self, err_msg: str):
         self.action_bar.set_busy(False)
-        QMessageBox.critical(self, "Fehler", f"Ein Fehler ist aufgetreten:\\n{err_msg}")
+        QMessageBox.critical(self, "Fehler", f"Ein Fehler ist aufgetreten:\n{err_msg}")
         self.action_bar.lbl_status.setText("Vorgang mit Fehler abgebrochen.")
 
     def _cancel_task(self):

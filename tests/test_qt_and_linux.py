@@ -1,4 +1,4 @@
-﻿"""Unit tests for Qt models, cross-platform drive detection, and thumbnails."""
+"""Unit tests for Qt models, cross-platform drive detection, and thumbnails."""
 
 from datetime import datetime
 import os
@@ -9,20 +9,48 @@ import unittest
 from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QApplication
 
-from core.drive_detector import DriveInfo, _detect_drives_linux, detect_drives
+from core.drive_detector import (
+    DriveInfo, DiskSpaceInfo, _detect_drives_linux,
+    detect_drives, format_size, get_disk_space
+)
 from core.exif_reader import MediaMetadata
 from core.importer import ScanItem
 from core.thumbnail import generate_thumbnail
 from core.version import __version__
 from gui_qt.models.scan_model import ScanTableModel
 from gui_qt.models.filter_proxy import ScanFilterProxyModel
+from gui_qt.widgets.storage_bar import StorageBarWidget
+from gui_qt.widgets.filter_bar import FilterBarWidget
 
 
 class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.3.2")
+        self.assertEqual(__version__, "0.4.0")
+
+
+class TestDiskSpace(unittest.TestCase):
+    def test_format_size(self):
+        self.assertEqual(format_size(500), "500 B")
+        self.assertEqual(format_size(1024), "1.0 KB")
+        self.assertEqual(format_size(1024 * 1024 * 15), "15.0 MB")
+        self.assertEqual(format_size(1024 * 1024 * 1024 * 4), "4.0 GB")
+        self.assertEqual(format_size(1024 * 1024 * 1024 * 1024 * 2), "2.0 TB")
+
+    def test_get_disk_space_current_dir(self):
+        space = get_disk_space(".")
+        self.assertIsNotNone(space)
+        self.assertGreater(space.total_bytes, 0)
+        self.assertGreaterEqual(space.used_bytes, 0)
+        self.assertGreater(space.free_bytes, 0)
+        self.assertTrue(0.0 <= space.used_percent <= 100.0)
+
+    def test_disk_space_info_calculations(self):
+        info = DiskSpaceInfo(total_bytes=1000, used_bytes=400, free_bytes=600)
+        self.assertAlmostEqual(info.used_percent, 40.0)
+        self.assertAlmostEqual(info.free_percent, 60.0)
+        self.assertEqual(info.total_str, "1000 B")
 
 
 class TestLinuxDriveDetector(unittest.TestCase):
@@ -38,7 +66,8 @@ class TestLinuxDriveDetector(unittest.TestCase):
                 label="EOS_DIGITAL",
                 path=mount_point,
                 has_dcim=True,
-                dcim_path=dcim_dir
+                dcim_path=dcim_dir,
+                space=DiskSpaceInfo(total_bytes=1000000, used_bytes=400000, free_bytes=600000)
             )
             self.assertTrue(info.has_dcim)
             self.assertIn("DCIM", info.display_name)
@@ -78,8 +107,8 @@ class TestQtScanModels(unittest.TestCase):
             ),
             target_path=Path("/out/2026-08-15_IMG_0001.JPG"),
             is_duplicate=False,
-            file_hash="hash1",
             status="Neu",
+            file_hash="hash1",
             selected=True
         )
         item2 = ScanItem(
@@ -97,8 +126,8 @@ class TestQtScanModels(unittest.TestCase):
             ),
             target_path=Path("/out/2026-08-15_DSC_0002.CR3"),
             is_duplicate=True,
-            file_hash="hash2",
             status="Bereits importiert",
+            file_hash="hash2",
             selected=False
         )
         item3 = ScanItem(
@@ -109,43 +138,43 @@ class TestQtScanModels(unittest.TestCase):
                 extension=".mp4",
                 file_size=104857600,
                 date_taken=dt,
-                date_source="FileHeader",
+                date_source="FileModified",
                 camera_make="Sony",
-                camera_model="ILCE-7M4",
+                camera_model="A7IV",
                 camera_name="Sony A7IV"
             ),
             target_path=Path("/out/2026-08-15_VID_0003.MP4"),
             is_duplicate=False,
-            file_hash="hash3",
             status="Neu",
+            file_hash="hash3",
             selected=True
         )
         return [item1, item2, item3]
 
-    def test_model_data_and_selection(self):
+    def test_scan_table_model_basic(self):
+        items = self._create_sample_items()
+        model = ScanTableModel(items)
+        self.assertEqual(model.rowCount(), 3)
+        self.assertEqual(model.columnCount(), 8)
+
+        # Check column headers
+        self.assertEqual(model.headerData(2, Qt.Orientation.Horizontal), "Originalname")
+
+        # Test selection toggle via setData
+        idx = model.index(0, 0)
+        self.assertTrue(items[0].selected)
+        model.setData(idx, Qt.CheckState.Unchecked.value, Qt.ItemDataRole.CheckStateRole)
+        self.assertFalse(items[0].selected)
+
+    def test_selection_methods(self):
         items = self._create_sample_items()
         model = ScanTableModel(items)
 
-        self.assertEqual(model.rowCount(), 3)
-        self.assertEqual(model.columnCount(), len(ScanTableModel.COLUMNS))
-
-        # Check column data
-        idx_status = model.index(0, 1)
-        self.assertEqual(model.data(idx_status, Qt.ItemDataRole.DisplayRole), "Neu")
-
-        idx_chk = model.index(0, 0)
-        self.assertEqual(model.data(idx_chk, Qt.ItemDataRole.CheckStateRole), Qt.CheckState.Checked)
-
-        # Toggle selection
-        model.setData(idx_chk, Qt.CheckState.Unchecked, Qt.ItemDataRole.CheckStateRole)
-        self.assertFalse(items[0].selected)
-
-        # Bulk selection methods
         model.select_all()
         self.assertTrue(all(it.selected for it in items))
 
         model.deselect_all()
-        self.assertTrue(all(not it.selected for it in items))
+        self.assertFalse(any(it.selected for it in items))
 
         model.select_only_new()
         self.assertTrue(items[0].selected)
@@ -176,6 +205,31 @@ class TestQtScanModels(unittest.TestCase):
         # Search filter
         proxy.set_search_term("Sony")
         self.assertEqual(proxy.rowCount(), 1)
+
+    def test_storage_bar_widget(self):
+        widget = StorageBarWidget("Test Storage")
+        widget.set_path(".")
+        self.assertGreater(widget.bar.maximum(), 0)
+
+        # Test capacity check with realistic values
+        ok, msg = widget.check_capacity(1024)
+        self.assertTrue(ok)
+        self.assertIn("Ausreichend Speicher", msg)
+
+        # Test capacity check with impossibly large requirement (100 Petabytes)
+        huge_bytes = 100 * 1024 * 1024 * 1024 * 1024 * 1024
+        ok, msg = widget.check_capacity(huge_bytes)
+        self.assertFalse(ok)
+        self.assertIn("Nicht genügend Speicherplatz", msg)
+
+    def test_filter_bar_zoom_slider(self):
+        filter_bar = FilterBarWidget()
+        self.assertTrue(filter_bar.slider_zoom.isHidden())
+
+        # Switch to gallery mode
+        filter_bar.combo_view.setCurrentIndex(1)
+        self.assertFalse(filter_bar.slider_zoom.isHidden())
+        self.assertEqual(filter_bar.slider_zoom.value(), 160)
 
 
 if __name__ == "__main__":

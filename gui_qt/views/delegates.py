@@ -12,8 +12,8 @@ from core.importer import ScanItem
 
 
 class GalleryDelegate(QStyledItemDelegate):
-    CARD_SIZE = QSize(180, 205)
-    THUMB_SIZE = QSize(160, 120)
+    DEFAULT_CARD_SIZE = QSize(180, 205)
+    DEFAULT_THUMB_SIZE = QSize(160, 120)
 
     STATUS_COLORS = {
         "Neu": (QColor("#166534"), QColor("#4ade80")),          # bg, fg
@@ -25,12 +25,21 @@ class GalleryDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.pixmap_cache: Dict[str, QPixmap] = {}
+        self.card_size = QSize(self.DEFAULT_CARD_SIZE)
+        self.thumb_size = QSize(self.DEFAULT_THUMB_SIZE)
+
+    def set_scale(self, width: int):
+        """Adjusts thumbnail and card dimensions according to zoom slider."""
+        thumb_w = max(110, min(340, width))
+        thumb_h = int(thumb_w * 0.72)
+        self.thumb_size = QSize(thumb_w, thumb_h)
+        self.card_size = QSize(thumb_w + 20, thumb_h + 80)
 
     def set_pixmap(self, path_str: str, pixmap: QPixmap):
         self.pixmap_cache[path_str] = pixmap
 
     def sizeHint(self, option: QStyleOptionViewItem, index) -> QSize:
-        return self.CARD_SIZE
+        return self.card_size
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index):
         painter.save()
@@ -82,12 +91,21 @@ class GalleryDelegate(QStyledItemDelegate):
         painter.drawText(pill_rect, Qt.AlignmentFlag.AlignCenter, display_status)
 
         # 4. Thumbnail Area
-        thumb_rect = QRect(rect.left() + (rect.width() - self.THUMB_SIZE.width()) // 2, rect.top() + 32, self.THUMB_SIZE.width(), self.THUMB_SIZE.height())
+        thumb_rect = QRect(
+            rect.left() + (rect.width() - self.thumb_size.width()) // 2,
+            rect.top() + 32,
+            self.thumb_size.width(),
+            self.thumb_size.height()
+        )
         path_str = str(item.source_path)
         pix = self.pixmap_cache.get(path_str)
 
         if pix and not pix.isNull():
-            scaled = pix.scaled(thumb_rect.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            scaled = pix.scaled(
+                thumb_rect.size(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
             target_draw = QRect(
                 thumb_rect.left() + (thumb_rect.width() - scaled.width()) // 2,
                 thumb_rect.top() + (thumb_rect.height() - scaled.height()) // 2,

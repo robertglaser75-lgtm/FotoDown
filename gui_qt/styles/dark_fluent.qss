@@ -1,4 +1,4 @@
-﻿/* FotoDown Modern Fluent Dark Theme (Cross-Platform Windows & Linux) */
+/* FotoDown Modern Fluent Dark Theme (Cross-Platform Windows & Linux) */
 
 QWidget {
     background-color: #0f172a;
@@ -334,4 +334,49 @@ QStatusBar {
     color: #94a3b8;
     border-top: 1px solid #334155;
     font-size: 12px;
+}
+
+
+/* Storage Card & Disk Usage */
+#storageCard {
+    background-color: #162032;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+}
+
+#storageTitle {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+#storageInfo {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* Zoom Slider */
+QSlider::groove:horizontal {
+    border: 1px solid #334155;
+    background: #1e293b;
+    height: 6px;
+    border-radius: 3px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #0284c7;
+    border-radius: 3px;
+}
+
+QSlider::handle:horizontal {
+    background: #38bdf8;
+    border: 1px solid #0284c7;
+    width: 14px;
+    margin-top: -4px;
+    margin-bottom: -4px;
+    border-radius: 7px;
+}
+
+QSlider::handle:horizontal:hover {
+    background: #7dd3fc;
 }

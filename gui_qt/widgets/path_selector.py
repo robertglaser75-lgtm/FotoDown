@@ -1,6 +1,7 @@
-"""Path and organization configuration widget."""
+"""Path and organization configuration widget with integrated storage visualization."""
 
 from pathlib import Path
+from typing import Optional, Tuple
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QButtonGroup, QCheckBox, QFileDialog, QFrame,
@@ -9,6 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.config import AppConfig
+from .storage_bar import StorageBarWidget
 
 
 class PathSelectorWidget(QWidget):
@@ -31,7 +33,7 @@ class PathSelectorWidget(QWidget):
         lbl_source = QLabel("Quellordner / SD-Karte:")
         self.edit_source = QLineEdit()
         self.edit_source.setPlaceholderText("Pfad zum Quellordner oder DCIM...")
-        self.edit_source.textChanged.connect(lambda *args: self.changed.emit())
+        self.edit_source.textChanged.connect(self._on_source_text_changed)
 
         btn_browse_source = QPushButton("Durchsuchen...")
         btn_browse_source.setObjectName("secondaryBtn")
@@ -41,19 +43,27 @@ class PathSelectorWidget(QWidget):
         grid.addWidget(self.edit_source, 0, 1)
         grid.addWidget(btn_browse_source, 0, 2)
 
+        # 1b. Source Storage Bar
+        self.source_storage_bar = StorageBarWidget("Speicherplatz Quelle (SD-Karte / Ordner)")
+        grid.addWidget(self.source_storage_bar, 1, 0, 1, 3)
+
         # 2. Target Dir
         lbl_target = QLabel("Zielordner Fotos:")
         self.edit_target = QLineEdit()
         self.edit_target.setPlaceholderText("Zielverzeichnis für sortierte Fotos...")
-        self.edit_target.textChanged.connect(lambda *args: self.changed.emit())
+        self.edit_target.textChanged.connect(self._on_target_text_changed)
 
         btn_browse_target = QPushButton("Durchsuchen...")
         btn_browse_target.setObjectName("secondaryBtn")
         btn_browse_target.clicked.connect(self._browse_target)
 
-        grid.addWidget(lbl_target, 1, 0)
-        grid.addWidget(self.edit_target, 1, 1)
-        grid.addWidget(btn_browse_target, 1, 2)
+        grid.addWidget(lbl_target, 2, 0)
+        grid.addWidget(self.edit_target, 2, 1)
+        grid.addWidget(btn_browse_target, 2, 2)
+
+        # 2b. Target Storage Bar
+        self.target_storage_bar = StorageBarWidget("Speicherplatz Ziel-Festplatte")
+        grid.addWidget(self.target_storage_bar, 3, 0, 1, 3)
 
         # 3. Video Target Dir
         self.chk_video = QCheckBox("Separater Zielordner für Videos:")
@@ -69,9 +79,9 @@ class PathSelectorWidget(QWidget):
         self.btn_browse_video.setEnabled(False)
         self.btn_browse_video.clicked.connect(self._browse_video)
 
-        grid.addWidget(self.chk_video, 2, 0)
-        grid.addWidget(self.edit_video_target, 2, 1)
-        grid.addWidget(self.btn_browse_video, 2, 2)
+        grid.addWidget(self.chk_video, 4, 0)
+        grid.addWidget(self.edit_video_target, 4, 1)
+        grid.addWidget(self.btn_browse_video, 4, 2)
 
         layout.addLayout(grid)
 
@@ -105,6 +115,18 @@ class PathSelectorWidget(QWidget):
         self.chk_only_new.setChecked(True)
         self.chk_only_new.toggled.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.chk_only_new)
+
+    def _on_source_text_changed(self, text: str):
+        self.source_storage_bar.set_path(text)
+        self.changed.emit()
+
+    def _on_target_text_changed(self, text: str):
+        self.target_storage_bar.set_path(text)
+        self.changed.emit()
+
+    def check_capacity(self, required_bytes: int) -> Tuple[bool, str]:
+        """Validates if target has sufficient space for selected import items."""
+        return self.target_storage_bar.check_capacity(required_bytes)
 
     def _browse_source(self):
         curr = self.edit_source.text().strip() or str(Path.home())
@@ -152,6 +174,9 @@ class PathSelectorWidget(QWidget):
         self.edit_video_target.setText(config.video_target_dir)
         self.set_type_org(config.type_folder_organization)
         self.chk_only_new.setChecked(config.only_new_files)
+        # Update storage bars
+        self.source_storage_bar.set_path(config.source_dir)
+        self.target_storage_bar.set_path(config.target_dir)
 
     def sync_to_config(self, config: AppConfig):
         config.source_dir = self.edit_source.text().strip()

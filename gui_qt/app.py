@@ -1,4 +1,4 @@
-﻿"""Application entry point for FotoDown PySide6 Qt GUI."""
+"""Application entry point for FotoDown PySide6 Qt GUI."""
 
 from pathlib import Path
 import sys
@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication
 
 from core.version import __version__
 from .main_window import MainWindow
+from .widgets.splash_screen import FotoDownSplashScreen
 
 
 def run_gui():
@@ -49,7 +50,15 @@ def run_gui():
             app.setWindowIcon(QIcon(str(icon_path)))
             break
 
-    window = MainWindow()
+    # Show Splash Screen
+    splash = FotoDownSplashScreen()
+    splash.show()
+    splash.set_status("Lade Farbschema & Ressourcen...", 1, 5)
+
+    window = MainWindow(splash=splash)
+    splash.set_status("Bereit!", 5, 5)
+
     window.show()
+    splash.finish(window)
 
     return app.exec()

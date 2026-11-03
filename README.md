@@ -1,4 +1,4 @@
-﻿# FotoDown 📸
+# FotoDown 📸
 
 **FotoDown** ist ein intelligentes, schnelles Werkzeug zum automatischen Importieren, Umbenennen und Sortieren von Fotos und Videos direkt von Speicherkarten (SD-Karten, USB-Laufwerken) oder beliebigen Quellordnern.
 
@@ -8,6 +8,10 @@ Lauffähig unter **Windows** und **Linux**.
 
 ## ✨ Funktionen
 
+- 🚀 **Professioneller Fluent Dark Splashscreen:** Schneller, visuell ansprechender Start mit asynchroner Status- und Ladeanzeige.
+- 💾 **Echtzeit-Speicherplatz-Visualisierung & Pre-Flight Check:**
+  - Übersichtliche Anzeige der Belegung und des freien Speichers für SD-Karten und Ziellaufwerke (Festplatten, NAS, Netzlaufwerke).
+  - Automatische Vorab-Prüfung vor dem Kopieren: Warnt sofort bei Speichermangel und verhindert unvollständige Kopiervorgänge.
 - 🔍 **Automatische Speicherkartenerkennung:** Erkennt eingesteckte SD-Karten und findet automatisch typische `DCIM`-Ordner (unter Windows via Win32-API, unter Linux via `/media`, `/run/media` und `/proc/mounts`).
 - ⏏️ **Sicheres Auswerfen:** Ermöglicht das direkte und sichere Aushängen von Speicherkarten per Mausklick.
 - 🧠 **Duplikaterkennung via Historie:** Merkt sich heruntergeladene Fotos (via SHA-256-Hash in einer SQLite-Datenbank). Speicherkarte erneut einstecken? Es werden **nur neue Fotos** geladen!
@@ -22,9 +26,10 @@ Lauffähig unter **Windows** und **Linux**.
   - Standardformate: `.jpg`, `.jpeg`, `.png`, `.heic`, `.heif`, `.tiff`
   - RAW-Formate: Canon (`.cr2`, `.cr3`), Nikon (`.nef`), Sony (`.arw`), Adobe (`.dng`), Panasonic (`.rw2`), Olympus (`.orf`), Fuji (`.raf`), Pentax (`.pef`)
   - Videoformate: `.mp4`, `.mov`, `.mts`, `.m2ts`, `.avi`, `.mkv`
-- 🖥️ **Moderne Benutzeroberfläche (PySide6 / Qt 6):**
-  - Schnelle, virtualisierte Fotogalerie (`QListView` im `IconMode`) mit asynchronem Laden von Miniaturbildern (kein Einfrieren).
-  - Sortier- und filterbare Tabellenansicht (`QTableView` mit `QSortFilterProxyModel`).
+- 🖥️ **Moderne 2-Spalten-Benutzeroberfläche (PySide6 / Qt 6):**
+  - Vertikaler Splitter durch Sidebar-Layout ersetzt: Steuer- und Konfigurationsleiste links, maximaler Raum für Fotobetrachtung rechts.
+  - Stufenloser **Zoom-Slider** für Miniaturbilder in der Fotogalerie (`QListView` im `IconMode`).
+  - Sortier- und filterbare Tabellenansicht (`QTableView` mit `ScanFilterProxyModel`).
   - Fluent Dark Design optimiert für Windows 11 und moderne Linux-Desktops (GNOME, KDE Plasma).
 - ⚙️ **Kommandozeilen-Modus (CLI):** Voller CLI-Support für Scripting, Hintergrundjobs und Headless-Server.
 - 🛡️ **Kollisionssicher:** Vorhandene Zieldateien werden bei Bedarf automatisch nummeriert (`_1`, `_2`), um Überschreiben zu verhindern.
@@ -40,7 +45,7 @@ pip install -r requirements.txt
 ```
 
 ### 1. Unter Windows:
-Einfach die Datei **`FotoDown.bat`** per Doppelklick starten.
+Einfach die Datei **`FotoDown.bat`** per Doppelklick starten oder die Desktop-Verknüpfung verwenden.
 
 ### 2. Unter Linux:
 ```bash
@@ -90,15 +95,9 @@ python fotodown.py --source E:\DCIM --target "D:\Meine Fotos" --dry-run
 | `{num}` | Fortlaufende Nummer ohne führende Nullen | `1` |
 | `{ext}` | Dateiendung | `jpg` |
 
-### Beispiel-Kombinationen:
-- **Ordner-Schema:** `{YYYY}/{YYYY}-{MM}-{DD}`
-- **Dateiname-Schema:** `{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}`
-- **Ergebnis:** `2026/2026-08-15/2026-08-15_14-30-45_Sony_ILCE-7M4_DSC_0123.jpg`
-
 ---
 
 ## 🧪 Tests ausführen
-
 ```bash
 python -m unittest discover tests
 ```

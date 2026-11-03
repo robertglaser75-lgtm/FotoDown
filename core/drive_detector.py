@@ -3,9 +3,73 @@
 from dataclasses import dataclass
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 from typing import List, Optional, Tuple
+
+
+@dataclass
+class DiskSpaceInfo:
+    total_bytes: int = 0
+    used_bytes: int = 0
+    free_bytes: int = 0
+
+    @property
+    def used_percent(self) -> float:
+        if self.total_bytes <= 0:
+            return 0.0
+        return (self.used_bytes / self.total_bytes) * 100.0
+
+    @property
+    def free_percent(self) -> float:
+        if self.total_bytes <= 0:
+            return 0.0
+        return (self.free_bytes / self.total_bytes) * 100.0
+
+    @property
+    def total_str(self) -> str:
+        return format_size(self.total_bytes)
+
+    @property
+    def used_str(self) -> str:
+        return format_size(self.used_bytes)
+
+    @property
+    def free_str(self) -> str:
+        return format_size(self.free_bytes)
+
+
+def format_size(size_bytes: int) -> str:
+    """Formats bytes into human readable format (B, KB, MB, GB, TB)."""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    num = float(size_bytes)
+    for unit in ["KB", "MB", "GB", "TB", "PB"]:
+        num /= 1024.0
+        if num < 1024.0 or unit == "PB":
+            return f"{num:.1f} {unit}"
+    return f"{num:.1f} TB"
+
+
+def get_disk_space(path_or_str: str | Path) -> Optional[DiskSpaceInfo]:
+    """Retrieves disk usage for any local drive, folder, or UNC share."""
+    if not path_or_str:
+        return None
+    try:
+        p = Path(path_or_str)
+        while not p.exists() and p != p.parent:
+            p = p.parent
+        if not p.exists():
+            return None
+        usage = shutil.disk_usage(p)
+        return DiskSpaceInfo(
+            total_bytes=usage.total,
+            used_bytes=usage.used,
+            free_bytes=usage.free,
+        )
+    except Exception:
+        return None
 
 
 @dataclass
@@ -15,12 +79,14 @@ class DriveInfo:
     path: Path
     has_dcim: bool
     dcim_path: Optional[Path] = None
+    space: Optional[DiskSpaceInfo] = None
 
     @property
     def display_name(self) -> str:
         tag = "[DCIM / Kamera-Fotos]" if self.has_dcim else "[Wechseldatenträger]"
         lbl = f" ({self.label})" if self.label and self.label != self.letter else ""
-        return f"{self.letter}{lbl} {tag}"
+        space_info = f" [{self.space.free_str} frei von {self.space.total_str}]" if self.space and self.space.total_bytes > 0 else ""
+        return f"{self.letter}{lbl} {tag}{space_info}"
 
 
 def _detect_drives_windows() -> List[DriveInfo]:
@@ -54,13 +120,15 @@ def _detect_drives_windows() -> List[DriveInfo]:
                         # Check DCIM
                         dcim = drive_path / "DCIM"
                         has_dcim = dcim.exists() and dcim.is_dir()
+                        space = get_disk_space(drive_path)
 
                         drives.append(DriveInfo(
                             letter=chr(letter_ascii) + ":",
                             label=label,
                             path=drive_path,
                             has_dcim=has_dcim,
-                            dcim_path=dcim if has_dcim else None
+                            dcim_path=dcim if has_dcim else None,
+                            space=space,
                         ))
                 except Exception:
                     continue
@@ -92,13 +160,15 @@ def _detect_drives_linux() -> List[DriveInfo]:
                         if not dcim.exists():
                             dcim = entry / "dcim"
                         has_dcim = dcim.exists() and dcim.is_dir()
+                        space = get_disk_space(entry)
 
                         drives.append(DriveInfo(
                             letter=entry.name,
                             label=entry.name,
                             path=entry,
                             has_dcim=has_dcim,
-                            dcim_path=dcim if has_dcim else None
+                            dcim_path=dcim if has_dcim else None,
+                            space=space,
                         ))
             except Exception:
                 continue
@@ -120,12 +190,14 @@ def _detect_drives_linux() -> List[DriveInfo]:
                                     dcim = mnt_path / "dcim"
                                 has_dcim = dcim.exists() and dcim.is_dir()
                                 if has_dcim or mnt.startswith(("/media", "/run/media")):
+                                    space = get_disk_space(mnt_path)
                                     drives.append(DriveInfo(
                                         letter=mnt_path.name or mnt,
                                         label=mnt_path.name or dev,
                                         path=mnt_path,
                                         has_dcim=has_dcim,
-                                        dcim_path=dcim if has_dcim else None
+                                        dcim_path=dcim if has_dcim else None,
+                                        space=space,
                                     ))
         except Exception:
             pass
