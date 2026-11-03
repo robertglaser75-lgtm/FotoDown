@@ -33,6 +33,7 @@ from gui_qt.views.tree_view import MediaTreeView
 from gui_qt.views.gallery_view import MediaGalleryView
 from gui_qt.views.single_view import MediaSingleView
 from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
+from gui_qt.workers.thumb_worker import ThumbnailSignals, ThumbnailTask
 
 _app = QApplication.instance() or QApplication(["-platform", "offscreen"])
 
@@ -41,7 +42,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.11.0")
+        self.assertEqual(__version__, "0.11.1")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -632,6 +633,29 @@ class TestHighResPreviews(unittest.TestCase):
             loaded = load_preview_image(p, max_dim=1000)
             self.assertIsNotNone(loaded)
             self.assertLessEqual(max(loaded.width, loaded.height), 1000)
+
+
+class TestThumbnailWorker(unittest.TestCase):
+    def test_thumbnail_task_execution_and_signal(self):
+        signals = ThumbnailSignals()
+        received = []
+        signals.thumbnail_ready.connect(lambda k, qimg: received.append((k, qimg)))
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            from PIL import Image
+            img = Image.new("RGB", (500, 500), color=(100, 150, 200))
+            p = Path(tmp_dir) / "thumb_test.jpg"
+            img.save(p)
+
+            task = ThumbnailTask(path=p, key_path=str(p), signals=signals, max_size=(320, 320))
+            task.run()
+
+            self.assertEqual(len(received), 1)
+            key, qimage = received[0]
+            self.assertEqual(key, str(p))
+            self.assertFalse(qimage.isNull())
+            self.assertLessEqual(qimage.width(), 320)
+            self.assertLessEqual(qimage.height(), 320)
 
 
 if __name__ == "__main__":

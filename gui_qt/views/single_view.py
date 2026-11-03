@@ -326,3 +326,4 @@ class MediaSingleView(QWidget):
             self._on_fullscreen_clicked()
         else:
             super().keyPressEvent(event)
+

@@ -3,6 +3,15 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.11.1] - 2026-11-03
+
+### Behoben
+- **Absturz beim Umschalten auf die Galerie-Ansicht behoben (`gui_qt/workers/thumb_worker.py`, `gui_qt/main_window.py`, `gui_qt/views/delegates.py`):**
+  - **Thread-sichere Signal-Architektur:** Beseitigung eines kritischen Race-Conditions-/Dangling-Pointer-Absturzes in Qt/PySide6. Bisher wurde in `ThumbnailTask` (einem `QRunnable` mit `autoDelete=True`) ein ephemeres `ThumbnailSignals`-Objekt ohne festen Qt-Parent erstellt, das nach Beendigung des Worker-Threads in C++ zerstört wurde, während die Signal-Events noch in der Qt-Ereignisschleife des Hauptthreads verarbeitet wurden.
+  - `MainWindow` verwaltet nun eine langlebige, threadsichere Instanz `thumb_signals`, die direkt und ohne fehleranfällige Lambda-Closures mit dem Galerie-Delegate kommuniziert.
+  - **Sichere QImage-Konvertierung:** Thumbnails werden nun über einen In-Memory-PNG-Bytestrom via `QImage.loadFromData()` instanziiert, wodurch Puffer-Lebenszeitprobleme und Zugriffsverletzungen (Access Violation) bei asynchronen Threadpool-Ladevorgängen vollständig ausgeschlossen werden.
+  - **Robuste Delegaten-Absicherung:** `GalleryDelegate.paint()` validiert `index.isValid()` und stellt sicher, dass nur skalierte Pixmaps mit positiven Dimensionen gezeichnet werden.
+
 ## [0.11.0] - 2026-11-03
 
 ### Hinzugefügt

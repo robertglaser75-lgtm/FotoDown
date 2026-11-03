@@ -37,25 +37,33 @@ def extract_raw_embedded_jpeg(raw_path: Path) -> Optional[Image.Image]:
             for f_idx in range(min(frame_count, 5)):
                 try:
                     img.seek(f_idx)
+                    img.load()
                     candidates.append((img.width * img.height, ImageOps.exif_transpose(img).copy()))
                 except Exception:
                     pass
     except Exception:
         pass
 
-    # 2. Binary scan for embedded JPEGs (up to first 24MB)
+    if candidates:
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        if candidates[0][0] >= 640 * 480:
+            return candidates[0][1]
+
+    # 2. Binary scan for embedded JPEGs (first 16MB)
     try:
+        file_size = raw_path.stat().st_size
+        read_len = min(file_size, 16 * 1024 * 1024)
         with open(raw_path, "rb") as f:
-            data = f.read(24 * 1024 * 1024)
+            data = f.read(read_len)
 
         pos = 0
         scan_count = 0
-        while pos < len(data) - 4 and scan_count < 8:
+        while pos < len(data) - 4 and scan_count < 6:
             start = data.find(b"\xff\xd8\xff", pos)
             if start == -1:
                 break
             scan_count += 1
-            search_end = min(len(data), start + 12 * 1024 * 1024)
+            search_end = min(len(data), start + 6 * 1024 * 1024)
             chunk = data[start:search_end]
             end = chunk.rfind(b"\xff\xd9")
             if end != -1 and end > 5000:
@@ -66,8 +74,9 @@ def extract_raw_embedded_jpeg(raw_path: Path) -> Optional[Image.Image]:
                         candidates.append((img.width * img.height, ImageOps.exif_transpose(img).copy()))
                 except Exception:
                     pass
-            pos = start + 4
-
+                pos = start + max(end, 5000)
+            else:
+                pos = start + 5000
     except Exception:
         pass
 
@@ -77,7 +86,7 @@ def extract_raw_embedded_jpeg(raw_path: Path) -> Optional[Image.Image]:
     return None
 
 
-def generate_thumbnail(path: Path, max_size: Tuple[int, int] = (480, 480)) -> Optional[Image.Image]:
+def generate_thumbnail(path: Path, max_size: Tuple[int, int] = (320, 320)) -> Optional[Image.Image]:
     """Generates a high-quality resized thumbnail for an image or RAW file."""
     ext = path.suffix.lower()
 

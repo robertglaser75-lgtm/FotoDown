@@ -42,6 +42,9 @@ class GalleryDelegate(QStyledItemDelegate):
         return self.card_size
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index):
+        if not index.isValid():
+            return
+
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
@@ -107,17 +110,18 @@ class GalleryDelegate(QStyledItemDelegate):
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
-            target_draw = QRect(
-                thumb_rect.left() + (thumb_rect.width() - scaled.width()) // 2,
-                thumb_rect.top() + (thumb_rect.height() - scaled.height()) // 2,
-                scaled.width(), scaled.height()
-            )
-            t_path = QPainterPath()
-            t_path.addRoundedRect(target_draw, 4, 4)
-            painter.save()
-            painter.setClipPath(t_path)
-            painter.drawPixmap(target_draw.topLeft(), scaled)
-            painter.restore()
+            if scaled.width() > 0 and scaled.height() > 0:
+                target_draw = QRect(
+                    thumb_rect.left() + (thumb_rect.width() - scaled.width()) // 2,
+                    thumb_rect.top() + (thumb_rect.height() - scaled.height()) // 2,
+                    scaled.width(), scaled.height()
+                )
+                t_path = QPainterPath()
+                t_path.addRoundedRect(target_draw, 4, 4)
+                painter.save()
+                painter.setClipPath(t_path)
+                painter.drawPixmap(target_draw.topLeft(), scaled)
+                painter.restore()
         else:
             t_path = QPainterPath()
             t_path.addRoundedRect(thumb_rect, 6, 6)

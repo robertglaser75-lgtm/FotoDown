@@ -37,7 +37,7 @@ from .widgets.empty_state import EmptyStateWidget
 from .widgets.card_notification import CardNotificationBanner
 from .workers.scan_worker import ScanWorker
 from .workers.import_worker import ImportWorker
-from .workers.thumb_worker import ThumbnailTask
+from .workers.thumb_worker import ThumbnailTask, ThumbnailSignals
 from .workers.drive_watcher import DriveWatcherThread
 from .dialogs.history_dialog import HistoryDialog
 from .dialogs.help_dialog import HelpDialog
@@ -68,6 +68,7 @@ class MainWindow(QMainWindow):
         self._scan_worker: Optional[ScanWorker] = None
         self._import_worker: Optional[ImportWorker] = None
         self._drive_watcher: Optional[DriveWatcherThread] = None
+        self.thumb_signals = ThumbnailSignals(self)
 
         if splash:
             splash.set_status("Initialisiere Datenmodelle...", 3, 5)
@@ -287,6 +288,9 @@ class MainWindow(QMainWindow):
         self.gallery_view.selection_toggled.connect(self._update_stats_bar)
         self.single_view.selection_toggled.connect(self._on_single_view_selection_toggled)
 
+        # Thumbnail ready signal from persistent thread-safe dispatcher
+        self.thumb_signals.thumbnail_ready.connect(self._on_thumbnail_ready)
+
     def _init_drive_watcher(self):
         if self.config.auto_detect_drives and not self._drive_watcher:
             self._drive_watcher = DriveWatcherThread(interval_sec=2.0, parent=self)
@@ -484,6 +488,7 @@ class MainWindow(QMainWindow):
             return
 
         self.action_bar.set_busy(True, "Scannen")
+        self.gallery_view.delegate.pixmap_cache.clear()
         self.action_bar.lbl_status.setText("Durchsuche Quellverzeichnis...")
 
         self._scan_worker = ScanWorker(self.engine, source_dir, self.config)
@@ -521,14 +526,19 @@ class MainWindow(QMainWindow):
             path_str = str(item.source_path)
             if path_str not in self.gallery_view.delegate.pixmap_cache:
                 thumb_source = item.companion_path if (item.is_pair and item.companion_path and item.companion_path.exists()) else item.source_path
-                task = ThumbnailTask(thumb_source, max_size=(480, 480))
-                task.signals.thumbnail_ready.connect(lambda p_str, qimg, orig=path_str: self._on_thumbnail_ready(orig, qimg))
+                task = ThumbnailTask(
+                    path=thumb_source,
+                    key_path=path_str,
+                    signals=self.thumb_signals,
+                    max_size=(320, 320)
+                )
                 self.thread_pool.start(task)
 
-    def _on_thumbnail_ready(self, path_str: str, qimage):
-        pixmap = QPixmap.fromImage(qimage)
-        self.gallery_view.delegate.set_pixmap(path_str, pixmap)
-        self.gallery_view.viewport().update()
+    def _on_thumbnail_ready(self, path_str: str, qimage: QImage):
+        if not qimage.isNull():
+            pixmap = QPixmap.fromImage(qimage)
+            self.gallery_view.delegate.set_pixmap(path_str, pixmap)
+            self.gallery_view.viewport().update()
 
     def _start_import(self):
         self._on_settings_changed()
