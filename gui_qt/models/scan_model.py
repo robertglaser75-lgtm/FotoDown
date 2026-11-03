@@ -93,12 +93,12 @@ class ScanTableModel(QAbstractTableModel):
             elif col == 5:
                 return item.metadata.formatted_camera or "-"
             elif col == 6:
-                return item.metadata.media_type
+                return item.display_type
             elif col == 7:
-                size_mb = item.metadata.file_size / (1024 * 1024)
+                size_mb = item.total_size / (1024 * 1024)
                 if size_mb >= 1.0:
                     return f"{size_mb:.1f} MB"
-                return f"{item.metadata.file_size / 1024:.0f} KB"
+                return f"{item.total_size / 1024:.0f} KB"
 
         elif role == Qt.ItemDataRole.ForegroundRole:
             if col == 1:

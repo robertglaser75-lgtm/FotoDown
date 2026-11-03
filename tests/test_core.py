@@ -277,6 +277,79 @@ class TestHistoryAndImport(unittest.TestCase):
             self.assertEqual(compute_file_hash(target_files[0]), items[0].file_hash)
             self.assertEqual(compute_file_hash(backup_files[0]), items[0].file_hash)
 
+    def test_raw_jpg_pairing_scan_and_import(self):
+        # Create paired files with identical stem: _DSC0001.ARW and _DSC0001.JPG
+        raw_file = self._create_dummy_image("_DSC0001.ARW", b"raw_data_content_bytes")
+        jpg_file = self._create_dummy_image("_DSC0001.JPG", b"jpg_data_content_bytes")
+        solo_jpg = self._create_dummy_image("_DSC0002.JPG", b"solo_jpg_bytes")
+
+        cfg = AppConfig(
+            source_dir=str(self.source_dir),
+            target_dir=str(self.target_dir),
+            pair_raw_jpg=True,
+            type_folder_organization="subfolders",
+            verify_checksums=True,
+        )
+
+        items = self.engine.scan(self.source_dir, cfg)
+        # Should be 2 items: paired entry and solo jpg
+        self.assertEqual(len(items), 2)
+
+        pair_item = next(it for it in items if it.source_path.name == "_DSC0001.ARW")
+        self.assertTrue(pair_item.is_pair)
+        self.assertIsNotNone(pair_item.companion_path)
+        self.assertEqual(pair_item.companion_path.name, "_DSC0001.JPG")
+        self.assertEqual(pair_item.display_type, "RAW+JPG")
+        self.assertEqual(pair_item.total_size, len(b"raw_data_content_bytes") + len(b"jpg_data_content_bytes"))
+
+        # Execute import
+        stats = self.engine.execute_import(items, cfg)
+        self.assertEqual(stats.copied_success, 2)
+        self.assertEqual(stats.paired_count, 1)
+        self.assertEqual(stats.failed, 0)
+
+        # Check target folder structure: RAW in /RAW, JPG in /JPG
+        raw_targets = list(Path(self.target_dir).rglob("*.arw"))
+        jpg_targets = list(Path(self.target_dir).rglob("*.jpg"))
+        self.assertEqual(len(raw_targets), 1)
+        self.assertEqual(len(jpg_targets), 2)
+        self.assertIn("RAW", str(raw_targets[0].parent))
+        self.assertIn("JPG", str(jpg_targets[0].parent))
+
+        # Check both RAW and companion JPG are recorded in history
+        self.assertTrue(self.history.is_imported(raw_file))
+        self.assertTrue(self.history.is_imported(jpg_file))
+
+    def test_xmp_sidecar_synchronization(self):
+        # Create RAW file with .xmp sidecar
+        raw_file = self._create_dummy_image("_DSC0005.CR3", b"cr3_raw_data")
+        xmp_file = self._create_dummy_image("_DSC0005.xmp", b"<x:xmpmeta>sidecar</x:xmpmeta>")
+
+        cfg = AppConfig(
+            source_dir=str(self.source_dir),
+            target_dir=str(self.target_dir),
+            sync_xmp_sidecars=True,
+            delete_source_after_import=True,
+        )
+
+        items = self.engine.scan(self.source_dir, cfg)
+        self.assertEqual(len(items), 1)
+        self.assertEqual(len(items[0].sidecar_paths), 1)
+        self.assertEqual(items[0].display_type, "RAW + XMP")
+
+        stats = self.engine.execute_import(items, cfg)
+        self.assertEqual(stats.copied_success, 1)
+        self.assertEqual(stats.sidecars_copied, 1)
+
+        # Check target sidecar exists
+        xmp_targets = list(Path(self.target_dir).rglob("*.xmp"))
+        self.assertEqual(len(xmp_targets), 1)
+        self.assertEqual(xmp_targets[0].read_bytes(), b"<x:xmpmeta>sidecar</x:xmpmeta>")
+
+        # Check sources deleted
+        self.assertFalse(raw_file.exists())
+        self.assertFalse(xmp_file.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

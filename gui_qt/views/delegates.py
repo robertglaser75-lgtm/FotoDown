@@ -126,6 +126,21 @@ class GalleryDelegate(QStyledItemDelegate):
             painter.setFont(QFont("Segoe UI", 10))
             painter.drawText(thumb_rect, Qt.AlignmentFlag.AlignCenter, placeholder_text)
 
+        # 4b. Badge for RAW+JPG pair / XMP
+        if item.is_pair or item.sidecar_paths:
+            badge_text = "RAW+JPG" if item.is_pair else ""
+            if item.sidecar_paths:
+                badge_text = f"{badge_text}+XMP" if badge_text else "XMP"
+
+            badge_rect = QRect(thumb_rect.right() - 64, thumb_rect.bottom() - 19, 62, 17)
+            b_path = QPainterPath()
+            b_path.addRoundedRect(badge_rect, 4, 4)
+            painter.fillPath(b_path, QBrush(QColor(15, 23, 42, 225)))
+            painter.strokePath(b_path, QPen(QColor("#6366f1"), 1))
+            painter.setFont(QFont("Segoe UI", 7, QFont.Weight.Bold))
+            painter.setPen(QColor("#a5b4fc"))
+            painter.drawText(badge_rect, Qt.AlignmentFlag.AlignCenter, badge_text)
+
         # 5. Filename & Details in footer
         name_rect = QRect(rect.left() + 8, rect.bottom() - 36, rect.width() - 16, 16)
         painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Medium))
@@ -137,9 +152,9 @@ class GalleryDelegate(QStyledItemDelegate):
         detail_rect = QRect(rect.left() + 8, rect.bottom() - 18, rect.width() - 16, 14)
         painter.setFont(QFont("Segoe UI", 7))
         painter.setPen(QColor("#94a3b8"))
-        size_mb = item.metadata.file_size / (1024 * 1024)
-        size_str = f"{size_mb:.1f} MB" if size_mb >= 1.0 else f"{item.metadata.file_size / 1024:.0f} KB"
-        type_str = item.metadata.media_type
+        size_mb = item.total_size / (1024 * 1024)
+        size_str = f"{size_mb:.1f} MB" if size_mb >= 1.0 else f"{item.total_size / 1024:.0f} KB"
+        type_str = item.display_type
         painter.drawText(detail_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, f"{type_str} • {size_str}")
 
         painter.restore()

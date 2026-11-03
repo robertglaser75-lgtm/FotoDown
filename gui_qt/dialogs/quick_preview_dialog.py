@@ -62,20 +62,20 @@ class QuickPreviewDialog(QDialog):
         self.btn_next.clicked.connect(self._next_item)
         header.addWidget(self.btn_next)
 
-        self.btn_close = QPushButton("\u2715 Schließen")
-        self.btn_close.setObjectName("secondaryBtn")
-        self.btn_close.clicked.connect(self.accept)
-        header.addWidget(self.btn_close)
+        btn_close = QPushButton("✕ Schließen")
+        btn_close.setObjectName("secondaryBtn")
+        btn_close.clicked.connect(self.accept)
+        header.addWidget(btn_close)
 
         layout.addLayout(header)
 
-        # 2. Main Preview Viewport
+        # 2. Main Image Preview Area
         self.preview_frame = QFrame()
         self.preview_frame.setStyleSheet("""
             QFrame {
                 background-color: #0b1120;
-                border: 1px solid #1e293b;
                 border-radius: 8px;
+                border: 1px solid #1e293b;
             }
         """)
         pf_layout = QVBoxLayout(self.preview_frame)
@@ -147,22 +147,35 @@ class QuickPreviewDialog(QDialog):
         date_str = item.metadata.date_taken.strftime("%d.%m.%Y %H:%M:%S") if item.metadata.date_taken else "-"
         self.lbl_date.setText(f"\U0001F4C5 {date_str}")
 
-        size_str = format_size(item.metadata.file_size)
-        self.lbl_size.setText(f"\U0001F4BE {size_str} ({item.metadata.media_type})")
+        size_str = format_size(item.total_size)
+        self.lbl_size.setText(f"\U0001F4BE {size_str} ({item.display_type})")
 
         self.lbl_status.setText(f"Status: {item.status}")
 
         # Load Preview Image
-        self._load_image_preview(item.source_path, item.metadata.is_raw)
+        self._load_image_preview(item)
 
-    def _load_image_preview(self, path: Path, is_raw: bool):
+    def _load_image_preview(self, item: ScanItem):
         pil_img = None
-        if is_raw:
-            pil_img = extract_raw_embedded_jpeg(path)
 
+        # For paired RAW+JPG, the companion JPG is the fastest, high quality preview
+        if item.is_pair and item.companion_path and item.companion_path.exists():
+            try:
+                with Image.open(item.companion_path) as img:
+                    img = ImageOps.exif_transpose(img)
+                    img.thumbnail((1920, 1440))
+                    pil_img = img.copy()
+            except Exception:
+                pass
+
+        # Try raw embedded preview if raw
+        if not pil_img and item.metadata.is_raw:
+            pil_img = extract_raw_embedded_jpeg(item.source_path)
+
+        # Standard PIL open
         if not pil_img:
             try:
-                with Image.open(path) as img:
+                with Image.open(item.source_path) as img:
                     img = ImageOps.exif_transpose(img)
                     img.thumbnail((1600, 1200))
                     pil_img = img.copy()
@@ -229,4 +242,3 @@ class QuickPreviewDialog(QDialog):
             self.chk_selected.setChecked(not self.chk_selected.isChecked())
         else:
             super().keyPressEvent(event)
-

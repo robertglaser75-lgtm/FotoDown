@@ -1,13 +1,13 @@
-"""Scanning and importing orchestration engine with dual-backup and integrity verification."""
+"""Scanning and importing orchestration engine with RAW+JPG pairing, XMP sidecars, and dual-backup."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import os
 from pathlib import Path
 import shutil
 import threading
 import time
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 from .config import AppConfig
 from .exif_reader import MediaMetadata, extract_metadata
 from .history import ImportHistory, compute_file_hash
@@ -25,6 +25,35 @@ class ScanItem:
     index: int = 1
     error_msg: str = ""
     selected: bool = True
+    # RAW+JPG Pairing & XMP Sidecars
+    is_pair: bool = False
+    companion_path: Optional[Path] = None
+    companion_metadata: Optional[MediaMetadata] = None
+    companion_target_path: Optional[Path] = None
+    companion_hash: str = ""
+    sidecar_paths: List[Path] = field(default_factory=list)
+
+    @property
+    def total_size(self) -> int:
+        size = self.metadata.file_size
+        if self.companion_metadata:
+            size += self.companion_metadata.file_size
+        for sc in self.sidecar_paths:
+            try:
+                size += sc.stat().st_size
+            except Exception:
+                pass
+        return size
+
+    @property
+    def display_type(self) -> str:
+        if self.is_pair:
+            xmp = " + XMP" if self.sidecar_paths else ""
+            return f"RAW+JPG{xmp}"
+        t = self.metadata.media_type
+        if self.sidecar_paths:
+            return f"{t} + XMP"
+        return t
 
 
 @dataclass
@@ -34,6 +63,8 @@ class ImportStats:
     duplicates_skipped: int = 0
     copied_success: int = 0
     backup_success: int = 0
+    paired_count: int = 0
+    sidecars_copied: int = 0
     failed: int = 0
     bytes_copied: int = 0
 
@@ -63,6 +94,20 @@ class ImporterEngine:
 
         return sorted(candidates)
 
+    def _find_xmp_sidecars(self, file_path: Path) -> List[Path]:
+        """Looks for .xmp sidecar files matching the base file."""
+        candidates = [
+            file_path.with_suffix(".xmp"),
+            file_path.with_suffix(".XMP"),
+            Path(str(file_path) + ".xmp"),
+            Path(str(file_path) + ".XMP"),
+        ]
+        found = []
+        for c in candidates:
+            if c.exists() and c.is_file() and c not in found:
+                found.append(c)
+        return found
+
     def scan(
         self,
         source_dir: Path,
@@ -70,7 +115,7 @@ class ImporterEngine:
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
         cancel_event: Optional[threading.Event] = None,
     ) -> List[ScanItem]:
-        """Scans the source directory and evaluates EXIF, target path, and duplicate status."""
+        """Scans the source directory and evaluates EXIF, pairing, and duplicate status."""
         files = self.get_candidate_files(source_dir, config)
         total = len(files)
         raw_scanned = []
@@ -110,17 +155,52 @@ class ImporterEngine:
                     "error": str(e)
                 })
 
-        # Sort chronologically by date_taken so sequential numbering matches time
-        raw_scanned.sort(key=lambda x: (x["meta"].date_taken or datetime(1970, 1, 1), x["path"].name))
+        # RAW + JPG Pairing step
+        paired_scanned = []
+        if config.pair_raw_jpg:
+            # Group by (parent_dir, stem_lower)
+            groups: Dict[Tuple[Path, str], List[dict]] = {}
+            for item in raw_scanned:
+                key = (item["path"].parent, item["path"].stem.lower())
+                groups.setdefault(key, []).append(item)
+
+            for key, items in groups.items():
+                if len(items) >= 2:
+                    raw_item = next((it for it in items if it["meta"].is_raw), None)
+                    jpg_item = next((it for it in items if it["meta"].extension.lower() in (".jpg", ".jpeg")), None)
+
+                    if raw_item and jpg_item and raw_item != jpg_item:
+                        # Combine into paired entry
+                        combined = dict(raw_item)
+                        combined["is_pair"] = True
+                        combined["companion"] = jpg_item
+                        paired_scanned.append(combined)
+
+                        # Add remaining items if any (rare edge cases)
+                        for other in items:
+                            if other not in (raw_item, jpg_item):
+                                paired_scanned.append(other)
+                        continue
+
+                # Not a pair, add all normally
+                for it in items:
+                    paired_scanned.append(it)
+        else:
+            paired_scanned = raw_scanned
+
+        # Sort chronologically by date_taken so sequential numbering matches capture time
+        paired_scanned.sort(key=lambda x: (x["meta"].date_taken or datetime(1970, 1, 1), x["path"].name))
 
         items: List[ScanItem] = []
-        for idx, entry in enumerate(raw_scanned):
+        for idx, entry in enumerate(paired_scanned):
             item_idx = idx + 1
             file_path = entry["path"]
             meta = entry["meta"]
             f_hash = entry["hash"]
             is_dup = entry["is_dup"]
-            err = entry["error"]
+            err = entry.get("error")
+            is_pair = entry.get("is_pair", False)
+            companion = entry.get("companion")
 
             if err:
                 items.append(ScanItem(
@@ -138,6 +218,7 @@ class ImporterEngine:
 
             video_root = Path(config.video_target_dir) if config.separate_video_dir and config.video_target_dir else None
 
+            # Primary destination
             target_dest = resolve_destination(
                 Path(config.target_dir),
                 config.folder_pattern,
@@ -148,14 +229,35 @@ class ImporterEngine:
                 type_folder_organization=config.type_folder_organization,
             )
 
-            if is_dup:
+            # Companion destination (if paired)
+            companion_dest = None
+            if is_pair and companion:
+                companion_dest = resolve_destination(
+                    Path(config.target_dir),
+                    config.folder_pattern,
+                    config.file_pattern,
+                    companion["meta"],
+                    index=item_idx,
+                    video_target_root=video_root,
+                    type_folder_organization=config.type_folder_organization,
+                )
+
+            # Find XMP sidecars
+            sidecars = []
+            if config.sync_xmp_sidecars:
+                sidecars = self._find_xmp_sidecars(file_path)
+                if is_pair and companion:
+                    for sc in self._find_xmp_sidecars(companion["path"]):
+                        if sc not in sidecars:
+                            sidecars.append(sc)
+
+            if is_dup and (not companion or companion.get("is_dup", True)):
                 status = "Bereits importiert"
-            elif target_dest.exists():
+            elif target_dest.exists() and (not companion_dest or companion_dest.exists()):
                 status = "Existiert im Ziel"
             else:
                 status = "Neu"
 
-            # Default pre-selection: 'Neu' files selected
             is_selected = (status == "Neu")
 
             items.append(ScanItem(
@@ -167,6 +269,12 @@ class ImporterEngine:
                 status=status,
                 index=item_idx,
                 selected=is_selected,
+                is_pair=is_pair,
+                companion_path=companion["path"] if companion else None,
+                companion_metadata=companion["meta"] if companion else None,
+                companion_target_path=companion_dest,
+                companion_hash=companion["hash"] if companion else "",
+                sidecar_paths=sidecars,
             ))
 
         return items
@@ -193,7 +301,7 @@ class ImporterEngine:
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
         cancel_event: Optional[threading.Event] = None,
     ) -> ImportStats:
-        """Copies/moves the scanned items to primary and optional backup targets with integrity check."""
+        """Copies items with companion files and XMP sidecars, verifying bit-exact integrity."""
         stats = ImportStats(total_found=len(items))
 
         to_process = [it for it in items if getattr(it, 'selected', True)]
@@ -201,7 +309,7 @@ class ImporterEngine:
         stats.duplicates_skipped = len(items) - len(to_process)
 
         total_to_process = len(to_process)
-        total_bytes_to_copy = sum(it.metadata.file_size for it in to_process)
+        total_bytes_to_copy = sum(it.total_size for it in to_process)
         start_time = time.time()
 
         for idx, item in enumerate(to_process):
@@ -216,7 +324,8 @@ class ImporterEngine:
                 eta_sec = int(remaining_bytes / speed_bytes_s)
                 eta_str = f"noch {eta_sec // 60}m {eta_sec % 60}s" if eta_sec >= 60 else f"noch {eta_sec}s"
                 speed_str = f"{speed_bytes_s / (1024 * 1024):.1f} MB/s"
-                status_msg = f"Kopiere ({idx+1}/{total_to_process}): {item.source_path.name} [{speed_str}, {eta_str}]"
+                pair_tag = " [RAW+JPG]" if item.is_pair else ""
+                status_msg = f"Kopiere ({idx+1}/{total_to_process}): {item.source_path.name}{pair_tag} [{speed_str}, {eta_str}]"
             else:
                 status_msg = f"Kopiere ({idx+1}/{total_to_process}): {item.source_path.name}"
 
@@ -226,7 +335,7 @@ class ImporterEngine:
             try:
                 dest = item.target_path
 
-                # Handle collisions on primary destination
+                # Collision handling for primary destination
                 if dest.exists():
                     if config.collision_mode == "skip":
                         stats.duplicates_skipped += 1
@@ -234,20 +343,45 @@ class ImporterEngine:
                     elif config.collision_mode == "rename":
                         dest = self._get_unique_target_path(dest)
 
-                # 1. Primary Copy
+                # 1. Primary Copy & Verify
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(item.source_path, dest)
                 stats.bytes_copied += item.metadata.file_size
 
-                # Checksum verification for primary destination
                 if config.verify_checksums:
                     dest_hash = compute_file_hash(dest)
                     if dest_hash != item.file_hash:
-                        raise IOError(
-                            f"Prüfsummenfehler bei Ziel {dest.name} (Quelle: {item.file_hash[:8]}..., Ziel: {dest_hash[:8]}...)"
-                        )
+                        raise IOError(f"Prüfsummenfehler bei Ziel {dest.name}")
 
-                # 2. Dual Backup Copy (if enabled and configured)
+                # 2. Companion Copy (RAW+JPG Pair)
+                if item.is_pair and item.companion_path and item.companion_target_path:
+                    comp_dest = item.companion_target_path
+                    if comp_dest.exists() and config.collision_mode == "rename":
+                        comp_dest = self._get_unique_target_path(comp_dest)
+
+                    comp_dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(item.companion_path, comp_dest)
+                    if item.companion_metadata:
+                        stats.bytes_copied += item.companion_metadata.file_size
+                    stats.paired_count += 1
+
+                    if config.verify_checksums and item.companion_hash:
+                        comp_hash = compute_file_hash(comp_dest)
+                        if comp_hash != item.companion_hash:
+                            raise IOError(f"Prüfsummenfehler beim gepaarten JPG {comp_dest.name}")
+
+                # 3. Synchronize XMP Sidecar files
+                for sc in item.sidecar_paths:
+                    if sc.exists():
+                        sc_dest = dest.with_suffix(".xmp")
+                        shutil.copy2(sc, sc_dest)
+                        stats.sidecars_copied += 1
+                        try:
+                            stats.bytes_copied += sc.stat().st_size
+                        except Exception:
+                            pass
+
+                # 4. Dual-Backup Copy
                 if config.enable_dual_backup and config.backup_target_dir:
                     backup_root = Path(config.backup_target_dir)
                     backup_dest = resolve_destination(
@@ -270,19 +404,49 @@ class ImporterEngine:
                         if bk_hash != item.file_hash:
                             raise IOError(f"Prüfsummenfehler bei Backup-Ziel {backup_dest.name}")
 
+                    # Backup for paired companion
+                    if item.is_pair and item.companion_path and item.companion_metadata:
+                        comp_bk_dest = resolve_destination(
+                            backup_root,
+                            config.folder_pattern,
+                            config.file_pattern,
+                            item.companion_metadata,
+                            index=item.index,
+                            type_folder_organization=config.type_folder_organization,
+                        )
+                        comp_bk_dest.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(item.companion_path, comp_bk_dest)
+
+                    # Backup for sidecars
+                    for sc in item.sidecar_paths:
+                        if sc.exists():
+                            sc_bk_dest = backup_dest.with_suffix(".xmp")
+                            shutil.copy2(sc, sc_bk_dest)
+
                 stats.copied_success += 1
 
-                # Record in history
+                # Record primary in history
                 self.history.record_import(
                     file_path=item.source_path,
                     destination=dest,
                     meta=item.metadata,
                     file_hash=item.file_hash,
                 )
+                if item.is_pair and item.companion_path and item.companion_metadata:
+                    self.history.record_import(
+                        file_path=item.companion_path,
+                        destination=comp_dest,
+                        meta=item.companion_metadata,
+                        file_hash=item.companion_hash,
+                    )
 
-                # Delete from source only if all copies & verifications succeeded
+                # Delete sources only after successful transfer & verification
                 if config.delete_source_after_import:
-                    item.source_path.unlink()
+                    item.source_path.unlink(missing_ok=True)
+                    if item.is_pair and item.companion_path:
+                        item.companion_path.unlink(missing_ok=True)
+                    for sc in item.sidecar_paths:
+                        sc.unlink(missing_ok=True)
 
             except Exception as e:
                 stats.failed += 1

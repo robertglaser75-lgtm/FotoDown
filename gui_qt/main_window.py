@@ -271,7 +271,7 @@ class MainWindow(QMainWindow):
         selected = sum(1 for it in items if it.selected)
         new_cnt = sum(1 for it in items if it.status == "Neu")
         dup_cnt = sum(1 for it in items if it.is_duplicate)
-        total_bytes = sum(it.metadata.file_size for it in items if it.selected)
+        total_bytes = sum(it.total_size for it in items if it.selected)
 
         # Check target capacity
         has_space, warning_msg = self.path_selector.check_capacity(total_bytes)
@@ -320,7 +320,7 @@ class MainWindow(QMainWindow):
 
         new_count = sum(1 for it in items if it.status == "Neu")
         self.action_bar.lbl_status.setText(
-            f"Scan abgeschlossen: {len(items)} Dateien gefunden ({new_count} neu)."
+            f"Scan abgeschlossen: {len(items)} Einheiten gefunden ({new_count} neu)."
         )
 
         if self.filter_bar.combo_view.currentData() == "gallery":
@@ -352,7 +352,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Keine Auswahl", "Es wurden keine Dateien zum Importieren ausgewählt.")
             return
 
-        total_bytes = sum(it.metadata.file_size for it in selected_items)
+        total_bytes = sum(it.total_size for it in selected_items)
         has_space, warning_msg = self.path_selector.check_capacity(total_bytes)
         if not has_space:
             QMessageBox.critical(self, "Speicherplatz unzureichend", warning_msg)
@@ -370,16 +370,20 @@ class MainWindow(QMainWindow):
         mb = stats.bytes_copied / (1024 * 1024)
         msg_lines = [
             "Import abgeschlossen!\n",
-            f"✓ {stats.copied_success} Dateien kopiert ({mb:.1f} MB)"
+            f"✓ {stats.copied_success} Einheiten kopiert ({mb:.1f} MB)"
         ]
+        if stats.paired_count > 0:
+            msg_lines.append(f"\U0001F517 {stats.paired_count} RAW+JPG Paare synchronisiert")
+        if stats.sidecars_copied > 0:
+            msg_lines.append(f"\U0001F4C4 {stats.sidecars_copied} XMP-Sidecars übertragen")
         if stats.backup_success > 0:
-            msg_lines.append(f"\U0001F6E1 {stats.backup_success} Dateien auf 2. Backup-Ziel gesichert")
+            msg_lines.append(f"\U0001F6E1 {stats.backup_success} Einheiten auf 2. Backup gesichert")
         msg_lines.append(f"⚠️ {stats.duplicates_skipped} Duplikate übersprungen")
         if stats.failed > 0:
             msg_lines.append(f"✕ {stats.failed} Fehler")
 
         QMessageBox.information(self, "Import abgeschlossen", "\n".join(msg_lines))
-        self.action_bar.lbl_status.setText(f"Fertig: {stats.copied_success} Dateien erfolgreich kopiert ({mb:.1f} MB).")
+        self.action_bar.lbl_status.setText(f"Fertig: {stats.copied_success} Einheiten erfolgreich kopiert ({mb:.1f} MB).")
         self._start_scan()
 
     def _on_worker_error(self, err_msg: str):

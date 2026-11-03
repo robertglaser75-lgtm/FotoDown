@@ -8,6 +8,13 @@ Lauffähig unter **Windows** und **Linux**.
 
 ## ✨ Funktionen
 
+- 🔗 **RAW + JPG Kopplung als Einheit:**
+  - Erkennt zusammengehörige RAW- und JPG-Aufnahmen desselben Motivs automatisch und behandelt sie als logische Einheit.
+  - Gewährleistet exakt dieselbe Umbenennung und Nummerierung für beide Dateien, auch bei getrennter Ordnerablage (`.../RAW` und `.../JPG`).
+  - Gemeinsame Auswahl, Vorschau und Duplikatserkennung.
+- 📄 **XMP-Sidecar-Synchronisation:**
+  - Automatische Mitführung und Umbenennung von `.xmp`-Metadatendateien (z.B. aus Kameras oder Raw-Entwicklern).
+  - Sicheres Löschen von der Quellkarte erst nach erfolgreichem Kopieren aller zugehörigen Sidecars.
 - 🛡️ **Duales Backup & Bit-genaue Verifikation:**
   - Gleichzeitiges Kopieren auf zwei Ziele (z.B. Arbeits-SSD und NAS-Archiv).
   - SHA-256 Checksum-Prüfung nach dem Schreiben garantiert 100%ige Datenintegrität.
@@ -58,51 +65,18 @@ chmod +x fotodown.sh
 ./fotodown.sh
 ```
 
-### 3. Starten über Python:
-```bash
-python fotodown.py
-```
+---
 
-### 4. Starten im CLI-Modus (Kommandozeile):
-```bash
-# Windows
-python fotodown.py --source E:\DCIM --target "D:\Meine Fotos"
+## ⌨️ Tastatur-Shortcuts
 
-# Linux
-python fotodown.py --source /media/user/EOS_DIGITAL/DCIM --target /home/user/Pictures
-```
-Für einen reinen Trockenlauf (Vorschau ohne Kopieren):
-```bash
-python fotodown.py --source E:\DCIM --target "D:\Meine Fotos" --dry-run
-```
+| Taste | Aktion |
+| :--- | :--- |
+| **Leertaste / Doppelklick** | Öffnet die hochauflösende Schnellvorschau (Quick Look) |
+| **Pfeiltasten Links / Rechts** | Im Vorschaumodus zum vorherigen / nächsten Foto blättern |
+| **S** | Im Vorschaumodus Foto für Import an- oder abwählen |
+| **Leertaste / Escape** | Vorschaumodus schließen |
 
 ---
 
-## 🧩 Platzhalter für Dateinamen und Ordner
-
-| Platzhalter | Bedeutung | Beispiel |
-| :--- | :--- | :--- |
-| `{YYYY}` | 4-stelliges Aufnahmejahr | `2026` |
-| `{YY}` | 2-stelliges Aufnahmejahr | `26` |
-| `{MM}` | 2-stelliger Aufnahmemonat | `08` |
-| `{MONTH_NAME}` | Monatsname (Deutsch) | `August` |
-| `{DD}` | 2-stelliger Aufnahmetag | `15` |
-| `{hh}` | 2-stellige Aufnahmestunde (24h) | `14` |
-| `{mm}` | 2-stellige Aufnahmeminute | `30` |
-| `{ss}` | 2-stellige Aufnahmesekunde | `45` |
-| `{camera}` | Erkannter Kameraname | `Sony_ILCE-7M4` |
-| `{make}` | Kamerahersteller | `Sony` |
-| `{model}` | Kameramodell | `ILCE-7M4` |
-| `{orig_name}` | Originaler Dateiname ohne Endung | `DSC_0123` |
-| `{num:04d}` | 4-stellige fortlaufende Nummer (0001, 0002...) | `0001` |
-| `{num:03d}` | 3-stellige fortlaufende Nummer (001, 002...) | `001` |
-| `{num:02d}` | 2-stellige fortlaufende Nummer (01, 02...) | `01` |
-| `{num}` | Fortlaufende Nummer ohne führende Nullen | `1` |
-| `{ext}` | Dateiendung | `jpg` |
-
----
-
-## 🧪 Tests ausführen
-```bash
-python -m unittest discover tests
-```
+## 📄 Lizenz
+MIT License.

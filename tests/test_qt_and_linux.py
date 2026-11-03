@@ -9,6 +9,7 @@ import unittest
 from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QApplication
 
+from core.config import AppConfig
 from core.drive_detector import (
     DriveInfo, DiskSpaceInfo, _detect_drives_linux,
     detect_drives, format_size, get_disk_space
@@ -21,6 +22,7 @@ from gui_qt.models.scan_model import ScanTableModel
 from gui_qt.models.filter_proxy import ScanFilterProxyModel
 from gui_qt.widgets.storage_bar import StorageBarWidget
 from gui_qt.widgets.filter_bar import FilterBarWidget
+from gui_qt.widgets.path_selector import PathSelectorWidget
 from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
 
 
@@ -28,7 +30,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.6.0")
+        self.assertEqual(__version__, "0.7.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -167,6 +169,27 @@ class TestQtScanModels(unittest.TestCase):
         model.setData(idx, Qt.CheckState.Unchecked.value, Qt.ItemDataRole.CheckStateRole)
         self.assertFalse(items[0].selected)
 
+    def test_scan_table_model_paired_item(self):
+        dt = datetime(2026, 8, 15, 14, 30, 0)
+        raw_meta = MediaMetadata(Path("IMG_0001.CR3"), "IMG_0001", ".cr3", 30000000, dt, "EXIF")
+        jpg_meta = MediaMetadata(Path("IMG_0001.JPG"), "IMG_0001", ".jpg", 5000000, dt, "EXIF")
+        paired_item = ScanItem(
+            source_path=Path("IMG_0001.CR3"),
+            metadata=raw_meta,
+            target_path=Path("/out/IMG_0001.CR3"),
+            is_duplicate=False,
+            file_hash="rawhash",
+            status="Neu",
+            is_pair=True,
+            companion_path=Path("IMG_0001.JPG"),
+            companion_metadata=jpg_meta,
+        )
+        model = ScanTableModel([paired_item])
+        # Column 6 is display_type -> "RAW+JPG"
+        self.assertEqual(model.data(model.index(0, 6)), "RAW+JPG")
+        # Column 7 is total_size -> 35 MB
+        self.assertIn("33.4 MB", model.data(model.index(0, 7)))
+
     def test_selection_methods(self):
         items = self._create_sample_items()
         model = ScanTableModel(items)
@@ -251,7 +274,6 @@ class TestQtScanModels(unittest.TestCase):
         dlg._prev_item()
         self.assertEqual(dlg.current_idx, 0)
 
-
     def test_empty_state_widget(self):
         from gui_qt.widgets.empty_state import EmptyStateWidget
         empty = EmptyStateWidget()
@@ -261,6 +283,22 @@ class TestQtScanModels(unittest.TestCase):
         empty.scan_requested.connect(lambda: emitted.append(True))
         empty.btn_scan.click()
         self.assertEqual(len(emitted), 1)
+
+    def test_path_selector_options(self):
+        selector = PathSelectorWidget()
+        self.assertTrue(selector.chk_pair_raw.isChecked())
+        self.assertTrue(selector.chk_sync_xmp.isChecked())
+
+        cfg = AppConfig(pair_raw_jpg=False, sync_xmp_sidecars=False)
+        selector.load_config(cfg)
+        self.assertFalse(selector.chk_pair_raw.isChecked())
+        self.assertFalse(selector.chk_sync_xmp.isChecked())
+
+        selector.chk_pair_raw.setChecked(True)
+        selector.chk_sync_xmp.setChecked(True)
+        selector.sync_to_config(cfg)
+        self.assertTrue(cfg.pair_raw_jpg)
+        self.assertTrue(cfg.sync_xmp_sidecars)
 
 
 if __name__ == "__main__":

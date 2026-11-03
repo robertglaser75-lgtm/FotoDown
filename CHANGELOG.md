@@ -3,6 +3,26 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.7.0] - 2026-11-03
+
+### Hinzugefügt
+- **RAW + JPG Kopplung als logische Einheit (`core/importer.py`, `core/config.py`):**
+  - Beim Scannen werden RAW- und JPG-Dateien desselben Motivs (gleicher Stammname im selben Quellordner) automatisch zu einem einzelnen Eintrag (`is_pair=True`) gekoppelt.
+  - Einheitliche Umbenennung: Beide Dateien erhalten exakt denselben neuen Namen und dieselbe fortlaufende Nummer.
+  - Selektiert der Benutzer das Foto, werden stets RAW und JPG gemeinsam ausgewählt und importiert.
+  - Vollständige Unterstützung für getrennte Unter- oder Hauptordner (`.../RAW` und `.../JPG`) bei simultaner Kopplung.
+  - Beide Dateien werden in der Historie-Datenbank mit ihren SHA-256 Hashes erfasst, damit künftige Scans Duplikate lückenlos erkennen.
+- **XMP-Sidecar-Synchronisation (`.xmp`):**
+  - Vorhandene `.xmp`-Metadatendateien (z.B. von Lightroom, Capture One oder Kamera-Bewertungen) werden automatisch erkannt und mitkopiert.
+  - Die `.xmp`-Dateien werden exakt synchron zum neuen Zieldateinamen umbenannt.
+  - Beim optionalen Löschen von der Quelle nach erfolgreichem Import werden Sidecars erst dann gelöscht, wenn alle Kopiervorgänge und Prüfsummenvalidierungen erfolgreich waren.
+- **UI-Integration für RAW+JPG & XMP:**
+  - Neue Konfigurations-Checkboxen in der Seitenleiste: *„RAW & JPG als logische Einheit koppeln“* und *„XMP-Sidecars (.xmp) synchron mitführen“*.
+  - Galerieansicht zeigt einen visuellen Badge (`RAW+JPG`, `RAW+JPG+XMP`, `+XMP`) auf den Fotokarten.
+  - Tabellenansicht zeigt im Typfeld `RAW+JPG` sowie die kombinierte Gesamtdateigröße.
+  - Schnellvorschau (`QuickPreviewDialog`) nutzt bei RAW+JPG-Paaren automatisch das Begleit-JPG für sofortigen, gestochen scharfen Bildaufbau.
+  - Speicherkapazitätsprüfung berechnet das Gesamtdatenvolumen inklusive Begleitdateien und Sidecars.
+
 ## [0.6.0] - 2026-11-03
 
 ### Hinzugefügt

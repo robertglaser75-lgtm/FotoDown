@@ -40,6 +40,8 @@ class AppConfig:
     custom_extensions: List[str] = field(default_factory=lambda: list(DEFAULT_IMAGE_EXTENSIONS + DEFAULT_VIDEO_EXTENSIONS))
     delete_source_after_import: bool = False
     collision_mode: str = "rename"  # 'rename' (_1, _2), 'skip', 'overwrite'
+    pair_raw_jpg: bool = True
+    sync_xmp_sidecars: bool = True
 
     @classmethod
     def get_default_config_path(cls) -> Path:
