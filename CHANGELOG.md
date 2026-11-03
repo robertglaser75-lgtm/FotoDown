@@ -3,6 +3,23 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.13.0] - 2026-11-03
+
+### Hinzugefügt
+- **Umfassende Vorschau- und Thumbnail-Unterstützung für RAW-Formate (`core/thumbnail.py`, `requirements.txt`):**
+  - **Unterstützung aller gängigen Kamera-RAW-Formate:** Canon (`.cr2`, `.cr3`, `.crw`), Nikon (`.nef`, `.nrw`), Sony (`.arw`, `.srf`, `.sr2`), Fujifilm (`.raf`), Olympus/OM System (`.orf`, `.ori`), Panasonic/Lumix (`.rw2`, `.raw`), Pentax (`.pef`), Adobe DNG (`.dng`), Samsung (`.srw`), Hasselblad (`.3fr`, `.fff`), Phase One (`.iiq`), Kodak (`.kdc`, `.dcr`), Minolta (`.mrw`), Epson (`.erf`) und Sigma (`.x3f`).
+  - **Multi-Level Extraktions-Pipeline:**
+    1. **Begleit-JPEG-Priorität:** Automatische Verwendung vorhandener RAW+JPG Begleitdateien für sofortige Latenzfreiheit.
+    2. **Direkte Container-Parser:** Blitzschnelle Extraktion eingebetteter JPEG-Vorschauen aus Fujifilm RAF-Headern, Canon CR3 (ISOBMFF `PRVW`/`thmb` Boxen) sowie TIFF-basierten Formaten (CR2, NEF, ARW, DNG, ORF, PEF) über SubIFD-, ExifIFD- und StripOffsets-Tags.
+    3. **LibRaw / rawpy Integration:** Volle Unterstützung von `rawpy` zur direkten Extraktion von embedded Previews oder schnellem Sensor-Demosaicing (`half_size`), falls kein JPEG eingebettet ist.
+    4. **Robuster Pure-Python-Stream-Scan:** Fehlertoleranter SOI-Marker-Scan (`\xff\xd8\xff`) mit dynamischer Pillow-Auflösungsanalyse als Ausfallsicherung.
+  - **Durchgängige Anzeige im gesamten Programm:**
+    - Miniatur-Kacheln in der Galerieansicht ([`MediaGalleryView`](file:///192.168.1.20/Daten\Developement\FotoDown\gui_qt\views\gallery_view.py)).
+    - Hochauflösende Einzelbild-Betrachtung ([`MediaSingleView`](file:///192.168.1.20/Daten\Developement\FotoDown\gui_qt\views\single_view.py)).
+    - Vollbild-Vorschau ([`QuickPreviewDialog`](file:///192.168.1.20/Daten\Developement\FotoDown\gui_qt\dialogs\quick_preview_dialog.py)).
+    - EXIF-Inspektor-Vorschau und Histogramm-Berechnung ([`ExifInspectorWidget`](file:///192.168.1.20/Daten\Developement\FotoDown\gui_qt\widgets\exif_inspector.py)).
+  - **Abhängigkeiten aktualisiert:** `rawpy>=0.20.0` und `numpy>=1.26.0` in `requirements.txt` ergänzt.
+
 ## [0.12.2] - 2026-11-03
 
 ### Behoben

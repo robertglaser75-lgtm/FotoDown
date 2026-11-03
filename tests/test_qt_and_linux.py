@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.12.2")
+        self.assertEqual(__version__, "0.13.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -750,6 +750,85 @@ class TestDriveEjectionClearPreview(unittest.TestCase):
         if win._drive_watcher and win._drive_watcher.isRunning():
             win._drive_watcher.stop()
         win.close()
+
+
+class TestRawPreviewExtraction(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.dir_path = Path(self.temp_dir.name)
+
+        # Helper to generate a dummy JPEG bytes payload
+        from PIL import Image
+        import io
+        img = Image.new("RGB", (640, 480), "blue")
+        bio = io.BytesIO()
+        img.save(bio, "JPEG")
+        self.sample_jpg = bio.getvalue()
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_extract_fuji_raf(self):
+        import struct
+        header = bytearray(120)
+        header[0:15] = b"FUJIFILMCCD-RAW"
+        header[84:88] = struct.pack(">I", 120)
+        header[88:92] = struct.pack(">I", len(self.sample_jpg))
+        raf_file = self.dir_path / "sample.raf"
+        raf_file.write_bytes(bytes(header) + self.sample_jpg)
+
+        from core.thumbnail import extract_raw_embedded_jpeg, generate_thumbnail, load_preview_image
+        img = extract_raw_embedded_jpeg(raf_file)
+        self.assertIsNotNone(img)
+        self.assertEqual(img.size, (640, 480))
+
+        thumb = generate_thumbnail(raf_file, max_size=(160, 120))
+        self.assertIsNotNone(thumb)
+        self.assertLessEqual(thumb.width, 160)
+        self.assertLessEqual(thumb.height, 120)
+
+        preview = load_preview_image(raf_file, max_dim=1024)
+        self.assertIsNotNone(preview)
+        self.assertEqual(preview.size, (640, 480))
+
+    def test_extract_canon_cr3(self):
+        import struct
+        box_size = 8 + 12 + len(self.sample_jpg)
+        box = struct.pack(">I", box_size) + b"PRVW" + b"\x00\x00\x00\x00" + struct.pack(">HH", 640, 480) + b"\x00\x00\x00\x00" + self.sample_jpg
+        cr3_file = self.dir_path / "sample.cr3"
+        cr3_file.write_bytes(b"ftypcrx \x00\x00\x00\x00" + box)
+
+        from core.thumbnail import extract_raw_embedded_jpeg
+        img = extract_raw_embedded_jpeg(cr3_file)
+        self.assertIsNotNone(img)
+        self.assertEqual(img.size, (640, 480))
+
+    def test_extract_tiff_raw(self):
+        import struct
+        hdr = b"II\x2a\x00\x08\x00\x00\x00"
+        jpg_offset = 8 + 2 + 12 * 2 + 4
+        e1 = struct.pack("<HHI I", 0x0201, 4, 1, jpg_offset)
+        e2 = struct.pack("<HHI I", 0x0202, 4, 1, len(self.sample_jpg))
+        next_ifd = struct.pack("<I", 0)
+        tiff_raw = hdr + struct.pack("<H", 2) + e1 + e2 + next_ifd + self.sample_jpg
+
+        cr2_file = self.dir_path / "sample.cr2"
+        cr2_file.write_bytes(tiff_raw)
+
+        from core.thumbnail import extract_raw_embedded_jpeg
+        img = extract_raw_embedded_jpeg(cr2_file)
+        self.assertIsNotNone(img)
+        self.assertEqual(img.size, (640, 480))
+
+    def test_binary_scan_fallback(self):
+        # File with random header followed by JPEG SOI
+        raw_file = self.dir_path / "unknown.nef"
+        raw_file.write_bytes(b"PADDING_HEADER_DATA_1234567890" + self.sample_jpg + b"TRAILING")
+
+        from core.thumbnail import extract_raw_embedded_jpeg
+        img = extract_raw_embedded_jpeg(raw_file)
+        self.assertIsNotNone(img)
+        self.assertEqual(img.size, (640, 480))
 
 
 if __name__ == "__main__":
