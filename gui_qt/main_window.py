@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt, QThreadPool
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
-    QScrollArea, QSplitter, QStackedWidget, QStatusBar,
+    QScrollArea, QSizePolicy, QSplitter, QStackedWidget, QStatusBar,
     QVBoxLayout, QWidget
 )
 
@@ -159,11 +159,12 @@ class MainWindow(QMainWindow):
 
         # Filter Bar (with Zoom Slider for Gallery & EXIF Inspector Toggle)
         self.filter_bar = FilterBarWidget()
-        workspace_layout.addWidget(self.filter_bar)
+        workspace_layout.addWidget(self.filter_bar, 0)
 
         # Workspace horizontal splitter: Left Views Stack, Right EXIF Inspector Panel
         self.workspace_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.workspace_splitter.setChildrenCollapsible(False)
+        self.workspace_splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # View Stack (Empty State vs Table vs Gallery vs Destination Tree)
         self.view_stack = QStackedWidget()
@@ -196,7 +197,7 @@ class MainWindow(QMainWindow):
         self.workspace_splitter.setStretchFactor(0, 1)
         self.workspace_splitter.setStretchFactor(1, 0)
 
-        workspace_layout.addWidget(self.workspace_splitter)
+        workspace_layout.addWidget(self.workspace_splitter, 1)
         main_splitter.addWidget(workspace_container)
 
         # Splitter sizing: Left sidebar ~390px, Right workspace gets rest

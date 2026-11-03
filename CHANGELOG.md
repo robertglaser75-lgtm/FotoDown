@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.10.2] - 2026-11-03
+
+### Behoben
+- **Layout-Aufteilung im rechten Arbeitsbereich (`gui_qt/main_window.py`, `gui_qt/widgets/filter_bar.py`):**
+  - Korrektur der vertikalen Größenverteilung im Medien-Arbeitsbereich: Die Filterleiste war unbeabsichtigt vertikal auf ~380px expandiert und hatte den gesamten Ansichtsbereich mit Tabelle/Galerie/Baum bzw. den Leeren Zustand nach unten gedrückt.
+  - `FilterBarWidget` erhält jetzt eine feste vertikale Größenpolitik (`QSizePolicy.Fixed`), und `workspace_splitter` erhält den vollen vertikalen Dehnungsfaktor (`stretch=1`).
+  - Die Filterleiste sitzt nun wieder schlank und bündig oben (Höhe ~36px), während die Inhaltsansichten den gesamten verbleibenden vertikalen Raum einnehmen.
+
 ## [0.10.1] - 2026-11-03
 
 ### Behoben

@@ -23,6 +23,7 @@ class FilterBarWidget(QWidget):
         self._setup_ui()
 
     def _setup_ui(self):
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 2, 0, 4)
         layout.setSpacing(6)
