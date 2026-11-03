@@ -3,6 +3,17 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.10.4] - 2026-11-03
+
+### Behoben
+- **Sidebar-Layout & Proportionen (`gui_qt/main_window.py`, `gui_qt/widgets/path_selector.py`, `gui_qt/widgets/pattern_editor.py`, `gui_qt/widgets/collapsible_box.py`):**
+  - **Architektur der Seitenleiste optimiert:** Aufteilung in einen feststehenden Kopfbereich (Profil-Auswahl), einen flexiblen scrollbaren Mittelteil für die einklappbaren Konfigurationsblöcke (`QScrollArea` mit vertikalem Scrollbalken bei Bedarf) und eine fest am unteren Rand verankerte Aktionsleiste (`[Scannen]`, `[Importieren]`, Speicherwarnungen und Fortschrittsbalken). Dadurch sind die Hauptaktionen stets direkt erreichbar und werden nie verdeckt oder nach unten weggescrollt.
+  - **Größen- und Abschneideprobleme behoben:**
+    - `PatternEditorWidget`: Platzhalter-Chips wurden von einer 10-Elemente-Horizontalzeile (die über 640px Mindestbreite erzwang) in ein kompaktes 2-Zeilen-Raster (2x5) umorganisiert.
+    - `PathSelectorWidget`: Text der 2. Backup-Checkbox gekürzt auf `🛡️ Gleichzeitig 2. Backup erstellen (NAS/Festplatte)` mit erklärendem Tooltip.
+    - `CollapsibleBox`: Feste Layout-Größenbeschränkung (`SetMinimumSize`) verhindert, dass eingeklappte oder ausgeklappte Boxen auf wenige Pixel zusammengestaucht werden.
+  - Die Mindestbreite und Initialaufteilung des Hauptsplitters (`420px / 860px`) sorgt dafür, dass alle Schaltflächen (`Durchsuchen`, `Einklappen`, `Ausklappen`, Profil-Buttons) und Labels vollständig ohne Abschneiden lesbar sind.
+
 ## [0.10.3] - 2026-11-03
 
 ### Behoben

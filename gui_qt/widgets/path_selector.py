@@ -72,7 +72,8 @@ class PathSelectorWidget(QWidget):
         layout.addSpacing(4)
 
         # 3. Dual-Backup Target Section (Parallel Backup)
-        self.chk_dual_backup = QCheckBox("\U0001F6E1 Gleichzeitig 2. Backup erstellen (z.B. NAS oder externe Festplatte)")
+        self.chk_dual_backup = QCheckBox("\U0001F6E1 Gleichzeitig 2. Backup erstellen (NAS/Festplatte)")
+        self.chk_dual_backup.setToolTip("Gleichzeitige Sicherung auf ein zweites Ziel (z.B. NAS oder externe Festplatte)")
         self.chk_dual_backup.toggled.connect(self._on_dual_backup_toggled)
         layout.addWidget(self.chk_dual_backup)
 

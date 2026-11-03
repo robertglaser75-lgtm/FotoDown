@@ -109,47 +109,56 @@ class MainWindow(QMainWindow):
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
         main_splitter.setChildrenCollapsible(False)
 
-        # Left Sidebar (Scrollable options and controls)
+        # Left Sidebar (Fixed Profile Bar at top, Scrollable Settings in middle, Fixed Action Bar at bottom)
+        sidebar_container = QWidget()
+        sidebar_container.setMinimumWidth(390)
+        sidebar_layout = QVBoxLayout(sidebar_container)
+        sidebar_layout.setContentsMargins(10, 8, 6, 8)
+        sidebar_layout.setSpacing(6)
+
+        # 1. Top Fixed: Profile / Preset Selection Bar
+        self.profile_bar = ProfileBarWidget()
+        sidebar_layout.addWidget(self.profile_bar)
+
+        # 2. Middle Scrollable Area: Collapsible Settings Sections
         sidebar_scroll = QScrollArea()
         sidebar_scroll.setWidgetResizable(True)
         sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
         sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        sidebar_scroll.setMinimumWidth(380)
+        sidebar_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
-        sidebar_container = QWidget()
-        sidebar_layout = QVBoxLayout(sidebar_container)
-        sidebar_layout.setContentsMargins(12, 10, 8, 10)
-        sidebar_layout.setSpacing(10)
-
-        # Profile / Preset Selection Bar
-        self.profile_bar = ProfileBarWidget()
-        sidebar_layout.addWidget(self.profile_bar)
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(0, 0, 4, 0)
+        scroll_layout.setSpacing(8)
 
         # Collapsible Section 1: Paths & Storage
         self.box_paths = CollapsibleBox("1. Quell- und Zielordner", is_expanded=True)
         self.path_selector = PathSelectorWidget()
         self.box_paths.set_content_widget(self.path_selector)
-        sidebar_layout.addWidget(self.box_paths)
+        scroll_layout.addWidget(self.box_paths)
 
         # Collapsible Section 2: Patterns & Tags
         self.box_patterns = CollapsibleBox("2. Namens- und Ordnerstruktur-Muster", is_expanded=False)
         self.pattern_editor = PatternEditorWidget()
         self.box_patterns.set_content_widget(self.pattern_editor)
-        sidebar_layout.addWidget(self.box_patterns)
+        scroll_layout.addWidget(self.box_patterns)
 
         # Collapsible Section 3: General Settings & Options (eigens ein-/ausklappbar)
         self.box_general = CollapsibleBox("3. Allgemeine Einstellungen & Optionen", is_expanded=False)
         self.general_settings = GeneralSettingsWidget()
         self.box_general.set_content_widget(self.general_settings)
-        sidebar_layout.addWidget(self.box_general)
+        scroll_layout.addWidget(self.box_general)
+        scroll_layout.addStretch()
 
-        # Action Buttons, Capacity Info & Progress
+        sidebar_scroll.setWidget(scroll_content)
+        sidebar_layout.addWidget(sidebar_scroll, stretch=1)
+
+        # 3. Bottom Fixed: Action Buttons, Capacity Info & Progress (always reachable!)
         self.action_bar = ActionBarWidget()
         sidebar_layout.addWidget(self.action_bar)
-        sidebar_layout.addStretch()
 
-        sidebar_scroll.setWidget(sidebar_container)
-        main_splitter.addWidget(sidebar_scroll)
+        main_splitter.addWidget(sidebar_container)
 
         # Right Section: Media Workspace (Filters + Views + EXIF Side Inspector)
         workspace_container = QWidget()
@@ -200,8 +209,8 @@ class MainWindow(QMainWindow):
         workspace_layout.addWidget(self.workspace_splitter, 1)
         main_splitter.addWidget(workspace_container)
 
-        # Splitter sizing: Left sidebar ~390px, Right workspace gets rest
-        main_splitter.setSizes([390, 890])
+        # Splitter sizing: Left sidebar ~420px, Right workspace gets rest
+        main_splitter.setSizes([420, 860])
         main_splitter.setStretchFactor(0, 0)
         main_splitter.setStretchFactor(1, 1)
 

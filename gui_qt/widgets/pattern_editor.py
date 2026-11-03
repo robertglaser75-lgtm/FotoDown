@@ -1,4 +1,4 @@
-﻿"""Pattern editor widget with clickable tag chips and live preview."""
+"""Pattern editor widget with clickable tag chips and live preview."""
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
@@ -62,22 +62,23 @@ class PatternEditorWidget(QWidget):
 
         layout.addLayout(grid)
 
-        # Tag Chips Bar
-        tag_box = QHBoxLayout()
-        tag_box.setSpacing(6)
+        # Tag Chips Bar (Organized in compact 2-row grid to maintain responsive sidebar width)
         lbl_tags = QLabel("Platzhalter:")
         lbl_tags.setObjectName("subtleLabel")
-        tag_box.addWidget(lbl_tags)
+        layout.addWidget(lbl_tags)
 
-        for tag, tip in self.TAGS:
+        tag_grid = QGridLayout()
+        tag_grid.setSpacing(4)
+        tag_grid.setContentsMargins(0, 0, 0, 0)
+
+        for i, (tag, tip) in enumerate(self.TAGS):
             btn = QPushButton(tag)
             btn.setObjectName("tagChip")
             btn.setToolTip(tip)
             btn.clicked.connect(lambda checked=False, t=tag: self._insert_tag(t))
-            tag_box.addWidget(btn)
+            tag_grid.addWidget(btn, i // 5, i % 5)
 
-        tag_box.addStretch()
-        layout.addLayout(tag_box)
+        layout.addLayout(tag_grid)
 
         # Live Preview Box
         self.preview_frame = QFrame()

@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QPushButton,
+    QFrame, QHBoxLayout, QLabel, QLayout, QPushButton,
     QVBoxLayout, QWidget
 )
 
@@ -28,6 +28,7 @@ class CollapsibleBox(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
+        main_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
 
         # 1. Full-width clickable header bar
         self.header = ClickableHeaderFrame()
