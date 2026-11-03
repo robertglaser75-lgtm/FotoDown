@@ -31,6 +31,10 @@ DEFAULT_PROFILES: Dict[str, dict] = {
         "verify_checksums": True,
         "separate_video_dir": False,
         "enable_dual_backup": False,
+        "enable_iptc": False,
+        "iptc_creator": "",
+        "iptc_copyright": "© {YYYY} {creator}. Alle Rechte vorbehalten.",
+        "iptc_keywords": "",
     },
     "Urlaub & Reise": {
         "type_folder_organization": "same",
@@ -42,6 +46,10 @@ DEFAULT_PROFILES: Dict[str, dict] = {
         "verify_checksums": True,
         "separate_video_dir": False,
         "enable_dual_backup": False,
+        "enable_iptc": False,
+        "iptc_creator": "",
+        "iptc_copyright": "© {YYYY} {creator}. Alle Rechte vorbehalten.",
+        "iptc_keywords": "Urlaub, Reise",
     },
     "Studio & Shooting": {
         "type_folder_organization": "subfolders",
@@ -53,6 +61,10 @@ DEFAULT_PROFILES: Dict[str, dict] = {
         "verify_checksums": True,
         "separate_video_dir": False,
         "enable_dual_backup": True,
+        "enable_iptc": True,
+        "iptc_creator": "",
+        "iptc_copyright": "© {YYYY} {creator}. Alle Rechte vorbehalten.",
+        "iptc_keywords": "Shooting, Studio",
     },
     "Drohne & Actioncam": {
         "type_folder_organization": "same",
@@ -64,6 +76,10 @@ DEFAULT_PROFILES: Dict[str, dict] = {
         "verify_checksums": True,
         "separate_video_dir": True,
         "enable_dual_backup": False,
+        "enable_iptc": False,
+        "iptc_creator": "",
+        "iptc_copyright": "© {YYYY} {creator}. Alle Rechte vorbehalten.",
+        "iptc_keywords": "Action, Drohne",
     },
 }
 
@@ -93,6 +109,11 @@ class AppConfig:
     auto_scan_on_insert: bool = False
     active_profile: str = "Standard"
     profiles: Dict[str, dict] = field(default_factory=lambda: dict(DEFAULT_PROFILES))
+    # IPTC & Copyright metadata injection
+    enable_iptc: bool = False
+    iptc_creator: str = ""
+    iptc_copyright: str = "© {YYYY} {creator}. Alle Rechte vorbehalten."
+    iptc_keywords: str = ""
 
     def apply_profile(self, name: str) -> bool:
         """Applies configuration settings from a profile by name."""
@@ -118,6 +139,10 @@ class AppConfig:
             "verify_checksums": self.verify_checksums,
             "separate_video_dir": self.separate_video_dir,
             "enable_dual_backup": self.enable_dual_backup,
+            "enable_iptc": self.enable_iptc,
+            "iptc_creator": self.iptc_creator,
+            "iptc_copyright": self.iptc_copyright,
+            "iptc_keywords": self.iptc_keywords,
         }
 
     def delete_profile(self, name: str) -> bool:
@@ -150,7 +175,6 @@ class AppConfig:
                 with open(config_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 cfg = cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
-                # Ensure all default profiles exist in loaded config
                 for p_name, p_data in DEFAULT_PROFILES.items():
                     if p_name not in cfg.profiles:
                         cfg.profiles[p_name] = dict(p_data)

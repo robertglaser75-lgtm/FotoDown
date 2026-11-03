@@ -19,6 +19,7 @@ from core.naming import (
 )
 from core.history import ImportHistory, compute_file_hash
 from core.importer import ImporterEngine, ScanItem
+from core.metadata_writer import format_copyright_template, generate_xmp_content, inject_metadata_sidecar
 
 
 class TestNaming(unittest.TestCase):
@@ -349,6 +350,64 @@ class TestHistoryAndImport(unittest.TestCase):
         # Check sources deleted
         self.assertFalse(raw_file.exists())
         self.assertFalse(xmp_file.exists())
+
+
+class TestMetadataWriter(unittest.TestCase):
+    def test_copyright_template_formatting(self):
+        s = format_copyright_template("© {year} {author}", "John Doe", 2026)
+        self.assertEqual(s, "© 2026 John Doe")
+
+    def test_generate_xmp_content(self):
+        xmp = generate_xmp_content(
+            creator="Jane Photographer",
+            copyright_notice="© 2026 Jane Photographer. All rights reserved.",
+            keywords=["Landscape", "Nature", "Munich"]
+        )
+        self.assertIn("Jane Photographer", xmp)
+        self.assertIn("dc:creator", xmp)
+        self.assertIn("Landscape", xmp)
+        self.assertIn("Munich", xmp)
+
+    def test_inject_metadata_sidecar(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            img_path = Path(tmp_dir) / "IMG_1234.JPG"
+            img_path.write_bytes(b"dummy_image_data")
+            sidecar = inject_metadata_sidecar(
+                target_path=img_path,
+                creator="Test Creator",
+                copyright_template="© {year} {creator}",
+                keywords_str="Test, Sample",
+                date_taken=2026,
+            )
+            self.assertTrue(sidecar.exists())
+            self.assertEqual(sidecar.suffix, ".xmp")
+            content = sidecar.read_text(encoding="utf-8")
+            self.assertIn("Test Creator", content)
+            self.assertIn("© 2026 Test Creator", content)
+
+
+class TestExifShootingMetadata(unittest.TestCase):
+    def test_formatted_exposure_and_gps(self):
+        meta = MediaMetadata(
+            file_path=Path("sample.jpg"),
+            orig_name="sample",
+            extension=".jpg",
+            file_size=1024,
+            date_taken=datetime(2026, 7, 24, 15, 30, 45),
+            date_source="EXIF DateTimeOriginal",
+            f_number=2.8,
+            exposure_time=0.002,
+            iso=400,
+            focal_length=50.0,
+            width=6000,
+            height=4000,
+            gps_lat=48.137154,
+            gps_lon=11.576124,
+        )
+        self.assertEqual(meta.formatted_exposure, "ƒ/2.8 | 1/500s | ISO 400 | 50mm")
+        self.assertEqual(meta.formatted_dimensions, "6000 × 4000 (24.0 MP)")
+        self.assertIn("48.13715° N", meta.formatted_gps)
+        self.assertIn("11.57612° E", meta.formatted_gps)
 
 
 if __name__ == "__main__":

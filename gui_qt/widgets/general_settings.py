@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QLabel, QVBoxLayout, QWidget
+    QCheckBox, QComboBox, QFrame, QLabel, QLineEdit, QVBoxLayout, QWidget
 )
 
 from core.config import AppConfig
@@ -63,6 +63,41 @@ class GeneralSettingsWidget(QWidget):
         self.chk_verify.toggled.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.chk_verify)
 
+        layout.addSpacing(6)
+
+        # 4. IPTC & Copyright Injection
+        lbl_iptc = QLabel("\U0001F4DD Urheberrecht & IPTC-Metadaten:")
+        lbl_iptc.setObjectName("sectionSubTitle")
+        layout.addWidget(lbl_iptc)
+
+        self.chk_enable_iptc = QCheckBox("Metadaten beim Importieren einbetten")
+        self.chk_enable_iptc.toggled.connect(self._on_iptc_toggled)
+        layout.addWidget(self.chk_enable_iptc)
+
+        self.edit_creator = QLineEdit()
+        self.edit_creator.setPlaceholderText("Fotograf / Urheber (z.B. Max Mustermann)...")
+        self.edit_creator.setEnabled(False)
+        self.edit_creator.textChanged.connect(lambda *args: self.changed.emit())
+        layout.addWidget(self.edit_creator)
+
+        self.edit_copyright = QLineEdit()
+        self.edit_copyright.setPlaceholderText("Copyright (z.B. © {YYYY} {creator})...")
+        self.edit_copyright.setEnabled(False)
+        self.edit_copyright.textChanged.connect(lambda *args: self.changed.emit())
+        layout.addWidget(self.edit_copyright)
+
+        self.edit_keywords = QLineEdit()
+        self.edit_keywords.setPlaceholderText("Stichwörter (kommagetrennt, z.B. Urlaub, Natur)...")
+        self.edit_keywords.setEnabled(False)
+        self.edit_keywords.textChanged.connect(lambda *args: self.changed.emit())
+        layout.addWidget(self.edit_keywords)
+
+    def _on_iptc_toggled(self, checked: bool):
+        self.edit_creator.setEnabled(checked)
+        self.edit_copyright.setEnabled(checked)
+        self.edit_keywords.setEnabled(checked)
+        self.changed.emit()
+
     def get_type_org(self) -> str:
         return self.combo_org.currentData() or "same"
 
@@ -80,6 +115,11 @@ class GeneralSettingsWidget(QWidget):
         self.chk_sync_xmp.setChecked(config.sync_xmp_sidecars)
         self.chk_only_new.setChecked(config.only_new_files)
         self.chk_verify.setChecked(config.verify_checksums)
+        self.chk_enable_iptc.setChecked(config.enable_iptc)
+        self.edit_creator.setText(config.iptc_creator)
+        self.edit_copyright.setText(config.iptc_copyright)
+        self.edit_keywords.setText(config.iptc_keywords)
+        self._on_iptc_toggled(config.enable_iptc)
 
     def sync_to_config(self, config: AppConfig):
         config.type_folder_organization = self.get_type_org()
@@ -88,3 +128,7 @@ class GeneralSettingsWidget(QWidget):
         config.sync_xmp_sidecars = self.chk_sync_xmp.isChecked()
         config.only_new_files = self.chk_only_new.isChecked()
         config.verify_checksums = self.chk_verify.isChecked()
+        config.enable_iptc = self.chk_enable_iptc.isChecked()
+        config.iptc_creator = self.edit_creator.text().strip()
+        config.iptc_copyright = self.edit_copyright.text().strip()
+        config.iptc_keywords = self.edit_keywords.text().strip()

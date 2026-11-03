@@ -11,6 +11,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 from .config import AppConfig
 from .exif_reader import MediaMetadata, extract_metadata
 from .history import ImportHistory, compute_file_hash
+from .metadata_writer import inject_metadata_sidecar
 from .naming import resolve_destination
 
 
@@ -54,6 +55,10 @@ class ScanItem:
         if self.sidecar_paths:
             return f"{t} + XMP"
         return t
+
+    @property
+    def target_filename(self) -> str:
+        return self.target_path.name if self.target_path else ""
 
 
 @dataclass
@@ -380,6 +385,24 @@ class ImporterEngine:
                             stats.bytes_copied += sc.stat().st_size
                         except Exception:
                             pass
+
+                # 3b. Inject IPTC / Copyright Metadata (if enabled)
+                if config.enable_iptc and (config.iptc_creator or config.iptc_copyright):
+                    inject_metadata_sidecar(
+                        target_path=dest,
+                        creator=config.iptc_creator,
+                        copyright_template=config.iptc_copyright,
+                        keywords_str=config.iptc_keywords,
+                        date_taken=item.metadata.date_taken,
+                    )
+                    if item.is_pair and item.companion_target_path:
+                        inject_metadata_sidecar(
+                            target_path=item.companion_target_path,
+                            creator=config.iptc_creator,
+                            copyright_template=config.iptc_copyright,
+                            keywords_str=config.iptc_keywords,
+                            date_taken=item.metadata.date_taken,
+                        )
 
                 # 4. Dual-Backup Copy
                 if config.enable_dual_backup and config.backup_target_dir:

@@ -27,14 +27,18 @@ from gui_qt.widgets.general_settings import GeneralSettingsWidget
 from gui_qt.widgets.collapsible_box import CollapsibleBox
 from gui_qt.widgets.profile_bar import ProfileBarWidget
 from gui_qt.widgets.card_notification import CardNotificationBanner
+from gui_qt.widgets.exif_inspector import ExifInspectorWidget, HistogramWidget
+from gui_qt.views.tree_view import MediaTreeView
 from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
+
+_app = QApplication.instance() or QApplication(["-platform", "offscreen"])
 
 
 class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.9.0")
+        self.assertEqual(__version__, "0.10.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -433,6 +437,98 @@ class TestQtScanModels(unittest.TestCase):
         self.assertEqual(len(scan_signals), 1)
         self.assertIn("DCIM", scan_signals[0])
         self.assertTrue(banner.isHidden())
+
+
+class TestTreeView(unittest.TestCase):
+    def test_tree_hierarchy_population(self):
+        meta1 = MediaMetadata(
+            file_path=Path("/tmp/IMG_0001.JPG"),
+            orig_name="IMG_0001",
+            extension=".jpg",
+            file_size=2000000,
+            date_taken=datetime(2026, 8, 1, 10, 0, 0),
+            date_source="EXIF",
+        )
+        item1 = ScanItem(
+            source_path=Path("/tmp/IMG_0001.JPG"),
+            target_path=Path("/dest/2026/2026-08-01/IMG_0001.jpg"),
+            metadata=meta1,
+            is_duplicate=False,
+            file_hash="hash_1",
+            status="Neu",
+        )
+        meta2 = MediaMetadata(
+            file_path=Path("/tmp/IMG_0002.CR3"),
+            orig_name="IMG_0002",
+            extension=".cr3",
+            file_size=25000000,
+            date_taken=datetime(2026, 8, 1, 10, 5, 0),
+            date_source="EXIF",
+        )
+        item2 = ScanItem(
+            source_path=Path("/tmp/IMG_0002.CR3"),
+            target_path=Path("/dest/2026/2026-08-01/RAW/IMG_0002.cr3"),
+            metadata=meta2,
+            is_duplicate=False,
+            file_hash="hash_2",
+            status="Neu",
+        )
+
+        tree = MediaTreeView()
+        tree.set_items([item1, item2], target_root="/dest")
+        self.assertEqual(tree.model.rowCount(), 2)  # Two distinct destination folders
+        self.assertIn("2 Ziel-Ordner", tree.lbl_summary.text())
+
+
+class TestExifInspectorAndHistogram(unittest.TestCase):
+    def test_exif_inspector_inspect_item(self):
+        inspector = ExifInspectorWidget()
+        self.assertTrue(inspector.btn_open_map.isHidden())
+
+        meta = MediaMetadata(
+            file_path=Path("/tmp/photo.jpg"),
+            orig_name="photo",
+            extension=".jpg",
+            file_size=5000000,
+            date_taken=datetime(2026, 8, 1, 12, 0, 0),
+            date_source="EXIF",
+            camera_make="Sony",
+            camera_model="ILCE-7M4",
+            camera_name="Sony ILCE-7M4",
+            lens_model="FE 24-70mm F2.8 GM",
+            f_number=2.8,
+            exposure_time=0.002,
+            iso=200,
+            focal_length=50.0,
+            gps_lat=48.137,
+            gps_lon=11.576,
+        )
+        item = ScanItem(
+            source_path=Path("/tmp/photo.jpg"),
+            target_path=Path("/dest/photo.jpg"),
+            metadata=meta,
+            is_duplicate=False,
+            file_hash="sample_hash",
+            status="Neu",
+        )
+
+        inspector.inspect_item(item)
+        self.assertEqual(inspector.lbl_filename.text(), "photo.jpg")
+        self.assertIn("Sony ILCE-7M4", inspector.lbl_camera.text())
+        self.assertIn("FE 24-70mm", inspector.lbl_lens.text())
+        self.assertIn("ƒ/2.8", inspector.lbl_exposure_chip.text())
+        self.assertIn("1/500s", inspector.lbl_exposure_chip.text())
+        self.assertFalse(inspector.btn_open_map.isHidden())
+
+    def test_histogram_widget(self):
+        hist = HistogramWidget()
+        from PIL import Image
+        img = Image.new("RGB", (50, 50), color=(100, 150, 200))
+        hist.set_image(img)
+        self.assertEqual(len(hist._r_bins), 256)
+        self.assertEqual(len(hist._g_bins), 256)
+        self.assertEqual(len(hist._b_bins), 256)
+        self.assertEqual(len(hist._l_bins), 256)
 
 
 if __name__ == "__main__":

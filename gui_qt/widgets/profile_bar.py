@@ -127,3 +127,4 @@ class ProfileBarWidget(QFrame):
         )
         if res == QMessageBox.StandardButton.Yes:
             self.profile_deleted.emit(name)
+

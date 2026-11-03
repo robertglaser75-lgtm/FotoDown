@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 
 
 class FilterBarWidget(QWidget):
-    view_mode_changed = Signal(str)      # "table", "gallery"
+    view_mode_changed = Signal(str)      # "table", "gallery", "tree"
     status_filter_changed = Signal(str)  # "all", "new_only", "duplicates_only"
     type_filter_changed = Signal(str)    # "all", "Fotos", "RAW", "Videos"
     search_changed = Signal(str)
@@ -16,6 +16,7 @@ class FilterBarWidget(QWidget):
     deselect_all_clicked = Signal()
     select_new_clicked = Signal()
     thumbnail_size_changed = Signal(int)
+    toggle_exif_panel = Signal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -26,11 +27,12 @@ class FilterBarWidget(QWidget):
         layout.setContentsMargins(0, 2, 0, 4)
         layout.setSpacing(6)
 
-        # 1. View Mode (Table vs Gallery)
+        # 1. View Mode (Table vs Gallery vs Destination Tree)
         self.combo_view = QComboBox()
-        self.combo_view.addItem("\U0001F4CB Tabelle", "table")
-        self.combo_view.addItem("\U0001F5BC Galerie", "gallery")
-        self.combo_view.setToolTip("Ansicht wechseln (Tabelle oder Fotogalerie)")
+        self.combo_view.addItem("📋 Tabelle", "table")
+        self.combo_view.addItem("🖼️ Galerie", "gallery")
+        self.combo_view.addItem("📁 Ordnerstruktur", "tree")
+        self.combo_view.setToolTip("Ansicht wechseln (Tabelle, Galerie oder Zielstruktur-Baum)")
         self.combo_view.currentIndexChanged.connect(self._on_view_changed)
         layout.addWidget(self.combo_view)
 
@@ -47,8 +49,8 @@ class FilterBarWidget(QWidget):
         # 2. Filter Status
         self.combo_status = QComboBox()
         self.combo_status.addItem("Status: Alle", "all")
-        self.combo_status.addItem("\u2728 Nur Neue", "new_only")
-        self.combo_status.addItem("\u26A0 Nur Duplikate", "duplicates_only")
+        self.combo_status.addItem("✨ Nur Neue", "new_only")
+        self.combo_status.addItem("⚠️ Nur Duplikate", "duplicates_only")
         self.combo_status.currentIndexChanged.connect(
             lambda: self.status_filter_changed.emit(self.combo_status.currentData())
         )
@@ -57,9 +59,9 @@ class FilterBarWidget(QWidget):
         # 3. Media Type
         self.combo_type = QComboBox()
         self.combo_type.addItem("Typ: Alle", "all")
-        self.combo_type.addItem("\U0001F4F8 Fotos", "Fotos")
-        self.combo_type.addItem("\U0001F39E RAW", "RAW")
-        self.combo_type.addItem("\U0001F3A5 Videos", "Videos")
+        self.combo_type.addItem("📷 Fotos", "Fotos")
+        self.combo_type.addItem("🎞️ RAW", "RAW")
+        self.combo_type.addItem("🎥 Videos", "Videos")
         self.combo_type.currentIndexChanged.connect(
             lambda: self.type_filter_changed.emit(self.combo_type.currentData())
         )
@@ -67,7 +69,7 @@ class FilterBarWidget(QWidget):
 
         # 4. Search input (with priority stretch and guaranteed minimum width)
         self.edit_search = QLineEdit()
-        self.edit_search.setPlaceholderText("\U0001F50D Suchen...")
+        self.edit_search.setPlaceholderText("🔍 Suchen...")
         self.edit_search.setMinimumWidth(130)
         self.edit_search.textChanged.connect(self.search_changed.emit)
         layout.addWidget(self.edit_search, stretch=1)
@@ -91,6 +93,14 @@ class FilterBarWidget(QWidget):
         layout.addWidget(self.btn_select_all)
         layout.addWidget(self.btn_select_none)
         layout.addWidget(self.btn_select_new)
+
+        # 6. EXIF Inspector Toggle Button
+        self.btn_toggle_exif = QPushButton("ℹ️ EXIF")
+        self.btn_toggle_exif.setCheckable(True)
+        self.btn_toggle_exif.setObjectName("chipBtn")
+        self.btn_toggle_exif.setToolTip("EXIF- & Metadaten-Inspektor ein-/ausblenden")
+        self.btn_toggle_exif.toggled.connect(self.toggle_exif_panel.emit)
+        layout.addWidget(self.btn_toggle_exif)
 
     def _on_view_changed(self):
         mode = self.combo_view.currentData()

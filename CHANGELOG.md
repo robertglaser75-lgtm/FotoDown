@@ -3,6 +3,29 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.10.0] - 2026-11-03
+
+### Hinzugefügt
+- **Interaktive Zielstruktur-Baumvorschau (`gui_qt/views/tree_view.py`):**
+  - Neuer Ansichtsmodus *„📁 Ordnerstruktur“* in der Ansichts-Umschaltung der Filterleiste.
+  - Hierarchische Baumdarstellung (`QTreeView`) aller geplanten Zielverzeichnisse und Dateien vor dem Kopiervorgang.
+  - Zeigt exakte Ordnerhierarchien, Dateigrößen-Badges, RAW+JPG-Paar-Zuordnung und Status pro Datei an.
+  - Doppelklick öffnet direkt die Großbild-Vorschau; Auswahl synchronisiert mit dem EXIF-Inspektor.
+  - Komfort-Schaltflächen für *„➕ Alle ausklappen“* und *„➖ Alle einklappen“*.
+- **IPTC- & Copyright-Metadaten-Injektion beim Import (`core/metadata_writer.py`, `core/config.py`, `core/importer.py`):**
+  - Automatische Injektion von Urheberdaten (Fotografenname, Copyright-Hinweis mit `{year}` / `{creator}` Platzhaltern und Schlagwörtern / Keywords) während des Kopiervorgangs.
+  - Erstellung und Anreicherung von Adobe-kompatiblen standardisierten XMP/Dublin-Core-Sidecars (`.xmp`) für Bilder und RAW-Dateien.
+  - Konfigurierbar in den Allgemeinen Einstellungen sowie in Import-Profilen sicherbar.
+- **Integrierter EXIF-Detail-Inspector als ausklappbares Seiten-Panel (`gui_qt/widgets/exif_inspector.py`):**
+  - Schnelles Ein- und Ausblenden über die Filterleiste (`ℹ️ EXIF`).
+  - Umfassende Anzeige aller technischen Aufnahmedaten (Kamera, Objektiv, Belichtungs-Chip `ƒ/2.8 | 1/500s | ISO 200 | 50mm`, Auflösung in Megapixeln, Dateigröße).
+  - Integriertes, antialiastes RGB- und Luminanz-Histogramm (`HistogramWidget`).
+  - GPS-Koordinaten-Anzeige mit Direkt-Button *„In OpenStreetMap öffnen ↗“*.
+- **Automatische Foto-Rotation nach EXIF-Orientierung:**
+  - Konsequente Anwendung von `ImageOps.exif_transpose` in allen Vorschaukomponenten (Gallery, Quick Preview, EXIF Inspector), sodass Hochformat- und gedrehte Fotos stets aufrecht dargestellt werden.
+- **Vorbereitung für v1.0.0:**
+  - Alle Kernfunktionen vollständig implementiert und mit 44 Unit-Tests abgesichert.
+
 ## [0.9.0] - 2026-11-03
 
 ### Hinzugefügt

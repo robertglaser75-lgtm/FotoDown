@@ -8,6 +8,19 @@ Lauffähig unter **Windows** und **Linux**.
 
 ## ✨ Funktionen
 
+- 📁 **Interaktive Zielstruktur-Baumvorschau:**
+  - Zusätzlicher Ansichtsmodus *„📁 Ordnerstruktur“* neben Tabelle und Galerie.
+  - Zeigt exakt vorab, welche Verzeichnisse und Unterordner auf der Zielfestplatte erstellt und wie viele Dateien pro Ordner abgelegt werden.
+  - Aufklappbare Ordneräste, Größen-Badges und direkte Großbildvorschau per Doppelklick.
+- ℹ️ **Integrierter EXIF-Detail-Inspector mit RGB-Histogramm & GPS:**
+  - Seiten-Panel zur detaillierten Analyse des selektierten Mediums (`ℹ️ EXIF`).
+  - Zeigt Kameramodell, Objektiv, Belichtungs-Chip (`ƒ/2.8 | 1/500s | ISO 200 | 50mm`), Megapixel und Status.
+  - Live-berechnetes Antialiasing-Histogramm (RGB-Farbkanäle und Luminanz).
+  - EXIF-Geodaten mit direktem Aufruf in OpenStreetMap (`📍 In OpenStreetMap öffnen ↗`).
+- ✍️ **Automatische IPTC- & Copyright-Injektion beim Import:**
+  - Schreibt Fotografenname, Copyright-Vermerk (`© {year} {creator}`) und Schlagwörter direkt beim Import in standardisierte `.xmp`-Sidecars.
+- 🔄 **Automatische Foto-Rotation nach EXIF-Orientierung:**
+  - Automatische Drehung (`ImageOps.exif_transpose`) in allen Ansichten – Fotos im Hochformat bleiben stets korrekt ausgerichtet.
 - 📋 **Import-Profile & Voreinstellungen (Presets):**
   - Schnelles Umschalten zwischen Workflows (z.B. *Standard*, *Urlaub & Reise*, *Studio & Shooting*, *Drohne & Actioncam*).
   - Speichern eigener Profile mit benutzerdefinierten Pfaden, Ordnerstrukturen und Namensmustern.

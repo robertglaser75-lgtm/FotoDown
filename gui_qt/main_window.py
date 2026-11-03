@@ -1,28 +1,27 @@
-# -*- coding: utf-8 -*-
-"""FotoDown Main Window implementation in PySide6 with professional layout, presets, and collapsible sections."""
+"""Main application window uniting all GUI widgets and core business logic."""
 
 from pathlib import Path
-import sys
 from typing import List, Optional
 
-from PySide6.QtCore import QThreadPool, Qt
+from PySide6.QtCore import Qt, QThreadPool
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QFrame, QLabel, QMainWindow, QMessageBox,
+    QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
     QScrollArea, QSplitter, QStackedWidget, QStatusBar,
     QVBoxLayout, QWidget
 )
 
 from core.config import AppConfig
-from core.drive_detector import format_size, DriveInfo
+from core.drive_detector import DriveInfo, format_size
 from core.history import ImportHistory
-from core.importer import ImporterEngine, ScanItem, ImportStats
+from core.importer import ImporterEngine, ImportStats, ScanItem
 from core.version import __version__
 
 from .models.scan_model import ScanTableModel
 from .models.filter_proxy import ScanFilterProxyModel
 from .views.table_view import MediaTableView
 from .views.gallery_view import MediaGalleryView
+from .views.tree_view import MediaTreeView
 from .widgets.header_banner import HeaderBanner
 from .widgets.collapsible_box import CollapsibleBox
 from .widgets.profile_bar import ProfileBarWidget
@@ -31,6 +30,7 @@ from .widgets.pattern_editor import PatternEditorWidget
 from .widgets.general_settings import GeneralSettingsWidget
 from .widgets.action_bar import ActionBarWidget
 from .widgets.filter_bar import FilterBarWidget
+from .widgets.exif_inspector import ExifInspectorWidget
 from .widgets.splash_screen import FotoDownSplashScreen
 from .widgets.empty_state import EmptyStateWidget
 from .widgets.card_notification import CardNotificationBanner
@@ -151,17 +151,21 @@ class MainWindow(QMainWindow):
         sidebar_scroll.setWidget(sidebar_container)
         main_splitter.addWidget(sidebar_scroll)
 
-        # Right Section: Media Workspace (Filters + Views)
+        # Right Section: Media Workspace (Filters + Views + EXIF Side Inspector)
         workspace_container = QWidget()
         workspace_layout = QVBoxLayout(workspace_container)
         workspace_layout.setContentsMargins(8, 10, 12, 8)
         workspace_layout.setSpacing(8)
 
-        # Filter Bar (with Zoom Slider for Gallery)
+        # Filter Bar (with Zoom Slider for Gallery & EXIF Inspector Toggle)
         self.filter_bar = FilterBarWidget()
         workspace_layout.addWidget(self.filter_bar)
 
-        # View Stack (Empty State vs Table vs Gallery)
+        # Workspace horizontal splitter: Left Views Stack, Right EXIF Inspector Panel
+        self.workspace_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.workspace_splitter.setChildrenCollapsible(False)
+
+        # View Stack (Empty State vs Table vs Gallery vs Destination Tree)
         self.view_stack = QStackedWidget()
 
         # View 0: Empty State
@@ -179,7 +183,20 @@ class MainWindow(QMainWindow):
         self.gallery_view.setModel(self.proxy_model)
         self.view_stack.addWidget(self.gallery_view)
 
-        workspace_layout.addWidget(self.view_stack)
+        # View 3: Target Directory Simulation Tree View
+        self.target_tree_view = MediaTreeView()
+        self.view_stack.addWidget(self.target_tree_view)
+
+        self.workspace_splitter.addWidget(self.view_stack)
+
+        # EXIF Metadata & Histogram Inspector side panel (hidden by default)
+        self.exif_inspector = ExifInspectorWidget()
+        self.exif_inspector.setVisible(False)
+        self.workspace_splitter.addWidget(self.exif_inspector)
+        self.workspace_splitter.setStretchFactor(0, 1)
+        self.workspace_splitter.setStretchFactor(1, 0)
+
+        workspace_layout.addWidget(self.workspace_splitter)
         main_splitter.addWidget(workspace_container)
 
         # Splitter sizing: Left sidebar ~390px, Right workspace gets rest
@@ -229,10 +246,18 @@ class MainWindow(QMainWindow):
         self.filter_bar.type_filter_changed.connect(self.proxy_model.set_type_filter)
         self.filter_bar.search_changed.connect(self.proxy_model.set_search_term)
         self.filter_bar.thumbnail_size_changed.connect(self.gallery_view.set_thumbnail_size)
+        self.filter_bar.toggle_exif_panel.connect(self._toggle_exif_inspector)
+        self.exif_inspector.close_requested.connect(lambda: self.filter_bar.btn_toggle_exif.setChecked(False))
 
         # Quick Preview requests (Space or Double click)
         self.table_view.open_preview_requested.connect(self._open_quick_preview)
         self.gallery_view.open_preview_requested.connect(self._open_quick_preview)
+        self.target_tree_view.open_preview_requested.connect(self._open_quick_preview)
+
+        # Item focus / selection -> EXIF inspector
+        self.table_view.clicked.connect(self._on_item_focused)
+        self.gallery_view.clicked.connect(self._on_item_focused)
+        self.target_tree_view.item_selected.connect(self._on_item_focused)
 
         # Selection shortcuts
         self.filter_bar.select_all_clicked.connect(self.table_model.select_all)
@@ -291,14 +316,19 @@ class MainWindow(QMainWindow):
             self._load_config_to_ui()
             self._update_stats_bar()
 
-    def _open_quick_preview(self, index):
-        if not index.isValid():
-            return
+    def _open_quick_preview(self, target):
         items = self.table_model.get_items()
         if not items:
             return
 
-        target_item: Optional[ScanItem] = index.data(Qt.ItemDataRole.UserRole)
+        target_item: Optional[ScanItem] = None
+        if isinstance(target, ScanItem):
+            target_item = target
+        elif hasattr(target, "data") and hasattr(target, "isValid"):
+            if not target.isValid():
+                return
+            target_item = target.data(Qt.ItemDataRole.UserRole)
+
         start_idx = 0
         if target_item and target_item in items:
             start_idx = items.index(target_item)
@@ -330,6 +360,10 @@ class MainWindow(QMainWindow):
         self.config.save()
         self._update_stats_bar()
 
+        # Keep destination tree view in sync
+        if self.table_model.get_items():
+            self.target_tree_view.set_items(self.table_model.get_items(), self.config.target_dir)
+
         # Update drive watcher running state
         if self.config.auto_detect_drives:
             if not self._drive_watcher or not self._drive_watcher.isRunning():
@@ -349,11 +383,29 @@ class MainWindow(QMainWindow):
         if mode == "gallery":
             self.view_stack.setCurrentWidget(self.gallery_view)
             self._queue_thumbnails_for_visible()
+        elif mode == "tree":
+            self.view_stack.setCurrentWidget(self.target_tree_view)
         else:
             self.view_stack.setCurrentWidget(self.table_view)
 
     def _on_view_mode_changed(self, mode: str):
         self._update_view_selection()
+
+    def _toggle_exif_inspector(self, show: bool):
+        self.exif_inspector.setVisible(show)
+        if show and not self.exif_inspector._current_item:
+            items = self.table_model.get_items()
+            if items:
+                self.exif_inspector.inspect_item(items[0])
+
+    def _on_item_focused(self, index_or_item):
+        target_item: Optional[ScanItem] = None
+        if isinstance(index_or_item, ScanItem):
+            target_item = index_or_item
+        elif hasattr(index_or_item, "data"):
+            target_item = index_or_item.data(Qt.ItemDataRole.UserRole)
+        if target_item:
+            self.exif_inspector.inspect_item(target_item)
 
     def _update_stats_bar(self):
         items = self.table_model.get_items()
@@ -405,8 +457,12 @@ class MainWindow(QMainWindow):
     def _on_scan_finished(self, items: List[ScanItem]):
         self.action_bar.set_busy(False)
         self.table_model.set_items(items)
+        self.target_tree_view.set_items(items, self.config.target_dir)
         self._update_stats_bar()
         self._update_view_selection()
+
+        if items:
+            self.exif_inspector.inspect_item(items[0])
 
         new_count = sum(1 for it in items if it.status == "Neu")
         self.action_bar.lbl_status.setText(
@@ -433,8 +489,11 @@ class MainWindow(QMainWindow):
     def _start_import(self):
         self._on_settings_changed()
         target_dir = Path(self.config.target_dir)
-        if not self.config.target_dir:
-            QMessageBox.warning(self, "Ungültiger Zielordner", "Bitte wählen Sie einen Zielordner für die Fotos aus.")
+        if not self.config.target_dir or not target_dir.exists():
+            QMessageBox.warning(
+                self, "Ungültiger Zielordner",
+                f"Der Zielordner '{self.config.target_dir}' existiert nicht."
+            )
             return
 
         selected_items = [it for it in self.table_model.get_items() if it.selected]
@@ -463,11 +522,11 @@ class MainWindow(QMainWindow):
             f"✓ {stats.copied_success} Einheiten kopiert ({mb:.1f} MB)"
         ]
         if stats.paired_count > 0:
-            msg_lines.append(f"\U0001F517 {stats.paired_count} RAW+JPG Paare synchronisiert")
+            msg_lines.append(f"🔗 {stats.paired_count} RAW+JPG Paare synchronisiert")
         if stats.sidecars_copied > 0:
-            msg_lines.append(f"\U0001F4C4 {stats.sidecars_copied} XMP-Sidecars übertragen")
+            msg_lines.append(f"📄 {stats.sidecars_copied} XMP-Sidecars übertragen")
         if stats.backup_success > 0:
-            msg_lines.append(f"\U0001F6E1 {stats.backup_success} Einheiten auf 2. Backup gesichert")
+            msg_lines.append(f"🛡️ {stats.backup_success} Einheiten auf 2. Backup gesichert")
         msg_lines.append(f"⚠️ {stats.duplicates_skipped} Duplikate übersprungen")
         if stats.failed > 0:
             msg_lines.append(f"✕ {stats.failed} Fehler")
