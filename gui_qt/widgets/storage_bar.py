@@ -25,19 +25,20 @@ class StorageBarWidget(QFrame):
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(4)
 
-        # Header: Title & Info
+        # Header: Title on left, Percentage on right
         header = QHBoxLayout()
         header.setSpacing(8)
 
         self.lbl_title = QLabel(self.default_title)
         self.lbl_title.setObjectName("storageTitle")
 
-        self.lbl_info = QLabel("Kein Laufwerk gewählt")
-        self.lbl_info.setObjectName("storageInfo")
-        self.lbl_info.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.lbl_pct = QLabel("")
+        self.lbl_pct.setStyleSheet("font-size: 11px; font-weight: bold; color: #38bdf8;")
+        self.lbl_pct.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
         header.addWidget(self.lbl_title)
-        header.addWidget(self.lbl_info)
+        header.addStretch()
+        header.addWidget(self.lbl_pct)
         layout.addLayout(header)
 
         # Usage Bar
@@ -46,12 +47,18 @@ class StorageBarWidget(QFrame):
         self.bar.setRange(0, 100)
         self.bar.setValue(0)
         self.bar.setTextVisible(False)
-        self.bar.setFixedHeight(8)
+        self.bar.setFixedHeight(7)
         layout.addWidget(self.bar)
+
+        # Sub-info row: Details (Free / Total) across full width
+        self.lbl_info = QLabel("Kein Pfad festgelegt")
+        self.lbl_info.setObjectName("storageInfo")
+        layout.addWidget(self.lbl_info)
 
         # Warning / Capacity check note
         self.lbl_warning = QLabel("")
         self.lbl_warning.setObjectName("storageWarning")
+        self.lbl_warning.setWordWrap(True)
         self.lbl_warning.setVisible(False)
         layout.addWidget(self.lbl_warning)
 
@@ -67,6 +74,7 @@ class StorageBarWidget(QFrame):
             self._current_space = None
             self._current_path = None
             self.lbl_info.setText("Kein Pfad festgelegt")
+            self.lbl_pct.setText("")
             self.bar.setValue(0)
             self._apply_bar_style(0)
             self.setToolTip("")
@@ -79,6 +87,7 @@ class StorageBarWidget(QFrame):
 
         if not space or space.total_bytes <= 0:
             self.lbl_info.setText("Speicherstatus nicht verfügbar")
+            self.lbl_pct.setText("")
             self.bar.setValue(0)
             self._apply_bar_style(0)
             self.setToolTip(f"Pfad: {path_str}")
@@ -89,8 +98,9 @@ class StorageBarWidget(QFrame):
         self.bar.setValue(int(used_pct))
         self._apply_bar_style(used_pct)
 
+        self.lbl_pct.setText(f"{used_pct:.0f}% belegt")
         self.lbl_info.setText(
-            f"{space.free_str} frei von {space.total_str} ({used_pct:.0f}% belegt)"
+            f"Frei: {space.free_str} von {space.total_str} (Belegt: {space.used_str})"
         )
         self.setToolTip(
             f"Laufwerk: {path_str}\n"
@@ -152,4 +162,3 @@ class StorageBarWidget(QFrame):
                 border-radius: 3px;
             }}
         """)
-

@@ -3,6 +3,21 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.5.1] - 2026-11-03
+
+### Behoben & Verbessert
+- **Sidebar-Layout (Vertikales Form-Design):**
+  - Umstellung der Quell- und Zielpfade auf ein vertikales Layout (Label oben, breites Eingabefeld mit Durchsuchen-Button darunter).
+  - Beseitigung aller horizontalen Stauchungen und Textüberhänge.
+  - JPG/RAW-Organisation als kompaktes, vollwertiges Dropdown-Menü (`QComboBox`) umgesetzt.
+- **Speicherplatzbalken (`StorageBarWidget`):**
+  - Entzerren von Titel und Speicherdetails (Prozentanzeige rechts oben, Füllstandsbalken und vollständige GB-Details vollflächig darunter).
+- **Responsive Filterleiste (`FilterBarWidget`):**
+  - Mindestbreite für das Suchfeld garantiert; kein Zusammenschrumpfen mehr auf `...`.
+  - Kompakte Beschriftungen und Schaltflächen.
+- **Empty-State-Platzhalter (`EmptyStateWidget`):**
+  - Anstelle eines leeren schwarzen Tabellenfeldes wird vor dem ersten Scan ein elegantes Platzhalter-Widget mit Hilfetext und Direkt-Scan-Button angezeigt.
+
 ## [0.5.0] - 2026-11-03
 
 ### Hinzugefügt

@@ -229,3 +229,4 @@ class QuickPreviewDialog(QDialog):
             self.chk_selected.setChecked(not self.chk_selected.isChecked())
         else:
             super().keyPressEvent(event)
+

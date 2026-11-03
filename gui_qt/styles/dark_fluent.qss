@@ -382,3 +382,10 @@ QSlider::handle:horizontal {
 QSlider::handle:horizontal:hover {
     background: #7dd3fc;
 }
+
+
+#sectionSubTitle {
+    font-size: 12px;
+    font-weight: 600;
+    color: #cbd5e1;
+}

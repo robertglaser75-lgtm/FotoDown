@@ -1,12 +1,12 @@
-"""Path and organization configuration widget with integrated storage visualization."""
+"""Path and organization configuration widget with vertical form layout and storage bars."""
 
 from pathlib import Path
 from typing import Optional, Tuple
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QButtonGroup, QCheckBox, QFileDialog, QFrame,
-    QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QRadioButton, QVBoxLayout, QWidget
+    QCheckBox, QComboBox, QFileDialog, QFrame,
+    QHBoxLayout, QLabel, QLineEdit,
+    QPushButton, QSizePolicy, QVBoxLayout, QWidget
 )
 
 from core.config import AppConfig
@@ -22,95 +22,92 @@ class PathSelectorWidget(QWidget):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(10)
 
-        grid = QGridLayout()
-        grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(8)
+        # 1. Source Dir Section
+        lbl_source = QLabel("\U0001F4C1 Quellordner / SD-Karte:")
+        lbl_source.setObjectName("sectionSubTitle")
+        layout.addWidget(lbl_source)
 
-        # 1. Source Dir
-        lbl_source = QLabel("Quellordner / SD-Karte:")
+        source_row = QHBoxLayout()
+        source_row.setSpacing(6)
         self.edit_source = QLineEdit()
         self.edit_source.setPlaceholderText("Pfad zum Quellordner oder DCIM...")
         self.edit_source.textChanged.connect(self._on_source_text_changed)
+        source_row.addWidget(self.edit_source, stretch=1)
 
-        btn_browse_source = QPushButton("Durchsuchen...")
+        btn_browse_source = QPushButton("\U0001F4C2 Durchsuchen")
         btn_browse_source.setObjectName("secondaryBtn")
         btn_browse_source.clicked.connect(self._browse_source)
+        source_row.addWidget(btn_browse_source)
+        layout.addLayout(source_row)
 
-        grid.addWidget(lbl_source, 0, 0)
-        grid.addWidget(self.edit_source, 0, 1)
-        grid.addWidget(btn_browse_source, 0, 2)
-
-        # 1b. Source Storage Bar
         self.source_storage_bar = StorageBarWidget("Speicherplatz Quelle (SD-Karte / Ordner)")
-        grid.addWidget(self.source_storage_bar, 1, 0, 1, 3)
+        layout.addWidget(self.source_storage_bar)
 
-        # 2. Target Dir
-        lbl_target = QLabel("Zielordner Fotos:")
+        layout.addSpacing(4)
+
+        # 2. Target Dir Section
+        lbl_target = QLabel("\U0001F3AF Zielordner Fotos:")
+        lbl_target.setObjectName("sectionSubTitle")
+        layout.addWidget(lbl_target)
+
+        target_row = QHBoxLayout()
+        target_row.setSpacing(6)
         self.edit_target = QLineEdit()
         self.edit_target.setPlaceholderText("Zielverzeichnis für sortierte Fotos...")
         self.edit_target.textChanged.connect(self._on_target_text_changed)
+        target_row.addWidget(self.edit_target, stretch=1)
 
-        btn_browse_target = QPushButton("Durchsuchen...")
+        btn_browse_target = QPushButton("\U0001F4C2 Durchsuchen")
         btn_browse_target.setObjectName("secondaryBtn")
         btn_browse_target.clicked.connect(self._browse_target)
+        target_row.addWidget(btn_browse_target)
+        layout.addLayout(target_row)
 
-        grid.addWidget(lbl_target, 2, 0)
-        grid.addWidget(self.edit_target, 2, 1)
-        grid.addWidget(btn_browse_target, 2, 2)
-
-        # 2b. Target Storage Bar
         self.target_storage_bar = StorageBarWidget("Speicherplatz Ziel-Festplatte")
-        grid.addWidget(self.target_storage_bar, 3, 0, 1, 3)
+        layout.addWidget(self.target_storage_bar)
 
-        # 3. Video Target Dir
-        self.chk_video = QCheckBox("Separater Zielordner für Videos:")
+        layout.addSpacing(4)
+
+        # 3. Video Target Dir Section
+        self.chk_video = QCheckBox("Separater Zielordner für Videos")
         self.chk_video.toggled.connect(self._on_video_toggled)
+        layout.addWidget(self.chk_video)
 
+        video_row = QHBoxLayout()
+        video_row.setSpacing(6)
         self.edit_video_target = QLineEdit()
         self.edit_video_target.setPlaceholderText("Zielverzeichnis für Videos...")
         self.edit_video_target.setEnabled(False)
         self.edit_video_target.textChanged.connect(lambda *args: self.changed.emit())
+        video_row.addWidget(self.edit_video_target, stretch=1)
 
-        self.btn_browse_video = QPushButton("Durchsuchen...")
+        self.btn_browse_video = QPushButton("\U0001F4C2 Durchsuchen")
         self.btn_browse_video.setObjectName("secondaryBtn")
         self.btn_browse_video.setEnabled(False)
         self.btn_browse_video.clicked.connect(self._browse_video)
+        video_row.addWidget(self.btn_browse_video)
+        layout.addLayout(video_row)
 
-        grid.addWidget(self.chk_video, 4, 0)
-        grid.addWidget(self.edit_video_target, 4, 1)
-        grid.addWidget(self.btn_browse_video, 4, 2)
+        layout.addSpacing(4)
 
-        layout.addLayout(grid)
+        # 4. JPG & RAW Organization dropdown (fits compact widths perfectly)
+        lbl_org = QLabel("JPG/RAW-Organisation:")
+        lbl_org.setObjectName("sectionSubTitle")
+        layout.addWidget(lbl_org)
 
-        # 4. JPG & RAW Organization mode
-        org_box = QHBoxLayout()
-        org_box.setSpacing(16)
-        lbl_org = QLabel("JPG/RAW-Ablage:")
-        org_box.addWidget(lbl_org)
+        self.combo_org = QComboBox()
+        self.combo_org.addItem("Alle Fotos gemeinsam in einem Ordner", "same")
+        self.combo_org.addItem("Getrennte Unterordner (.../JPG und .../RAW)", "subfolders")
+        self.combo_org.addItem("Getrennte Hauptordner (JPG/... und RAW/...)", "parent_folders")
+        self.combo_org.currentIndexChanged.connect(lambda *args: self.changed.emit())
+        layout.addWidget(self.combo_org)
 
-        self.btn_group_org = QButtonGroup(self)
-        self.rb_same = QRadioButton("Alle gemeinsam in einem Ordner")
-        self.rb_sub = QRadioButton("Unterordner (.../JPG und .../RAW)")
-        self.rb_parent = QRadioButton("Hauptordner (JPG/... und RAW/...)")
+        layout.addSpacing(4)
 
-        self.btn_group_org.addButton(self.rb_same, 0)
-        self.btn_group_org.addButton(self.rb_sub, 1)
-        self.btn_group_org.addButton(self.rb_parent, 2)
-        self.rb_same.setChecked(True)
-
-        self.btn_group_org.idToggled.connect(lambda *args: self.changed.emit())
-
-        org_box.addWidget(self.rb_same)
-        org_box.addWidget(self.rb_sub)
-        org_box.addWidget(self.rb_parent)
-        org_box.addStretch()
-
-        layout.addLayout(org_box)
-
-        # 5. Only new files check (use && to prevent mnemonic stripping of &)
+        # 5. Only new files check
         self.chk_only_new = QCheckBox("Nur neue Fotos && Videos importieren (Duplikate automatisch überspringen)")
         self.chk_only_new.setChecked(True)
         self.chk_only_new.toggled.connect(lambda *args: self.changed.emit())
@@ -152,20 +149,14 @@ class PathSelectorWidget(QWidget):
         self.changed.emit()
 
     def get_type_org(self) -> str:
-        sel_id = self.btn_group_org.checkedId()
-        if sel_id == 1:
-            return "subfolders"
-        elif sel_id == 2:
-            return "parent_folders"
-        return "same"
+        return self.combo_org.currentData() or "same"
 
     def set_type_org(self, val: str):
-        if val == "subfolders":
-            self.rb_sub.setChecked(True)
-        elif val == "parent_folders":
-            self.rb_parent.setChecked(True)
+        idx = self.combo_org.findData(val)
+        if idx >= 0:
+            self.combo_org.setCurrentIndex(idx)
         else:
-            self.rb_same.setChecked(True)
+            self.combo_org.setCurrentIndex(0)
 
     def load_config(self, config: AppConfig):
         self.edit_source.setText(config.source_dir)

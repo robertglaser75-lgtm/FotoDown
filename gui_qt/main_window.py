@@ -30,6 +30,7 @@ from .widgets.pattern_editor import PatternEditorWidget
 from .widgets.action_bar import ActionBarWidget
 from .widgets.filter_bar import FilterBarWidget
 from .widgets.splash_screen import FotoDownSplashScreen
+from .widgets.empty_state import EmptyStateWidget
 from .workers.scan_worker import ScanWorker
 from .workers.import_worker import ImportWorker
 from .workers.thumb_worker import ThumbnailTask
@@ -103,6 +104,7 @@ class MainWindow(QMainWindow):
         sidebar_scroll.setWidgetResizable(True)
         sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
         sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        sidebar_scroll.setMinimumWidth(380)
 
         sidebar_container = QWidget()
         sidebar_layout = QVBoxLayout(sidebar_container)
@@ -139,16 +141,20 @@ class MainWindow(QMainWindow):
         self.filter_bar = FilterBarWidget()
         workspace_layout.addWidget(self.filter_bar)
 
-        # View Stack (Table vs Gallery)
+        # View Stack (Empty State vs Table vs Gallery)
         self.view_stack = QStackedWidget()
 
-        # View 0: Table View
+        # View 0: Empty State
+        self.empty_state = EmptyStateWidget()
+        self.view_stack.addWidget(self.empty_state)
+
+        # View 1: Table View
         self.table_view = MediaTableView()
         self.table_view.setModel(self.proxy_model)
         self.table_view.setup_column_widths()
         self.view_stack.addWidget(self.table_view)
 
-        # View 1: Gallery View
+        # View 2: Gallery View
         self.gallery_view = MediaGalleryView()
         self.gallery_view.setModel(self.proxy_model)
         self.view_stack.addWidget(self.gallery_view)
@@ -156,8 +162,8 @@ class MainWindow(QMainWindow):
         workspace_layout.addWidget(self.view_stack)
         main_splitter.addWidget(workspace_container)
 
-        # Splitter sizing: Left sidebar ~380px, Right workspace gets rest
-        main_splitter.setSizes([380, 850])
+        # Splitter sizing: Left sidebar ~390px, Right workspace gets rest
+        main_splitter.setSizes([390, 890])
         main_splitter.setStretchFactor(0, 0)
         main_splitter.setStretchFactor(1, 1)
 
@@ -174,6 +180,9 @@ class MainWindow(QMainWindow):
         self.header_banner.drive_selected.connect(self._on_header_drive_selected)
         self.header_banner.open_history.connect(self._open_history_dialog)
         self.header_banner.open_help.connect(self._open_help_dialog)
+
+        # Empty state scan button
+        self.empty_state.scan_requested.connect(self._start_scan)
 
         # Path & Pattern changes
         self.path_selector.changed.connect(self._on_settings_changed)
@@ -240,12 +249,21 @@ class MainWindow(QMainWindow):
         self.config.save()
         self._update_stats_bar()
 
-    def _on_view_mode_changed(self, mode: str):
+    def _update_view_selection(self):
+        items = self.table_model.get_items()
+        if not items:
+            self.view_stack.setCurrentWidget(self.empty_state)
+            return
+
+        mode = self.filter_bar.combo_view.currentData()
         if mode == "gallery":
-            self.view_stack.setCurrentIndex(1)
+            self.view_stack.setCurrentWidget(self.gallery_view)
             self._queue_thumbnails_for_visible()
         else:
-            self.view_stack.setCurrentIndex(0)
+            self.view_stack.setCurrentWidget(self.table_view)
+
+    def _on_view_mode_changed(self, mode: str):
+        self._update_view_selection()
 
     def _update_stats_bar(self):
         items = self.table_model.get_items()
@@ -298,13 +316,15 @@ class MainWindow(QMainWindow):
         self.action_bar.set_busy(False)
         self.table_model.set_items(items)
         self._update_stats_bar()
+        self._update_view_selection()
 
         new_count = sum(1 for it in items if it.status == "Neu")
         self.action_bar.lbl_status.setText(
             f"Scan abgeschlossen: {len(items)} Dateien gefunden ({new_count} neu)."
         )
 
-        self._queue_thumbnails_for_visible()
+        if self.filter_bar.combo_view.currentData() == "gallery":
+            self._queue_thumbnails_for_visible()
 
     def _queue_thumbnails_for_visible(self):
         items = self.table_model.get_items()

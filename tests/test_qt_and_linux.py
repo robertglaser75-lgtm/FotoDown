@@ -28,7 +28,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.5.0")
+        self.assertEqual(__version__, "0.5.1")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -250,6 +250,17 @@ class TestQtScanModels(unittest.TestCase):
         # Navigate back
         dlg._prev_item()
         self.assertEqual(dlg.current_idx, 0)
+
+
+    def test_empty_state_widget(self):
+        from gui_qt.widgets.empty_state import EmptyStateWidget
+        empty = EmptyStateWidget()
+        self.assertIsNotNone(empty)
+        # Test scan_requested signal emission
+        emitted = []
+        empty.scan_requested.connect(lambda: emitted.append(True))
+        empty.btn_scan.click()
+        self.assertEqual(len(emitted), 1)
 
 
 if __name__ == "__main__":
