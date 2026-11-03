@@ -285,6 +285,7 @@ class MainWindow(QMainWindow):
 
         # Model changes update stats
         self.table_model.selection_changed.connect(self._update_stats_bar)
+        self.table_view.selection_toggled.connect(self._update_stats_bar)
         self.gallery_view.selection_toggled.connect(self._update_stats_bar)
         self.single_view.selection_toggled.connect(self._on_single_view_selection_toggled)
 

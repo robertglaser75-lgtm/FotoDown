@@ -103,7 +103,8 @@ chmod +x fotodown.sh
 | :--- | :--- |
 | **Leertaste / Doppelklick** | Öffnet die hochauflösende Schnellvorschau (Quick Look) |
 | **Pfeiltasten Links / Rechts** | Im Vorschaumodus zum vorherigen / nächsten Foto blättern |
-| **S** | Im Vorschaumodus Foto für Import an- oder abwählen |
+| **STRG + Klick / Shift + Klick** | Bereichsauswahl: Wählt alle Fotos zwischen erstem und zweitem Klick aus |
+| **S** | Foto / markierte Zeilen für Import an- oder abwählen |
 | **Leertaste / Escape** | Vorschaumodus schließen |
 
 ---

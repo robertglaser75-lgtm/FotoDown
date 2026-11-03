@@ -3,6 +3,15 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.12.0] - 2026-11-03
+
+### Hinzugefügt
+- **Bereichsauswahl mit STRG / Shift (`gui_qt/views/gallery_view.py`, `gui_qt/views/table_view.py`, `gui_qt/main_window.py`):**
+  - **Bereichsauswahl (Range Selection) in Galerie- und Tabellenansicht:** Durch Klicken auf ein erstes Bild und anschließendes Klicken auf ein zweites Bild bei gedrückter <kbd>STRG</kbd>- (oder <kbd>Umschalt</kbd>-)Taste werden automatisch alle dazwischen liegenden Fotos für den Import ausgewählt (`selected = True`).
+  - Visuelle Aktualisierung aller Kärtchen (Checkboxen & Umrandung) und synchrone Neuberechnung der Statistik-Leiste (Anzahl und Gesamtgröße).
+  - Synchronisation mit Qts `QItemSelectionModel`, sodass auch die Fokus- und Tastaturmarkierung für den gesamten Bereich gesetzt wird.
+  - Shortcut <kbd>S</kbd> in der Tabellenansicht zum Umschalten aller markierten Zeilen ergänzt.
+
 ## [0.11.1] - 2026-11-03
 
 ### Behoben

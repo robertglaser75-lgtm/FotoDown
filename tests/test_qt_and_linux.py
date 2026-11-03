@@ -29,6 +29,7 @@ from gui_qt.widgets.profile_bar import ProfileBarWidget
 from gui_qt.widgets.pattern_editor import PatternEditorWidget
 from gui_qt.widgets.card_notification import CardNotificationBanner
 from gui_qt.widgets.exif_inspector import ExifInspectorWidget, HistogramWidget
+from gui_qt.views.table_view import MediaTableView
 from gui_qt.views.tree_view import MediaTreeView
 from gui_qt.views.gallery_view import MediaGalleryView
 from gui_qt.views.single_view import MediaSingleView
@@ -42,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.11.1")
+        self.assertEqual(__version__, "0.12.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -656,6 +657,67 @@ class TestThumbnailWorker(unittest.TestCase):
             self.assertFalse(qimage.isNull())
             self.assertLessEqual(qimage.width(), 320)
             self.assertLessEqual(qimage.height(), 320)
+
+
+class TestRangeSelection(unittest.TestCase):
+    def test_gallery_range_selection(self):
+        gv = MediaGalleryView()
+        model = ScanTableModel()
+        gv.setModel(model)
+
+        items = []
+        for i in range(10):
+            meta = MediaMetadata(file_path=Path(f"p{i}.jpg"), orig_name=f"p{i}", extension=".jpg", file_size=1000, date_taken=datetime(2026, 7, 24, 12, 0, 0), date_source="test")
+            items.append(ScanItem(source_path=Path(f"p{i}.jpg"), target_path=Path(f"p{i}.jpg"), metadata=meta, status="Neu", is_duplicate=False, file_hash=f"h{i}", selected=False))
+
+        model.set_items(items)
+
+        # 1. Click row 2 without modifiers
+        idx2 = model.index(2, 0)
+        gv._on_clicked(idx2)
+        self.assertTrue(items[2].selected)
+        self.assertEqual(gv._last_index.row(), 2)
+
+        # 2. Simulate range click to row 6 (mocking range modifier)
+        from unittest.mock import patch
+        with patch("PySide6.QtWidgets.QApplication.keyboardModifiers", return_value=Qt.KeyboardModifier.ControlModifier):
+            idx6 = model.index(6, 0)
+            gv._on_clicked(idx6)
+
+        # Rows 2 to 6 must all be selected
+        for r in range(2, 7):
+            self.assertTrue(items[r].selected, f"Row {r} should be selected")
+        # Rows 0, 1 and 7, 8, 9 must remain unselected
+        for r in [0, 1, 7, 8, 9]:
+            self.assertFalse(items[r].selected, f"Row {r} should not be selected")
+
+    def test_table_range_selection(self):
+        tv = MediaTableView()
+        model = ScanTableModel()
+        tv.setModel(model)
+
+        items = []
+        for i in range(10):
+            meta = MediaMetadata(file_path=Path(f"p{i}.jpg"), orig_name=f"p{i}", extension=".jpg", file_size=1000, date_taken=datetime(2026, 7, 24, 12, 0, 0), date_source="test")
+            items.append(ScanItem(source_path=Path(f"p{i}.jpg"), target_path=Path(f"p{i}.jpg"), metadata=meta, status="Neu", is_duplicate=False, file_hash=f"h{i}", selected=False))
+
+        model.set_items(items)
+
+        # Click row 1
+        idx1 = model.index(1, 0)
+        tv._on_clicked(idx1)
+        self.assertEqual(tv._last_clicked_row, 1)
+
+        # Click row 4 with ControlModifier
+        from unittest.mock import patch
+        with patch("PySide6.QtWidgets.QApplication.keyboardModifiers", return_value=Qt.KeyboardModifier.ControlModifier):
+            idx4 = model.index(4, 0)
+            tv._on_clicked(idx4)
+
+        for r in range(1, 5):
+            self.assertTrue(items[r].selected, f"Row {r} should be selected")
+        for r in [0, 5, 6, 7, 8, 9]:
+            self.assertFalse(items[r].selected, f"Row {r} should not be selected")
 
 
 if __name__ == "__main__":
