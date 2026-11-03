@@ -3,6 +3,18 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.10.1] - 2026-11-03
+
+### Behoben
+- **Profil-Aktionsbuttons in der Profilleiste (`gui_qt/widgets/profile_bar.py`, `gui_qt/styles/dark_fluent.qss`):**
+  - Behebung eines Darstellungsfehlers, durch den das Standard-Button-Padding (`padding: 6px 14px`) den Inhalt von kompakten 28x28-Buttons komplett abgeschnitten hatte und alle drei Buttons als leere graue Quadrate erschienen.
+  - Spezifische Objekt-IDs (`profileBtnSave`, `profileBtnNew`, `profileBtnDelete`) mit `padding: 0px` und zentrierter Glyph-Darstellung (`Segoe UI Emoji` / `Segoe UI Symbol`).
+  - Semantische Farbkodierung zur klaren visuellen Unterscheidung:
+    - *Speichern* (`💾`): Blauer Akzentrahmen (`#0369a1`) und Icon-Farbe (`#38bdf8`) mit blauem Hover-Effekt.
+    - *Neu anlegen* (`➕`): Grüner Akzentrahmen (`#047857`) und Icon-Farbe (`#34d399`) mit smaragdgrünem Hover-Effekt.
+    - *Löschen* (`🗑️`): Roter Akzentrahmen (`#991b1b`) und Icon-Farbe (`#f87171`) mit rotem Danger-Hover-Effekt.
+  - Eindeutige, informative Tooltips für jede Aktion.
+
 ## [0.10.0] - 2026-11-03
 
 ### Hinzugefügt

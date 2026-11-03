@@ -217,6 +217,58 @@ QPushButton:disabled {
     color: #ffffff;
 }
 
+/* Profile Action Icon Buttons */
+QPushButton#profileBtnSave,
+QPushButton#profileBtnNew,
+QPushButton#profileBtnDelete {
+    padding: 0px;
+    margin: 0px;
+    font-size: 13px;
+    font-family: "Segoe UI Emoji", "Segoe UI Symbol", "Segoe UI", sans-serif;
+    border-radius: 6px;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+}
+
+QPushButton#profileBtnSave {
+    border-color: #0369a1;
+    color: #38bdf8;
+}
+
+QPushButton#profileBtnSave:hover {
+    background-color: #0284c7;
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+
+QPushButton#profileBtnNew {
+    border-color: #047857;
+    color: #34d399;
+}
+
+QPushButton#profileBtnNew:hover {
+    background-color: #059669;
+    border-color: #34d399;
+    color: #ffffff;
+}
+
+QPushButton#profileBtnDelete {
+    border-color: #991b1b;
+    color: #f87171;
+}
+
+QPushButton#profileBtnDelete:hover {
+    background-color: #dc2626;
+    border-color: #f87171;
+    color: #ffffff;
+}
+
+QPushButton#profileBtnDelete:disabled {
+    background-color: #0f172a;
+    border-color: #1e293b;
+    color: #475569;
+}
+
 /* Checkbox & Radio Buttons */
 QCheckBox, QRadioButton {
     spacing: 8px;

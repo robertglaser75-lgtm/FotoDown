@@ -38,7 +38,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.10.0")
+        self.assertEqual(__version__, "0.10.1")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -408,6 +408,12 @@ class TestQtScanModels(unittest.TestCase):
         bar = ProfileBarWidget()
         bar.load_profiles(cfg)
         self.assertIn("Custom Profile", [bar.combo_profiles.itemText(i) for i in range(bar.combo_profiles.count())])
+        self.assertEqual(bar.btn_save.objectName(), "profileBtnSave")
+        self.assertEqual(bar.btn_new.objectName(), "profileBtnNew")
+        self.assertEqual(bar.btn_delete.objectName(), "profileBtnDelete")
+        self.assertIn("speichern", bar.btn_save.toolTip().lower())
+        self.assertIn("neu", bar.btn_new.toolTip().lower())
+        self.assertIn("löschen", bar.btn_delete.toolTip().lower())
 
         # Delete custom profile
         self.assertTrue(cfg.delete_profile("Custom Profile"))

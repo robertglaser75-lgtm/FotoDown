@@ -447,3 +447,4 @@ class ExifInspectorWidget(QFrame):
         if meta.gps_lat is not None and meta.gps_lon is not None:
             url_str = f"https://www.openstreetmap.org/?mlat={meta.gps_lat:.6f}&mlon={meta.gps_lon:.6f}#map=16/{meta.gps_lat:.6f}/{meta.gps_lon:.6f}"
             QDesktopServices.openUrl(QUrl(url_str))
+

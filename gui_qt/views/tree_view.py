@@ -169,3 +169,4 @@ class MediaTreeView(QWidget):
         item_data = index.data(Qt.ItemDataRole.UserRole)
         if isinstance(item_data, ScanItem):
             self.open_preview_requested.emit(item_data)
+
