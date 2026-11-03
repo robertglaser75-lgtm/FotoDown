@@ -1,8 +1,8 @@
-"""Gallery view displaying media items in a responsive virtualized grid."""
+"""Gallery view displaying media items in a responsive virtualized grid with quick preview."""
 
 from pathlib import Path
-from PySide6.QtCore import QSize, QUrl, Qt, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QModelIndex, QSize, QUrl, Qt, Signal
+from PySide6.QtGui import QDesktopServices, QKeyEvent
 from PySide6.QtWidgets import QListView, QAbstractItemView
 
 from core.importer import ScanItem
@@ -11,6 +11,7 @@ from .delegates import GalleryDelegate
 
 class MediaGalleryView(QListView):
     selection_toggled = Signal()
+    open_preview_requested = Signal(object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -35,7 +36,7 @@ class MediaGalleryView(QListView):
         self.setGridSize(self.delegate.card_size + QSize(8, 8))
         self.doItemsLayout()
 
-    def _on_clicked(self, index):
+    def _on_clicked(self, index: QModelIndex):
         if not index.isValid():
             return
         item: ScanItem = index.data(Qt.ItemDataRole.UserRole)
@@ -44,9 +45,15 @@ class MediaGalleryView(QListView):
             self.model().dataChanged.emit(index, index)
             self.selection_toggled.emit()
 
-    def _on_double_clicked(self, index):
+    def _on_double_clicked(self, index: QModelIndex):
         if not index.isValid():
             return
-        item: ScanItem = index.data(Qt.ItemDataRole.UserRole)
-        if item and item.source_path.exists():
-            QDesktopServices.openUrl(QUrl.fromLocalFile(str(item.source_path)))
+        self.open_preview_requested.emit(index)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_Space:
+            idx = self.currentIndex()
+            if idx.isValid():
+                self.open_preview_requested.emit(idx)
+                return
+        super().keyPressEvent(event)

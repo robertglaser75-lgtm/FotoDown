@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shutil
 import threading
+import time
 from typing import Callable, List, Optional
 from .config import AppConfig
 from .exif_reader import MediaMetadata, extract_metadata
@@ -200,13 +201,27 @@ class ImporterEngine:
         stats.duplicates_skipped = len(items) - len(to_process)
 
         total_to_process = len(to_process)
+        total_bytes_to_copy = sum(it.metadata.file_size for it in to_process)
+        start_time = time.time()
 
         for idx, item in enumerate(to_process):
             if cancel_event and cancel_event.is_set():
                 break
 
+            # Calculate transfer speed and ETA
+            elapsed = max(0.01, time.time() - start_time)
+            speed_bytes_s = stats.bytes_copied / elapsed if stats.bytes_copied > 0 else 0
+            remaining_bytes = max(0, total_bytes_to_copy - stats.bytes_copied)
+            if speed_bytes_s > 0 and remaining_bytes > 0:
+                eta_sec = int(remaining_bytes / speed_bytes_s)
+                eta_str = f"noch {eta_sec // 60}m {eta_sec % 60}s" if eta_sec >= 60 else f"noch {eta_sec}s"
+                speed_str = f"{speed_bytes_s / (1024 * 1024):.1f} MB/s"
+                status_msg = f"Kopiere ({idx+1}/{total_to_process}): {item.source_path.name} [{speed_str}, {eta_str}]"
+            else:
+                status_msg = f"Kopiere ({idx+1}/{total_to_process}): {item.source_path.name}"
+
             if progress_callback:
-                progress_callback(idx + 1, total_to_process, f"Kopiere: {item.source_path.name}")
+                progress_callback(idx + 1, total_to_process, status_msg)
 
             try:
                 dest = item.target_path

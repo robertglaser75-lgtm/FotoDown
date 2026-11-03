@@ -35,6 +35,7 @@ from .workers.import_worker import ImportWorker
 from .workers.thumb_worker import ThumbnailTask
 from .dialogs.history_dialog import HistoryDialog
 from .dialogs.help_dialog import HelpDialog
+from .dialogs.quick_preview_dialog import QuickPreviewDialog
 
 
 class MainWindow(QMainWindow):
@@ -190,6 +191,10 @@ class MainWindow(QMainWindow):
         self.filter_bar.search_changed.connect(self.proxy_model.set_search_term)
         self.filter_bar.thumbnail_size_changed.connect(self.gallery_view.set_thumbnail_size)
 
+        # Quick Preview requests (Space or Double click)
+        self.table_view.open_preview_requested.connect(self._open_quick_preview)
+        self.gallery_view.open_preview_requested.connect(self._open_quick_preview)
+
         # Selection shortcuts
         self.filter_bar.select_all_clicked.connect(self.table_model.select_all)
         self.filter_bar.deselect_all_clicked.connect(self.table_model.deselect_all)
@@ -198,6 +203,26 @@ class MainWindow(QMainWindow):
         # Model changes update stats
         self.table_model.selection_changed.connect(self._update_stats_bar)
         self.gallery_view.selection_toggled.connect(self._update_stats_bar)
+
+    def _open_quick_preview(self, index):
+        if not index.isValid():
+            return
+        items = self.table_model.get_items()
+        if not items:
+            return
+
+        target_item: Optional[ScanItem] = index.data(Qt.ItemDataRole.UserRole)
+        start_idx = 0
+        if target_item and target_item in items:
+            start_idx = items.index(target_item)
+
+        dlg = QuickPreviewDialog(items, start_index=start_idx, parent=self)
+        dlg.selection_changed.connect(self._on_preview_selection_changed)
+        dlg.exec()
+
+    def _on_preview_selection_changed(self):
+        self.table_model.layoutChanged.emit()
+        self._update_stats_bar()
 
     def _on_header_drive_selected(self, path: str):
         self.path_selector.edit_source.setText(path)

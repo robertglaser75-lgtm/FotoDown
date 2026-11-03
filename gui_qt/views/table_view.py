@@ -1,14 +1,16 @@
-﻿"""Table view for media items with column sorting and double-click open."""
+"""Table view for media items with column sorting, quick preview and selection."""
 
 from pathlib import Path
-from PySide6.QtCore import QUrl, Qt
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QModelIndex, QUrl, Qt, Signal
+from PySide6.QtGui import QDesktopServices, QKeyEvent
 from PySide6.QtWidgets import QTableView, QHeaderView, QAbstractItemView
 
 from core.importer import ScanItem
 
 
 class MediaTableView(QTableView):
+    open_preview_requested = Signal(object)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -35,9 +37,15 @@ class MediaTableView(QTableView):
         h.setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)  # Type
         h.setSectionResizeMode(7, QHeaderView.ResizeMode.ResizeToContents)  # Size
 
-    def _on_double_clicked(self, index):
+    def _on_double_clicked(self, index: QModelIndex):
         if not index.isValid():
             return
-        item: ScanItem = index.data(Qt.ItemDataRole.UserRole)
-        if item and item.source_path.exists():
-            QDesktopServices.openUrl(QUrl.fromLocalFile(str(item.source_path)))
+        self.open_preview_requested.emit(index)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_Space:
+            idx = self.currentIndex()
+            if idx.isValid():
+                self.open_preview_requested.emit(idx)
+                return
+        super().keyPressEvent(event)

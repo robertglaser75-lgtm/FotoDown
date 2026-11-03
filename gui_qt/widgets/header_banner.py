@@ -20,18 +20,20 @@ class HeaderBanner(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("headerBanner")
+        self.setMaximumHeight(42)
         self._drives: List[DriveInfo] = []
         self._setup_ui()
         self.refresh_drives()
 
     def _setup_ui(self):
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 12, 16, 12)
-        layout.setSpacing(12)
+        layout.setContentsMargins(12, 4, 12, 4)
+        layout.setSpacing(10)
 
-        # Title & Version
+        # Title & Version (compact and vertically centered)
         title_box = QHBoxLayout()
-        title_box.setSpacing(8)
+        title_box.setSpacing(6)
+        title_box.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         lbl_logo = QLabel("\U0001F4F8")  # Camera emoji
         lbl_logo.setObjectName("logoIcon")
@@ -40,18 +42,19 @@ class HeaderBanner(QFrame):
 
         lbl_version = QLabel(f"v{__version__}")
         lbl_version.setObjectName("versionBadge")
+        lbl_version.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        title_box.addWidget(lbl_logo)
-        title_box.addWidget(lbl_title)
-        title_box.addWidget(lbl_version)
+        title_box.addWidget(lbl_logo, 0, Qt.AlignmentFlag.AlignVCenter)
+        title_box.addWidget(lbl_title, 0, Qt.AlignmentFlag.AlignVCenter)
+        title_box.addWidget(lbl_version, 0, Qt.AlignmentFlag.AlignVCenter)
         layout.addLayout(title_box)
 
-        layout.addSpacing(16)
+        layout.addSpacing(10)
 
         # Drive selector section
         lbl_drive = QLabel("Speicherkarte / Laufwerk:")
         lbl_drive.setObjectName("subtleLabel")
-        layout.addWidget(lbl_drive)
+        layout.addWidget(lbl_drive, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.combo_drives = QComboBox()
         self.combo_drives.setObjectName("driveCombo")
@@ -63,26 +66,26 @@ class HeaderBanner(QFrame):
         self.btn_refresh.setObjectName("secondaryBtn")
         self.btn_refresh.setToolTip("Laufwerke und Speicherkarten erneut scannen")
         self.btn_refresh.clicked.connect(self.refresh_drives)
-        layout.addWidget(self.btn_refresh)
+        layout.addWidget(self.btn_refresh, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.btn_eject = QPushButton("\u23CF Auswerfen")
         self.btn_eject.setObjectName("secondaryBtn")
         self.btn_eject.setToolTip("Ausgewähltes Wechsellaufwerk sicher entfernen")
         self.btn_eject.clicked.connect(self._on_eject_clicked)
-        layout.addWidget(self.btn_eject)
+        layout.addWidget(self.btn_eject, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        layout.addSpacing(12)
+        layout.addSpacing(10)
 
         # History & Help buttons
         self.btn_history = QPushButton("\U0001F4DC Historie")
         self.btn_history.setObjectName("secondaryBtn")
         self.btn_history.clicked.connect(self.open_history.emit)
-        layout.addWidget(self.btn_history)
+        layout.addWidget(self.btn_history, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.btn_help = QPushButton("? Hilfe")
         self.btn_help.setObjectName("secondaryBtn")
         self.btn_help.clicked.connect(self.open_help.emit)
-        layout.addWidget(self.btn_help)
+        layout.addWidget(self.btn_help, 0, Qt.AlignmentFlag.AlignVCenter)
 
     def refresh_drives(self):
         self.combo_drives.blockSignals(True)

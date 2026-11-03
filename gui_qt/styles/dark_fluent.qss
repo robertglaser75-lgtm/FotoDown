@@ -11,14 +11,15 @@ QWidget {
 #headerBanner {
     background-color: #1e293b;
     border-bottom: 1px solid #334155;
+    max-height: 42px;
 }
 
 #logoIcon {
-    font-size: 22px;
+    font-size: 16px;
 }
 
 #appTitle {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     color: #38bdf8;
 }
@@ -27,9 +28,10 @@ QWidget {
     background-color: #0369a1;
     color: #e0f2fe;
     font-size: 10px;
-    font-weight: bold;
-    padding: 2px 7px;
-    border-radius: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    max-height: 18px;
 }
 
 #subtleLabel {

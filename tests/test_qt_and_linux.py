@@ -21,13 +21,14 @@ from gui_qt.models.scan_model import ScanTableModel
 from gui_qt.models.filter_proxy import ScanFilterProxyModel
 from gui_qt.widgets.storage_bar import StorageBarWidget
 from gui_qt.widgets.filter_bar import FilterBarWidget
+from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
 
 
 class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.4.0")
+        self.assertEqual(__version__, "0.5.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -230,6 +231,25 @@ class TestQtScanModels(unittest.TestCase):
         filter_bar.combo_view.setCurrentIndex(1)
         self.assertFalse(filter_bar.slider_zoom.isHidden())
         self.assertEqual(filter_bar.slider_zoom.value(), 160)
+
+    def test_quick_preview_dialog(self):
+        items = self._create_sample_items()
+        dlg = QuickPreviewDialog(items, start_index=0)
+        self.assertEqual(dlg.current_idx, 0)
+        self.assertTrue(dlg.chk_selected.isChecked())
+
+        # Navigate forward
+        dlg._next_item()
+        self.assertEqual(dlg.current_idx, 1)
+        self.assertFalse(dlg.chk_selected.isChecked())
+
+        # Toggle selection
+        dlg.chk_selected.setChecked(True)
+        self.assertTrue(items[1].selected)
+
+        # Navigate back
+        dlg._prev_item()
+        self.assertEqual(dlg.current_idx, 0)
 
 
 if __name__ == "__main__":
