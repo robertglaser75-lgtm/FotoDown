@@ -78,21 +78,28 @@ Lauffähig unter **Windows** und **Linux**.
 
 ---
 
-## 🚀 Schnellstart
+## 🚀 Installation & Schnellstart
 
-### Voraussetzungen
-Python 3.10 oder neuer mit den Paketen aus `requirements.txt`:
-```bash
-pip install -r requirements.txt
-```
+> Ausführliche Anleitungen und Troubleshooting für Windows und alle Linux-Systeme finden Sie in der **[INSTALL.md](INSTALL.md)**.
 
-### 1. Unter Windows:
-Einfach die Datei **`FotoDown.bat`** per Doppelklick starten oder die Desktop-Verknüpfung verwenden.
+### 1. Unter Windows (10 / 11):
+- **1-Klick-Installation:** Führen Sie einfach die Datei **`install_windows.bat`** per Doppelklick aus.
+  - Richtet eine isolierte Umgebung ein, installiert alle Abhängigkeiten und erstellt ein Desktop-Icon.
+- **Starten:** Danach einfach per Doppelklick auf die Desktop-Verknüpfung **`FotoDown`** oder **`FotoDown.bat`**.
 
-### 2. Unter Linux:
-```bash
-chmod +x fotodown.sh
-./fotodown.sh
+### 2. Unter Linux (Arch Linux, Manjaro, EndeavourOS, Ubuntu, Fedora etc.):
+- **1-Klick-Installation:**
+  ```bash
+  chmod +x install_linux.sh
+  ./install_linux.sh
+  ```
+  - Installiert alle Abhängigkeiten, richtet `.venv` ein und integriert FotoDown in Ihr **Anwendungsmenü** (KDE, GNOME, etc.).
+- **Nativ auf Arch Linux via Pacman (ohne venv):**
+  ```bash
+  sudo pacman -S --needed python python-pyside6 python-pillow qt6-base qt6-wayland
+  ./fotodown.sh
+  ```
+- **Starten:** Über das Anwendungsmenü oder im Terminal via **`./fotodown.sh`**.
 ```
 
 ---

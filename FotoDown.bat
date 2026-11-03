@@ -5,11 +5,15 @@ title FotoDown
 cd /d "%~dp0" 2>nul || pushd "%~dp0"
 
 set "PY_CMD=python"
-where python >nul 2>nul
-if errorlevel 1 (
-    where py >nul 2>nul
-    if not errorlevel 1 (
-        set "PY_CMD=py"
+if exist ".venv\Scripts\python.exe" (
+    set "PY_CMD=.venv\Scripts\python.exe"
+) else (
+    where python >nul 2>nul
+    if errorlevel 1 (
+        where py >nul 2>nul
+        if not errorlevel 1 (
+            set "PY_CMD=py"
+        )
     )
 )
 

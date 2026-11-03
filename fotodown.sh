@@ -1,10 +1,12 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # FotoDown Linux Launcher
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-if command -v python3 &>/dev/null; then
+if [ -f ".venv/bin/python" ]; then
+    .venv/bin/python fotodown.py "$@"
+elif command -v python3 &>/dev/null; then
     python3 fotodown.py "$@"
 elif command -v python &>/dev/null; then
     python fotodown.py "$@"

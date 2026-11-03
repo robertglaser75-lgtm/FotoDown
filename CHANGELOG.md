@@ -3,6 +3,16 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.12.1] - 2026-11-03
+
+### Hinzugefügt
+- **Umfassende Installationsanleitung & 1-Klick-Installer (`INSTALL.md`, `install_windows.bat`, `install_linux.sh`):**
+  - **Detaillierte Installationsanleitung ([`INSTALL.md`](INSTALL.md)):** Strukturierte Anleitungen für Windows 10/11 und alle Linux-Systeme.
+  - **Spezifischer Support für alle Arch Linux Varianten:** Arch Linux, Manjaro, EndeavourOS, Garuda Linux, ArcoLinux, CachyOS etc. inklusive Pacman-Direktinstallation (`python-pyside6`, `python-pillow`), PEP-668-konformer venv-Einrichtung, Wayland/X11-Support (`qt6-wayland`) und Speicherkarten-Berechtigungen (`udisks2`).
+  - **1-Klick-Assistent für Linux (`install_linux.sh`):** Automatische Erkennung der Distribution, Einrichtung von `.venv`, Installation der Abhängigkeiten und Erstellung eines `.desktop`-Starters mit Icon für das Anwendungsmenü (KDE Plasma, GNOME, etc.).
+  - **1-Klick-Assistent für Windows (`install_windows.bat`):** Automatische `.venv`-Erstellung, Paketinstallation und Anlegen einer Desktop-Verknüpfung mit Kamera-Icon.
+  - **Starter-Optimierung (`FotoDown.bat`, `fotodown.sh`):** Erkennt und verwendet automatisch `.venv`, sofern vorhanden.
+
 ## [0.12.0] - 2026-11-03
 
 ### Hinzugefügt
