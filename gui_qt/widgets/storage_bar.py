@@ -152,3 +152,4 @@ class StorageBarWidget(QFrame):
                 border-radius: 3px;
             }}
         """)
+

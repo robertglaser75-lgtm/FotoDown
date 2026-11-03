@@ -123,3 +123,4 @@ class FotoDownSplashScreen(QSplashScreen):
         pct = int((step / max_steps) * 100)
         self.progress_bar.setValue(pct)
         QApplication.processEvents()
+
