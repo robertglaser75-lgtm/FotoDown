@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.10.3] - 2026-11-03
+
+### Behoben
+- **Galerie-Ansicht Rendering (`gui_qt/views/delegates.py`):**
+  - Behebung eines `AttributeError` in `GalleryDelegate.paint()`, bei dem `option.State_MouseOver` fälschlicherweise auf `QStyleOptionViewItem` statt auf `QStyle.StateFlag.State_MouseOver` referenziert wurde.
+  - Dieser Laufzeitfehler führte dazu, dass Qt den Zeichenvorgang für jedes Galeriekärtchen abbrach und die Galerieansicht beim Umschalten vollständig leer blieb.
+  - Unit-Test zur Absicherung des Rendering-Vorgangs der `MediaGalleryView` hinzugefügt.
+
 ## [0.10.2] - 2026-11-03
 
 ### Behoben

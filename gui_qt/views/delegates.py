@@ -6,7 +6,7 @@ from PySide6.QtGui import (
     QBrush, QColor, QFont, QFontMetrics, QPainter,
     QPainterPath, QPen, QPixmap
 )
-from PySide6.QtWidgets import QStyledItemDelegate, QStyleOptionViewItem
+from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 
 from core.importer import ScanItem
 
@@ -52,7 +52,7 @@ class GalleryDelegate(QStyledItemDelegate):
 
         rect = option.rect.adjusted(4, 4, -4, -4)
         is_selected = item.selected
-        is_hovered = bool(option.state & option.State_MouseOver)
+        is_hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
 
         # 1. Background Card
         card_path = QPainterPath()

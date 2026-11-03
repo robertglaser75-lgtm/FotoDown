@@ -29,6 +29,7 @@ from gui_qt.widgets.profile_bar import ProfileBarWidget
 from gui_qt.widgets.card_notification import CardNotificationBanner
 from gui_qt.widgets.exif_inspector import ExifInspectorWidget, HistogramWidget
 from gui_qt.views.tree_view import MediaTreeView
+from gui_qt.views.gallery_view import MediaGalleryView
 from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
 
 _app = QApplication.instance() or QApplication(["-platform", "offscreen"])
@@ -38,7 +39,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.10.2")
+        self.assertEqual(__version__, "0.10.3")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -271,6 +272,21 @@ class TestQtScanModels(unittest.TestCase):
         # Search filter
         proxy.set_search_term("Sony")
         self.assertEqual(proxy.rowCount(), 1)
+
+    def test_gallery_view_paint(self):
+        items = self._create_sample_items()
+        model = ScanTableModel(items)
+        proxy = ScanFilterProxyModel()
+        proxy.setSourceModel(model)
+
+        gallery = MediaGalleryView()
+        gallery.setModel(proxy)
+        gallery.resize(600, 400)
+        gallery.show()
+
+        pix = gallery.grab()
+        self.assertFalse(pix.isNull())
+        self.assertGreater(pix.width(), 0)
 
     def test_storage_bar_widget(self):
         widget = StorageBarWidget("Test Storage")
