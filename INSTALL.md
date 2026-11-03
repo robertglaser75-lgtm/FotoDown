@@ -271,3 +271,4 @@ Da FotoDown keine Dateien im System verstreut, ist die Deinstallation denkbar ei
 - **Benutzerkonfigurationen entfernen (optional):**
   - Windows: `%LOCALAPPDATA%\FotoDown`
   - Linux: `~/.config/FotoDown` oder `~/.fotodown`
+

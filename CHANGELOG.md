@@ -3,6 +3,18 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.12.2] - 2026-11-03
+
+### Behoben
+- **Vorschau beim Auswerfen leeren (`gui_qt/widgets/header_banner.py`, `gui_qt/main_window.py`):**
+  - Beim Klick auf „⏏ Auswerfen“ oder beim automatischen Entfernen eines Laufwerks werden alle geladenen Bilder und Vorschaudaten vollständig aus dem Arbeitsbereich entfernt:
+    - Tabellenmodell, Galerieansicht und Einzelbildansicht werden geleert.
+    - Die Zielordner-Vorschau (Ziel-Baum) wird zurückgesetzt.
+    - Miniaturbild-Cache wird bereinigt und freigegeben.
+    - EXIF-Inspektor wird geschlossen/zurückgesetzt.
+    - Status- und Statistikleiste sowie Quellpfad werden auf den Ausgangszustand („Bereit“) zurückgesetzt.
+    - Der Arbeitsbereich wechselt zurück auf die Willkommens- und Leeransicht („Noch keine Fotos eingelesen“).
+
 ## [0.12.1] - 2026-11-03
 
 ### Hinzugefügt

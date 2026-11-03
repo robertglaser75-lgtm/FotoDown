@@ -232,6 +232,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self):
         # Header signals
         self.header_banner.drive_selected.connect(self._on_header_drive_selected)
+        self.header_banner.drive_ejected.connect(self._on_drive_ejected)
         self.header_banner.open_history.connect(self._open_history_dialog)
         self.header_banner.open_help.connect(self._open_help_dialog)
 
@@ -308,9 +309,36 @@ class MainWindow(QMainWindow):
         else:
             self.card_notification.show_card(drive)
 
+    def clear_preview(self):
+        """Clears all previewed items, thumbnails, EXIF details, and resets view stack to empty state."""
+        self.table_model.set_items([])
+        self.target_tree_view.set_items([], "")
+        self.gallery_view.delegate.pixmap_cache.clear()
+        self.gallery_view.viewport().update()
+        self.single_view.set_items([])
+        self.exif_inspector.inspect_item(None)
+        self.card_notification.hide_card()
+        self._update_stats_bar()
+        self._update_view_selection()
+        self.action_bar.lbl_status.setText("Laufwerk ausgeworfen. Keine Fotos geladen.")
+
+    def _on_drive_ejected(self, drive_path: str = ""):
+        self.clear_preview()
+        current_src = self.path_selector.edit_source.text()
+        if not drive_path or drive_path in current_src or current_src.startswith(drive_path):
+            self.path_selector.edit_source.clear()
+            self.path_selector.source_storage_bar.set_path("")
+        self.status_bar.showMessage("Laufwerk sicher ausgeworfen. Vorschau geleert.", 4000)
+
     def _on_drive_removed(self, drive: DriveInfo):
         if self.card_notification.current_drive_path == str(drive.path):
             self.card_notification.hide_card()
+        current_src = self.path_selector.edit_source.text()
+        drive_path_str = str(drive.path)
+        if drive_path_str in current_src or current_src.startswith(drive_path_str):
+            self.clear_preview()
+            self.path_selector.edit_source.clear()
+            self.path_selector.source_storage_bar.set_path("")
         self.status_bar.showMessage(f"Laufwerk '{drive.letter}' wurde entfernt.", 4000)
 
     def _on_card_scan_requested(self, path: str):

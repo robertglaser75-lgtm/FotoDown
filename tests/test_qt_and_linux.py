@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.12.1")
+        self.assertEqual(__version__, "0.12.2")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -718,6 +718,38 @@ class TestRangeSelection(unittest.TestCase):
             self.assertTrue(items[r].selected, f"Row {r} should be selected")
         for r in [0, 5, 6, 7, 8, 9]:
             self.assertFalse(items[r].selected, f"Row {r} should not be selected")
+
+
+class TestDriveEjectionClearPreview(unittest.TestCase):
+    def test_clear_preview_on_eject(self):
+        from gui_qt.main_window import MainWindow
+        win = MainWindow()
+
+        # Simulate items loaded
+        meta = MediaMetadata(file_path=Path("test.jpg"), orig_name="test", extension=".jpg", file_size=5000, date_taken=datetime(2026, 7, 24, 12, 0, 0), date_source="test")
+        item = ScanItem(source_path=Path("test.jpg"), target_path=Path("test.jpg"), metadata=meta, status="Neu", is_duplicate=False, file_hash="hash1", selected=True)
+        win.table_model.set_items([item])
+        win.single_view.set_items([item], item)
+        win.exif_inspector.inspect_item(item)
+        win.path_selector.edit_source.setText("E:\\DCIM")
+
+        self.assertEqual(len(win.table_model.get_items()), 1)
+        self.assertIsNotNone(win.exif_inspector._current_item)
+
+        # Trigger drive ejection handler
+        win._on_drive_ejected("E:\\")
+
+        # Verify preview is cleared
+        self.assertEqual(len(win.table_model.get_items()), 0)
+        self.assertEqual(len(win.single_view.items), 0)
+        self.assertIsNone(win.exif_inspector._current_item)
+        self.assertEqual(win.path_selector.edit_source.text(), "")
+        self.assertEqual(win.view_stack.currentWidget(), win.empty_state)
+
+        # Cleanup
+        if win._drive_watcher and win._drive_watcher.isRunning():
+            win._drive_watcher.stop()
+        win.close()
 
 
 if __name__ == "__main__":

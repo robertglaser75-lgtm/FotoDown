@@ -123,3 +123,4 @@ read -r -p "> " start_now
 if [[ "$start_now" =~ ^[jJyY]$ ]]; then
     ./fotodown.sh &
 fi
+

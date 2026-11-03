@@ -14,6 +14,7 @@ from core.version import __version__
 
 class HeaderBanner(QFrame):
     drive_selected = Signal(str)  # Emits chosen source folder path
+    drive_ejected = Signal(str)   # Emits ejected drive path
     open_history = Signal()
     open_help = Signal()
 
@@ -132,6 +133,7 @@ class HeaderBanner(QFrame):
 
         ok, msg = eject_drive(path)
         if ok:
+            self.drive_ejected.emit(str(path))
             QMessageBox.information(self, "Sicher entfernen", msg)
             self.refresh_drives()
         else:
