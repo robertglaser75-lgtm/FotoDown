@@ -26,6 +26,7 @@ from gui_qt.widgets.path_selector import PathSelectorWidget
 from gui_qt.widgets.general_settings import GeneralSettingsWidget
 from gui_qt.widgets.collapsible_box import CollapsibleBox
 from gui_qt.widgets.profile_bar import ProfileBarWidget
+from gui_qt.widgets.pattern_editor import PatternEditorWidget
 from gui_qt.widgets.card_notification import CardNotificationBanner
 from gui_qt.widgets.exif_inspector import ExifInspectorWidget, HistogramWidget
 from gui_qt.views.tree_view import MediaTreeView
@@ -39,7 +40,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.10.4")
+        self.assertEqual(__version__, "0.10.5")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -551,6 +552,30 @@ class TestExifInspectorAndHistogram(unittest.TestCase):
         self.assertEqual(len(hist._g_bins), 256)
         self.assertEqual(len(hist._b_bins), 256)
         self.assertEqual(len(hist._l_bins), 256)
+
+
+class TestPatternEditorWidget(unittest.TestCase):
+    def test_pattern_editor_load_and_sync(self):
+        editor = PatternEditorWidget()
+        cfg = AppConfig(
+            folder_pattern="{YYYY}/{MM}",
+            file_pattern="{YYYY}_{orig_name}"
+        )
+        
+        # Ensure loading doesn't emit unexpected changes and sets text correctly
+        emitted = []
+        editor.changed.connect(lambda: emitted.append(True))
+        editor.load_config(cfg)
+        
+        self.assertEqual(len(emitted), 0)  # Signals blocked during load
+        self.assertEqual(editor.edit_folder.text(), "{YYYY}/{MM}")
+        self.assertEqual(editor.edit_file.text(), "{YYYY}_{orig_name}")
+        
+        # Test editing and sync
+        editor.edit_folder.setText("{YYYY}/{DD}")
+        self.assertEqual(len(emitted), 1)
+        editor.sync_to_config(cfg)
+        self.assertEqual(cfg.folder_pattern, "{YYYY}/{DD}")
 
 
 if __name__ == "__main__":

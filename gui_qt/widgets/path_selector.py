@@ -180,20 +180,34 @@ class PathSelectorWidget(QWidget):
         self.changed.emit()
 
     def load_config(self, config: AppConfig):
-        self.edit_source.setText(config.source_dir)
-        self.edit_target.setText(config.target_dir)
-        self.chk_dual_backup.setChecked(config.enable_dual_backup)
-        self.edit_backup_target.setText(config.backup_target_dir)
-        self.edit_backup_target.setEnabled(config.enable_dual_backup)
-        self.btn_browse_backup.setEnabled(config.enable_dual_backup)
-        self.backup_storage_bar.setVisible(config.enable_dual_backup)
-        self.chk_video.setChecked(config.separate_video_dir)
-        self.edit_video_target.setText(config.video_target_dir)
-        # Update storage bars
-        self.source_storage_bar.set_path(config.source_dir)
-        self.target_storage_bar.set_path(config.target_dir)
-        if config.enable_dual_backup:
-            self.backup_storage_bar.set_path(config.backup_target_dir)
+        self.edit_source.blockSignals(True)
+        self.edit_target.blockSignals(True)
+        self.chk_dual_backup.blockSignals(True)
+        self.edit_backup_target.blockSignals(True)
+        self.chk_video.blockSignals(True)
+        self.edit_video_target.blockSignals(True)
+        try:
+            self.edit_source.setText(config.source_dir)
+            self.edit_target.setText(config.target_dir)
+            self.chk_dual_backup.setChecked(config.enable_dual_backup)
+            self.edit_backup_target.setText(config.backup_target_dir)
+            self.edit_backup_target.setEnabled(config.enable_dual_backup)
+            self.btn_browse_backup.setEnabled(config.enable_dual_backup)
+            self.backup_storage_bar.setVisible(config.enable_dual_backup)
+            self.chk_video.setChecked(config.separate_video_dir)
+            self.edit_video_target.setText(config.video_target_dir)
+            # Update storage bars
+            self.source_storage_bar.set_path(config.source_dir)
+            self.target_storage_bar.set_path(config.target_dir)
+            if config.enable_dual_backup:
+                self.backup_storage_bar.set_path(config.backup_target_dir)
+        finally:
+            self.edit_source.blockSignals(False)
+            self.edit_target.blockSignals(False)
+            self.chk_dual_backup.blockSignals(False)
+            self.edit_backup_target.blockSignals(False)
+            self.chk_video.blockSignals(False)
+            self.edit_video_target.blockSignals(False)
 
     def sync_to_config(self, config: AppConfig):
         config.source_dir = self.edit_source.text().strip()

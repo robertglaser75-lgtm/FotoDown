@@ -125,10 +125,14 @@ class PatternEditorWidget(QWidget):
         self.lbl_preview_text.setText(f"{prev_folder} / {prev_file}")
 
     def load_config(self, config: AppConfig):
-        self.edit_folder.setText(config.folder_pattern)
-        self.edit_file.setText(config.file_pattern)
+        self.edit_folder.blockSignals(True)
+        self.edit_file.blockSignals(True)
+        self.edit_folder.setText(config.folder_pattern or "{YYYY}/{YYYY}-{MM}-{DD}")
+        self.edit_file.setText(config.file_pattern or "{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}")
+        self.edit_folder.blockSignals(False)
+        self.edit_file.blockSignals(False)
         self.update_preview(config.type_folder_organization)
 
     def sync_to_config(self, config: AppConfig):
-        config.folder_pattern = self.edit_folder.text().strip()
-        config.file_pattern = self.edit_file.text().strip()
+        config.folder_pattern = self.edit_folder.text().strip() or "{YYYY}/{YYYY}-{MM}-{DD}"
+        config.file_pattern = self.edit_file.text().strip() or "{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}"

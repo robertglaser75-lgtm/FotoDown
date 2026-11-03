@@ -56,6 +56,7 @@ class MainWindow(QMainWindow):
             splash.set_status("Lade Konfiguration & Historie...", 2, 5)
 
         # Core logic setup
+        self._is_loading_config = False
         self.config = AppConfig.load()
         self.history = ImportHistory()
         self.engine = ImporterEngine(self.history)
@@ -304,18 +305,24 @@ class MainWindow(QMainWindow):
         self._start_scan()
 
     def _on_profile_selected(self, name: str):
+        if getattr(self, "_is_loading_config", False):
+            return
         if self.config.apply_profile(name):
             self._load_config_to_ui()
             self.config.save()
             self._update_stats_bar()
 
     def _on_profile_saved(self, name: str):
-        self._on_settings_changed()
+        self.path_selector.sync_to_config(self.config)
+        self.pattern_editor.sync_to_config(self.config)
+        self.general_settings.sync_to_config(self.config)
         self.config.save_current_as_profile(name)
         self.config.save()
 
     def _on_profile_created(self, name: str):
-        self._on_settings_changed()
+        self.path_selector.sync_to_config(self.config)
+        self.pattern_editor.sync_to_config(self.config)
+        self.general_settings.sync_to_config(self.config)
         self.config.save_current_as_profile(name)
         self.config.save()
         self.profile_bar.load_profiles(self.config)
@@ -356,16 +363,24 @@ class MainWindow(QMainWindow):
         self.path_selector.source_storage_bar.set_path(path)
 
     def _load_config_to_ui(self):
-        self.profile_bar.load_profiles(self.config)
-        self.path_selector.load_config(self.config)
-        self.pattern_editor.load_config(self.config)
-        self.general_settings.load_config(self.config)
-        self.pattern_editor.update_preview(self.config.type_folder_organization)
+        self._is_loading_config = True
+        try:
+            self.profile_bar.load_profiles(self.config)
+            self.path_selector.load_config(self.config)
+            self.pattern_editor.load_config(self.config)
+            self.general_settings.load_config(self.config)
+            self.pattern_editor.update_preview(self.config.type_folder_organization)
+        finally:
+            self._is_loading_config = False
 
     def _on_settings_changed(self):
+        if getattr(self, "_is_loading_config", False):
+            return
         self.path_selector.sync_to_config(self.config)
         self.pattern_editor.sync_to_config(self.config)
         self.general_settings.sync_to_config(self.config)
+        if self.config.active_profile in self.config.profiles:
+            self.config.save_current_as_profile(self.config.active_profile)
         self.pattern_editor.update_preview(self.config.type_folder_organization)
         self.config.save()
         self._update_stats_bar()

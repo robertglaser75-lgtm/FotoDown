@@ -123,16 +123,22 @@ class AppConfig:
         self.active_profile = name
         for k, v in p.items():
             if hasattr(self, k):
+                if k == "folder_pattern" and not v:
+                    v = DEFAULT_PROFILES.get(name, DEFAULT_PROFILES["Standard"]).get("folder_pattern", "{YYYY}/{YYYY}-{MM}-{DD}")
+                elif k == "file_pattern" and not v:
+                    v = DEFAULT_PROFILES.get(name, DEFAULT_PROFILES["Standard"]).get("file_pattern", "{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}")
                 setattr(self, k, v)
         return True
 
     def save_current_as_profile(self, name: str) -> None:
         """Saves current settings under given profile name."""
         self.active_profile = name
+        f_pat = self.file_pattern or DEFAULT_PROFILES.get(name, DEFAULT_PROFILES["Standard"]).get("file_pattern", "{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}")
+        d_pat = self.folder_pattern or DEFAULT_PROFILES.get(name, DEFAULT_PROFILES["Standard"]).get("folder_pattern", "{YYYY}/{YYYY}-{MM}-{DD}")
         self.profiles[name] = {
             "type_folder_organization": self.type_folder_organization,
-            "file_pattern": self.file_pattern,
-            "folder_pattern": self.folder_pattern,
+            "file_pattern": f_pat,
+            "folder_pattern": d_pat,
             "pair_raw_jpg": self.pair_raw_jpg,
             "sync_xmp_sidecars": self.sync_xmp_sidecars,
             "only_new_files": self.only_new_files,
@@ -178,10 +184,37 @@ class AppConfig:
                 for p_name, p_data in DEFAULT_PROFILES.items():
                     if p_name not in cfg.profiles:
                         cfg.profiles[p_name] = dict(p_data)
+                    else:
+                        for k, v in p_data.items():
+                            if k not in cfg.profiles[p_name] or cfg.profiles[p_name][k] is None:
+                                cfg.profiles[p_name][k] = v
+
+                default_std = DEFAULT_PROFILES["Standard"]
+                for p_name, p_dict in cfg.profiles.items():
+                    fallback_source = DEFAULT_PROFILES.get(p_name, default_std)
+                    for k, v in fallback_source.items():
+                        if k not in p_dict or p_dict[k] is None:
+                            p_dict[k] = v
+                    if not p_dict.get("file_pattern"):
+                        p_dict["file_pattern"] = fallback_source.get("file_pattern", default_std["file_pattern"])
+                    if not p_dict.get("folder_pattern"):
+                        p_dict["folder_pattern"] = fallback_source.get("folder_pattern", default_std["folder_pattern"])
+
+                if cfg.active_profile not in cfg.profiles:
+                    cfg.active_profile = "Standard" if "Standard" in cfg.profiles else next(iter(cfg.profiles.keys()))
+                cfg.apply_profile(cfg.active_profile)
+
+                if not cfg.file_pattern:
+                    cfg.file_pattern = default_std["file_pattern"]
+                if not cfg.folder_pattern:
+                    cfg.folder_pattern = default_std["folder_pattern"]
+
                 return cfg
             except Exception as e:
                 print(f"[Warnung] Konfigurationsdatei konnte nicht geladen werden: {e}")
-        return cls()
+        cfg = cls()
+        cfg.apply_profile(cfg.active_profile)
+        return cfg
 
     def save(self, path: Optional[Path] = None) -> None:
         """Saves current configuration to JSON file."""

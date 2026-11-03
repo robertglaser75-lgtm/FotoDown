@@ -3,6 +3,17 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.10.5] - 2026-11-03
+
+### Behoben
+- **Profil-Persistenz & Muster-Synchronisation (`core/config.py`, `gui_qt/main_window.py`, `gui_qt/widgets/pattern_editor.py`, `gui_qt/widgets/path_selector.py`, `gui_qt/widgets/general_settings.py`):**
+  - **Namens- und Ordnerstruktur-Muster werden zuverlässig im Profil gespeichert:**
+    - Beim Wechseln oder Speichern von Profilen wurden zuvor Signale während des Ladens (`load_config`) ausgelöst, die noch unvollständige Formulareingaben zurück in die Konfiguration spiegelten und Muster mit leeren Strings überschreiben konnten.
+    - `load_config` blockiert nun in allen Einstellungs-Widgets (`PatternEditorWidget`, `PathSelectorWidget`, `GeneralSettingsWidget`) vorübergehend die Signale, und `MainWindow` verhindert mit einem Lade-Guard (`_is_loading_config`) vorzeitiges oder zirkuläres Zurückschreiben in die Konfiguration während Profilwechseln.
+    - Muster-Felder fallen bei leeren Eingaben automatisch auf gültige Standardmuster zurück (`{YYYY}/{YYYY}-{MM}-{DD}` bzw. `{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}`), sodass niemals ungültige oder leere Muster in Profilen gespeichert werden.
+    - **Automatische Profil-Migration:** Bestehende Konfigurationen aus älteren Versionen werden beim Laden automatisch mit allen Profil-Schlüsseln (inklusive IPTC, Dual-Backup und Muster) abgeglichen und nachgepflegt.
+    - Änderungen an Mustern oder allgemeinen Einstellungen im UI werden sofort im aktuell aktiven Profil hinterlegt und gesichert.
+
 ## [0.10.4] - 2026-11-03
 
 ### Behoben

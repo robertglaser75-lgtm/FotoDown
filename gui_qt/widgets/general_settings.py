@@ -109,17 +109,30 @@ class GeneralSettingsWidget(QWidget):
             self.combo_org.setCurrentIndex(0)
 
     def load_config(self, config: AppConfig):
-        self.set_type_org(config.type_folder_organization)
-        self.chk_auto_detect.setChecked(config.auto_detect_drives)
-        self.chk_pair_raw.setChecked(config.pair_raw_jpg)
-        self.chk_sync_xmp.setChecked(config.sync_xmp_sidecars)
-        self.chk_only_new.setChecked(config.only_new_files)
-        self.chk_verify.setChecked(config.verify_checksums)
-        self.chk_enable_iptc.setChecked(config.enable_iptc)
-        self.edit_creator.setText(config.iptc_creator)
-        self.edit_copyright.setText(config.iptc_copyright)
-        self.edit_keywords.setText(config.iptc_keywords)
-        self._on_iptc_toggled(config.enable_iptc)
+        widgets = [
+            self.combo_org, self.chk_auto_detect, self.chk_pair_raw,
+            self.chk_sync_xmp, self.chk_only_new, self.chk_verify,
+            self.chk_enable_iptc, self.edit_creator, self.edit_copyright, self.edit_keywords
+        ]
+        for w in widgets:
+            w.blockSignals(True)
+        try:
+            self.set_type_org(config.type_folder_organization)
+            self.chk_auto_detect.setChecked(config.auto_detect_drives)
+            self.chk_pair_raw.setChecked(config.pair_raw_jpg)
+            self.chk_sync_xmp.setChecked(config.sync_xmp_sidecars)
+            self.chk_only_new.setChecked(config.only_new_files)
+            self.chk_verify.setChecked(config.verify_checksums)
+            self.chk_enable_iptc.setChecked(config.enable_iptc)
+            self.edit_creator.setText(config.iptc_creator)
+            self.edit_copyright.setText(config.iptc_copyright)
+            self.edit_keywords.setText(config.iptc_keywords)
+            self.edit_creator.setEnabled(config.enable_iptc)
+            self.edit_copyright.setEnabled(config.enable_iptc)
+            self.edit_keywords.setEnabled(config.enable_iptc)
+        finally:
+            for w in widgets:
+                w.blockSignals(False)
 
     def sync_to_config(self, config: AppConfig):
         config.type_folder_organization = self.get_type_org()

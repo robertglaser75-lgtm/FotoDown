@@ -386,6 +386,49 @@ class TestMetadataWriter(unittest.TestCase):
             self.assertIn("© 2026 Test Creator", content)
 
 
+class TestProfileConfig(unittest.TestCase):
+    def test_profile_patterns_saved_and_restored(self):
+        cfg = AppConfig()
+        cfg.file_pattern = "{YYYY}-{MM}_{camera}_{orig_name}"
+        cfg.folder_pattern = "{YYYY}/CustomFolder"
+        cfg.save_current_as_profile("CustomPreset")
+        
+        self.assertIn("CustomPreset", cfg.profiles)
+        self.assertEqual(cfg.profiles["CustomPreset"]["file_pattern"], "{YYYY}-{MM}_{camera}_{orig_name}")
+        self.assertEqual(cfg.profiles["CustomPreset"]["folder_pattern"], "{YYYY}/CustomFolder")
+        
+        # Switch to Standard
+        cfg.apply_profile("Standard")
+        self.assertNotEqual(cfg.folder_pattern, "{YYYY}/CustomFolder")
+        
+        # Switch back to CustomPreset
+        cfg.apply_profile("CustomPreset")
+        self.assertEqual(cfg.folder_pattern, "{YYYY}/CustomFolder")
+        self.assertEqual(cfg.file_pattern, "{YYYY}-{MM}_{camera}_{orig_name}")
+
+    def test_profile_migration_missing_or_empty_patterns(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            cfg_file = Path(tmp_dir) / "config.json"
+            raw_data = {
+                "active_profile": "LegacyProfile",
+                "profiles": {
+                    "LegacyProfile": {
+                        "type_folder_organization": "same",
+                        # Missing file_pattern and folder_pattern
+                        "pair_raw_jpg": True
+                    }
+                }
+            }
+            import json
+            cfg_file.write_text(json.dumps(raw_data), encoding="utf-8")
+            
+            loaded_cfg = AppConfig.load(cfg_file)
+            self.assertEqual(loaded_cfg.active_profile, "LegacyProfile")
+            self.assertTrue(loaded_cfg.file_pattern)
+            self.assertTrue(loaded_cfg.folder_pattern)
+            self.assertEqual(loaded_cfg.profiles["LegacyProfile"]["folder_pattern"], "{YYYY}/{YYYY}-{MM}-{DD}")
+
+
 class TestExifShootingMetadata(unittest.TestCase):
     def test_formatted_exposure_and_gps(self):
         meta = MediaMetadata(
