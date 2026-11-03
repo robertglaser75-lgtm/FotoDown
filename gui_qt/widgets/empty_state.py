@@ -58,3 +58,4 @@ class EmptyStateWidget(QFrame):
         self.btn_scan.setStyleSheet("font-size: 13px; padding: 10px 18px;")
         self.btn_scan.clicked.connect(self.scan_requested.emit)
         layout.addWidget(self.btn_scan, alignment=Qt.AlignmentFlag.AlignCenter)
+
