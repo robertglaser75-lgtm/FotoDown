@@ -8,6 +8,11 @@ Lauffähig unter **Windows** und **Linux**.
 
 ## ✨ Funktionen
 
+- 🔍 **Integrierte Einzelansicht & Schärfebeurteilung:**
+  - Neuer Ansichtsmodus *„🔍 Einzelansicht“* im Hauptarbeitsbereich.
+  - Großformatige, gestochen scharfe Bildbetrachtung direkt im Anwendungsfenster (bis 2560px).
+  - Schnelle Tastaturnavigation mit Pfeiltasten / `A` / `D`, Auswahl-Checkbox (`[S]`) und Bildzähler.
+  - Schnelles Umschalten zwischen *Einpassen* und *100% Originalgröße* (`F` oder Doppelklick) zum exakten Prüfen von Fokus, Bildschärfe und Bilddetails.
 - 📁 **Interaktive Zielstruktur-Baumvorschau:**
   - Zusätzlicher Ansichtsmodus *„📁 Ordnerstruktur“* neben Tabelle und Galerie.
   - Zeigt exakt vorab, welche Verzeichnisse und Unterordner auf der Zielfestplatte erstellt und wie viele Dateien pro Ordner abgelegt werden.

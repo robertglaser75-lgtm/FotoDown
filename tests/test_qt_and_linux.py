@@ -16,7 +16,7 @@ from core.drive_detector import (
 )
 from core.exif_reader import MediaMetadata
 from core.importer import ScanItem
-from core.thumbnail import generate_thumbnail
+from core.thumbnail import generate_thumbnail, load_preview_image
 from core.version import __version__
 from gui_qt.models.scan_model import ScanTableModel
 from gui_qt.models.filter_proxy import ScanFilterProxyModel
@@ -31,6 +31,7 @@ from gui_qt.widgets.card_notification import CardNotificationBanner
 from gui_qt.widgets.exif_inspector import ExifInspectorWidget, HistogramWidget
 from gui_qt.views.tree_view import MediaTreeView
 from gui_qt.views.gallery_view import MediaGalleryView
+from gui_qt.views.single_view import MediaSingleView
 from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
 
 _app = QApplication.instance() or QApplication(["-platform", "offscreen"])
@@ -40,7 +41,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.10.5")
+        self.assertEqual(__version__, "0.11.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -576,6 +577,61 @@ class TestPatternEditorWidget(unittest.TestCase):
         self.assertEqual(len(emitted), 1)
         editor.sync_to_config(cfg)
         self.assertEqual(cfg.folder_pattern, "{YYYY}/{DD}")
+
+
+class TestMediaSingleView(unittest.TestCase):
+    def test_single_view_navigation_and_selection(self):
+        view = MediaSingleView()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            from PIL import Image
+            img1 = Image.new("RGB", (800, 600), color=(200, 50, 50))
+            p1 = Path(tmp_dir) / "test1.jpg"
+            img1.save(p1)
+
+            img2 = Image.new("RGB", (800, 600), color=(50, 200, 50))
+            p2 = Path(tmp_dir) / "test2.jpg"
+            img2.save(p2)
+
+            meta1 = MediaMetadata(file_path=p1, orig_name="test1", extension=".jpg", file_size=1000, date_taken=datetime(2026, 7, 24, 12, 0, 0), date_source="EXIF")
+            meta2 = MediaMetadata(file_path=p2, orig_name="test2", extension=".jpg", file_size=1000, date_taken=datetime(2026, 7, 24, 12, 0, 0), date_source="EXIF")
+
+            item1 = ScanItem(source_path=p1, target_path=p1, metadata=meta1, status="Neu", is_duplicate=False, file_hash="hash1", selected=True)
+            item2 = ScanItem(source_path=p2, target_path=p2, metadata=meta2, status="Neu", is_duplicate=False, file_hash="hash2", selected=False)
+
+            view.set_items([item1, item2], item1)
+            self.assertEqual(view.get_current_item(), item1)
+            self.assertEqual(view.lbl_title.text(), "test1.jpg")
+            self.assertTrue(view.chk_selected.isChecked())
+
+            # Navigate next
+            view._next_item()
+            self.assertEqual(view.get_current_item(), item2)
+            self.assertEqual(view.lbl_title.text(), "test2.jpg")
+            self.assertFalse(view.chk_selected.isChecked())
+
+            # Toggle selection
+            view.chk_selected.setChecked(True)
+            self.assertTrue(item2.selected)
+
+            # Zoom mode toggle
+            self.assertEqual(view._zoom_mode, "fit")
+            view._toggle_zoom()
+            self.assertEqual(view._zoom_mode, "actual")
+            view._toggle_zoom()
+            self.assertEqual(view._zoom_mode, "fit")
+
+
+class TestHighResPreviews(unittest.TestCase):
+    def test_load_preview_image_downscaling(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            from PIL import Image
+            img = Image.new("RGB", (3000, 2000), color=(50, 100, 150))
+            p = Path(tmp_dir) / "large.jpg"
+            img.save(p)
+
+            loaded = load_preview_image(p, max_dim=1000)
+            self.assertIsNotNone(loaded)
+            self.assertLessEqual(max(loaded.width, loaded.height), 1000)
 
 
 if __name__ == "__main__":

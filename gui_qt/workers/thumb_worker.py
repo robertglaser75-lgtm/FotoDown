@@ -1,4 +1,4 @@
-﻿"""Asynchronous thumbnail loader using QThreadPool and QRunnable."""
+"""Asynchronous thumbnail loader using QThreadPool and QRunnable."""
 
 import io
 from pathlib import Path
@@ -16,7 +16,7 @@ class ThumbnailSignals(QObject):
 
 
 class ThumbnailTask(QRunnable):
-    def __init__(self, path: Path, max_size=(160, 160)):
+    def __init__(self, path: Path, max_size=(480, 480)):
         super().__init__()
         self.path = path
         self.max_size = max_size

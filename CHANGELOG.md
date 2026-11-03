@@ -3,6 +3,26 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.11.0] - 2026-11-03
+
+### Hinzugefügt
+- **Integrierte Einzelansicht (`gui_qt/views/single_view.py`, `gui_qt/widgets/filter_bar.py`, `gui_qt/main_window.py`):**
+  - Neuer Ansichtsmodus *„🔍 Einzelansicht“* im Hauptarbeitsbereich.
+  - Ermöglicht das Betrachten von Fotos in voller Pracht direkt im Hauptfenster mit bequemer Tastaturnavigation (`◀` / `▶` bzw. `A` / `D`), Bildzähler und Titelleiste.
+  - Umschaltung per Klick oder Tastenkombination (`F` / Doppelklick) zwischen *„Einpassen“* (skaliert an Anzeigefläche) und *„100% Originalgröße“* (1:1 Pixeldarstellung mit Scrollbereich zur Schärfe- und Fokusbeurteilung).
+  - Direkte Auswahl-Checkbox (`Für Import ausgewählt [S]`) sowie Schnell-Absprung in den Vollbild-Vorschaudialog (`Leertaste`).
+  - Detaillierte Metadaten-Leiste am unteren Rand (Kameramodell, Objektiv, Belichtungswerte, Megapixel, Dateigröße, Datum).
+
+### Behoben
+- **Kristallklare Bilddarstellung & Schärfe-Optimierung (`core/thumbnail.py`, `gui_qt/workers/thumb_worker.py`, `gui_qt/views/delegates.py`, `gui_qt/dialogs/quick_preview_dialog.py`):**
+  - **Erhöhte Thumbnail-Auflösung:** Vorschaubilder in der Galerie werden nun nativ in 480x480 Pixeln mit `Image.Resampling.LANCZOS` generiert (zuvor 160x160), wodurch Fotos auch bei hoher Zoomstufe und auf Windows-HiDPI-Displays gestochen scharf dargestellt werden.
+  - **Glattes Rendering aktiviert:** `QPainter.RenderHint.SmoothPixmapTransform` in `GalleryDelegate` hinzugefügt, um Unschärfen und Moiré-Artefakte beim Zeichnen von Miniaturbildern zu verhindern.
+  - **Verbesserte RAW-Vorschauextraktion:**
+    - Behebung eines Problems, bei dem für RAW-Dateien fälschlicherweise das winzige 160x120-IFD0-Thumbnail verwendet wurde.
+    - `extract_raw_embedded_jpeg` prüft nun vorrangig vorhandene Begleit-JPGs und durchsucht den RAW-Datenstrom (bis 24 MB) nach den hochauflösenden eingebetteten JPEG-Vorschaubildern der Kamera.
+    - Sortierung aller gefundenen Bildkandidaten nach maximaler Auflösung (`width * height`), sodass stets die schärfste Vorschau gewählt wird.
+  - **Zentrale Vorschau-Ladefunktion (`load_preview_image`):** Lädt Vorschauen für Einzelansicht und Quick Look in bis zu 2560px Auflösung mit automatischer EXIF-Ausrichtung.
+
 ## [0.10.5] - 2026-11-03
 
 ### Behoben

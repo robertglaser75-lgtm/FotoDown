@@ -21,6 +21,7 @@ from .models.scan_model import ScanTableModel
 from .models.filter_proxy import ScanFilterProxyModel
 from .views.table_view import MediaTableView
 from .views.gallery_view import MediaGalleryView
+from .views.single_view import MediaSingleView
 from .views.tree_view import MediaTreeView
 from .widgets.header_banner import HeaderBanner
 from .widgets.collapsible_box import CollapsibleBox
@@ -194,7 +195,11 @@ class MainWindow(QMainWindow):
         self.gallery_view.setModel(self.proxy_model)
         self.view_stack.addWidget(self.gallery_view)
 
-        # View 3: Target Directory Simulation Tree View
+        # View 3: Single Item View
+        self.single_view = MediaSingleView()
+        self.view_stack.addWidget(self.single_view)
+
+        # View 4: Target Directory Simulation Tree View
         self.target_tree_view = MediaTreeView()
         self.view_stack.addWidget(self.target_tree_view)
 
@@ -263,11 +268,13 @@ class MainWindow(QMainWindow):
         # Quick Preview requests (Space or Double click)
         self.table_view.open_preview_requested.connect(self._open_quick_preview)
         self.gallery_view.open_preview_requested.connect(self._open_quick_preview)
+        self.single_view.open_quick_preview_requested.connect(self._open_quick_preview)
         self.target_tree_view.open_preview_requested.connect(self._open_quick_preview)
 
         # Item focus / selection -> EXIF inspector
         self.table_view.clicked.connect(self._on_item_focused)
         self.gallery_view.clicked.connect(self._on_item_focused)
+        self.single_view.item_focused.connect(self._on_item_focused)
         self.target_tree_view.item_selected.connect(self._on_item_focused)
 
         # Selection shortcuts
@@ -278,6 +285,7 @@ class MainWindow(QMainWindow):
         # Model changes update stats
         self.table_model.selection_changed.connect(self._update_stats_bar)
         self.gallery_view.selection_toggled.connect(self._update_stats_bar)
+        self.single_view.selection_toggled.connect(self._on_single_view_selection_toggled)
 
     def _init_drive_watcher(self):
         if self.config.auto_detect_drives and not self._drive_watcher:
@@ -408,6 +416,9 @@ class MainWindow(QMainWindow):
         if mode == "gallery":
             self.view_stack.setCurrentWidget(self.gallery_view)
             self._queue_thumbnails_for_visible()
+        elif mode == "single":
+            self.view_stack.setCurrentWidget(self.single_view)
+            self.single_view.set_items(items, self.exif_inspector._current_item)
         elif mode == "tree":
             self.view_stack.setCurrentWidget(self.target_tree_view)
         else:
@@ -423,6 +434,10 @@ class MainWindow(QMainWindow):
             if items:
                 self.exif_inspector.inspect_item(items[0])
 
+    def _on_single_view_selection_toggled(self):
+        self.table_model.layoutChanged.emit()
+        self._update_stats_bar()
+
     def _on_item_focused(self, index_or_item):
         target_item: Optional[ScanItem] = None
         if isinstance(index_or_item, ScanItem):
@@ -431,6 +446,8 @@ class MainWindow(QMainWindow):
             target_item = index_or_item.data(Qt.ItemDataRole.UserRole)
         if target_item:
             self.exif_inspector.inspect_item(target_item)
+            if hasattr(self, "single_view") and self.single_view.get_current_item() != target_item:
+                self.single_view.set_current_item(target_item)
 
     def _update_stats_bar(self):
         items = self.table_model.get_items()
@@ -483,6 +500,7 @@ class MainWindow(QMainWindow):
         self.action_bar.set_busy(False)
         self.table_model.set_items(items)
         self.target_tree_view.set_items(items, self.config.target_dir)
+        self.single_view.set_items(items, items[0] if items else None)
         self._update_stats_bar()
         self._update_view_selection()
 
@@ -502,8 +520,9 @@ class MainWindow(QMainWindow):
         for item in items:
             path_str = str(item.source_path)
             if path_str not in self.gallery_view.delegate.pixmap_cache:
-                task = ThumbnailTask(item.source_path)
-                task.signals.thumbnail_ready.connect(self._on_thumbnail_ready)
+                thumb_source = item.companion_path if (item.is_pair and item.companion_path and item.companion_path.exists()) else item.source_path
+                task = ThumbnailTask(thumb_source, max_size=(480, 480))
+                task.signals.thumbnail_ready.connect(lambda p_str, qimg, orig=path_str: self._on_thumbnail_ready(orig, qimg))
                 self.thread_pool.start(task)
 
     def _on_thumbnail_ready(self, path_str: str, qimage):

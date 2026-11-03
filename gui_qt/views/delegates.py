@@ -44,6 +44,7 @@ class GalleryDelegate(QStyledItemDelegate):
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index):
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
 
         item: ScanItem = index.data(Qt.ItemDataRole.UserRole)
         if not item:

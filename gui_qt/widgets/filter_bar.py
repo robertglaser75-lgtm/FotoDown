@@ -28,12 +28,13 @@ class FilterBarWidget(QWidget):
         layout.setContentsMargins(0, 2, 0, 4)
         layout.setSpacing(6)
 
-        # 1. View Mode (Table vs Gallery vs Destination Tree)
+        # 1. View Mode (Table vs Gallery vs Single vs Destination Tree)
         self.combo_view = QComboBox()
         self.combo_view.addItem("📋 Tabelle", "table")
         self.combo_view.addItem("🖼️ Galerie", "gallery")
+        self.combo_view.addItem("🔍 Einzelansicht", "single")
         self.combo_view.addItem("📁 Ordnerstruktur", "tree")
-        self.combo_view.setToolTip("Ansicht wechseln (Tabelle, Galerie oder Zielstruktur-Baum)")
+        self.combo_view.setToolTip("Ansicht wechseln (Tabelle, Galerie, Einzelansicht oder Zielstruktur-Baum)")
         self.combo_view.currentIndexChanged.connect(self._on_view_changed)
         layout.addWidget(self.combo_view)
 

@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 
 from core.drive_detector import format_size
 from core.importer import ScanItem
-from core.thumbnail import extract_raw_embedded_jpeg
+from core.thumbnail import extract_raw_embedded_jpeg, load_preview_image
 
 
 class QuickPreviewDialog(QDialog):
@@ -156,31 +156,8 @@ class QuickPreviewDialog(QDialog):
         self._load_image_preview(item)
 
     def _load_image_preview(self, item: ScanItem):
-        pil_img = None
-
-        # For paired RAW+JPG, the companion JPG is the fastest, high quality preview
-        if item.is_pair and item.companion_path and item.companion_path.exists():
-            try:
-                with Image.open(item.companion_path) as img:
-                    img = ImageOps.exif_transpose(img)
-                    img.thumbnail((1920, 1440))
-                    pil_img = img.copy()
-            except Exception:
-                pass
-
-        # Try raw embedded preview if raw
-        if not pil_img and item.metadata.is_raw:
-            pil_img = extract_raw_embedded_jpeg(item.source_path)
-
-        # Standard PIL open
-        if not pil_img:
-            try:
-                with Image.open(item.source_path) as img:
-                    img = ImageOps.exif_transpose(img)
-                    img.thumbnail((1600, 1200))
-                    pil_img = img.copy()
-            except Exception:
-                pass
+        target_path = item.companion_path if (item.is_pair and item.companion_path and item.companion_path.exists()) else item.source_path
+        pil_img = load_preview_image(target_path, max_dim=2560)
 
         if pil_img:
             try:
