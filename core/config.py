@@ -42,6 +42,8 @@ class AppConfig:
     collision_mode: str = "rename"  # 'rename' (_1, _2), 'skip', 'overwrite'
     pair_raw_jpg: bool = True
     sync_xmp_sidecars: bool = True
+    auto_detect_drives: bool = True
+    auto_scan_on_insert: bool = False
 
     @classmethod
     def get_default_config_path(cls) -> Path:

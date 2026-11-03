@@ -3,6 +3,16 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.8.0] - 2026-11-03
+
+### Hinzugefügt
+- **Automatische Speicherkartenerkennung bei Einstecken (Hotplug / Auto-Detect):**
+  - **Hintergrund-Laufwerksüberwachung (`DriveMonitor` & `DriveWatcherThread`):** Asynchrone Erkennung neu verbundener oder entfernter Wechsellaufwerke und SD-Karten in Echtzeit.
+  - **Hotplug-Benachrichtigungsbanner (`CardNotificationBanner`):** Sobald eine SD-Karte (insb. mit `DCIM`-Kamera-Ordner) eingesteckt wird, erscheint am oberen Bildschirmrand ein dezentes, elegantes Banner mit Laufwerksbuchstaben, Label, freiem Speicherplatz und einem **„🔍 Jetzt Fotos scannen“**-Button.
+  - **1-Klick-Scan:** Ein Klick auf das Banner übernimmt direkt den DCIM-Quellpfad und startet den Scanvorgang sofort.
+  - **Automatisches Aushängen / Entfernen:** Beim Abziehen der Karte wird das Banner automatisch geschlossen und die Laufwerksauswahl aktualisiert.
+  - **Konfigurierbar:** Option in den Einstellungen (`auto_detect_drives`) zum Aktivieren/Deaktivieren der automatischen Erkennung.
+
 ## [0.7.0] - 2026-11-03
 
 ### Hinzugefügt

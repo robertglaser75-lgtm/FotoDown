@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from typing import List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -210,6 +210,32 @@ def detect_drives() -> List[DriveInfo]:
     if sys.platform == "win32":
         return _detect_drives_windows()
     return _detect_drives_linux()
+
+
+class DriveMonitor:
+    """Monitors drive changes across polling ticks."""
+
+    def __init__(self, detector_func: Callable[[], List[DriveInfo]] = detect_drives):
+        self._detector = detector_func
+        self._known_drives: Dict[str, DriveInfo] = {}
+        self.refresh()
+
+    def refresh(self) -> List[DriveInfo]:
+        """Performs a full scan and updates known drives."""
+        drives = self._detector()
+        self._known_drives = {str(d.path).rstrip("\\/").upper(): d for d in drives}
+        return drives
+
+    def check_changes(self) -> Tuple[List[DriveInfo], List[DriveInfo]]:
+        """Checks for added and removed drives since last check. Returns (added, removed)."""
+        current_list = self._detector()
+        current_map = {str(d.path).rstrip("\\/").upper(): d for d in current_list}
+
+        added = [d for p, d in current_map.items() if p not in self._known_drives]
+        removed = [d for p, d in self._known_drives.items() if p not in current_map]
+
+        self._known_drives = current_map
+        return added, removed
 
 
 def _eject_drive_windows(drive_input: str | Path) -> Tuple[bool, str]:

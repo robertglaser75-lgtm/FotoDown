@@ -389,3 +389,45 @@ QSlider::handle:horizontal:hover {
     font-weight: 600;
     color: #cbd5e1;
 }
+
+
+/* Card Hotplug Notification Banner */
+#cardNotification {
+    background-color: #064e3b;
+    border-bottom: 2px solid #059669;
+    padding: 6px 14px;
+}
+
+#cardNotificationLabel {
+    color: #ecfdf5;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+#btnCardScan {
+    background-color: #059669;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 14px;
+}
+
+#btnCardScan:hover {
+    background-color: #10b981;
+}
+
+#btnCardDismiss {
+    background: transparent;
+    color: #a7f3d0;
+    font-size: 12px;
+    border: 1px solid #059669;
+    border-radius: 4px;
+    padding: 4px 10px;
+}
+
+#btnCardDismiss:hover {
+    background-color: #047857;
+    color: #ffffff;
+}

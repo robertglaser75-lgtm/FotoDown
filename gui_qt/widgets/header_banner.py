@@ -87,10 +87,12 @@ class HeaderBanner(QFrame):
         self.btn_help.clicked.connect(self.open_help.emit)
         layout.addWidget(self.btn_help, 0, Qt.AlignmentFlag.AlignVCenter)
 
-    def refresh_drives(self):
+    def set_drives(self, drives: List[DriveInfo]):
+        """Updates the dropdown list with a given set of drives, preserving selection if possible."""
         self.combo_drives.blockSignals(True)
+        prev_data = self.combo_drives.currentData()
         self.combo_drives.clear()
-        self._drives = detect_drives()
+        self._drives = drives
 
         if not self._drives:
             self.combo_drives.addItem("Keine Speicherkarten / Wechsellaufwerke gefunden", None)
@@ -101,14 +103,21 @@ class HeaderBanner(QFrame):
             self.btn_eject.setEnabled(True)
             auto_select_idx = 0
             for idx, d in enumerate(self._drives):
-                self.combo_drives.addItem(d.display_name, str(d.dcim_path or d.path))
-                if d.has_dcim:
+                item_data = str(d.dcim_path or d.path)
+                self.combo_drives.addItem(d.display_name, item_data)
+                if prev_data and item_data == prev_data:
+                    auto_select_idx = idx
+                elif not prev_data and d.has_dcim:
                     auto_select_idx = idx
 
             self.combo_drives.setCurrentIndex(auto_select_idx)
             self.drive_selected.emit(self.combo_drives.currentData())
 
         self.combo_drives.blockSignals(False)
+
+    def refresh_drives(self):
+        """Scans system for drives and updates UI."""
+        self.set_drives(detect_drives())
 
     def _on_drive_changed(self, index: int):
         path = self.combo_drives.currentData()

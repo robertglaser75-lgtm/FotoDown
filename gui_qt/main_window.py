@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""FotoDown Main Window implementation in PySide6 with professional layout and storage visualization."""
+"""FotoDown Main Window implementation in PySide6 with professional layout, storage visualization and hotplug detection."""
 
 from pathlib import Path
 import sys
@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.config import AppConfig
-from core.drive_detector import format_size
+from core.drive_detector import format_size, DriveInfo
 from core.history import ImportHistory
 from core.importer import ImporterEngine, ScanItem, ImportStats
 from core.version import __version__
@@ -31,9 +31,11 @@ from .widgets.action_bar import ActionBarWidget
 from .widgets.filter_bar import FilterBarWidget
 from .widgets.splash_screen import FotoDownSplashScreen
 from .widgets.empty_state import EmptyStateWidget
+from .widgets.card_notification import CardNotificationBanner
 from .workers.scan_worker import ScanWorker
 from .workers.import_worker import ImportWorker
 from .workers.thumb_worker import ThumbnailTask
+from .workers.drive_watcher import DriveWatcherThread
 from .dialogs.history_dialog import HistoryDialog
 from .dialogs.help_dialog import HelpDialog
 from .dialogs.quick_preview_dialog import QuickPreviewDialog
@@ -61,6 +63,7 @@ class MainWindow(QMainWindow):
         # Worker references
         self._scan_worker: Optional[ScanWorker] = None
         self._import_worker: Optional[ImportWorker] = None
+        self._drive_watcher: Optional[DriveWatcherThread] = None
 
         if splash:
             splash.set_status("Initialisiere Datenmodelle...", 3, 5)
@@ -76,6 +79,7 @@ class MainWindow(QMainWindow):
         self._setup_ui()
         self._connect_signals()
         self._load_config_to_ui()
+        self._init_drive_watcher()
 
     def _set_app_icon(self):
         for icon_name in ["icon.png", "icon_64.png", "icon_256.png", "fotodown.ico", "icon.ico"]:
@@ -95,7 +99,11 @@ class MainWindow(QMainWindow):
         self.header_banner = HeaderBanner()
         main_layout.addWidget(self.header_banner)
 
-        # 2. Main Horizontal Splitter (Sidebar left, Workspace right)
+        # 2. Hotplug Card Notification Banner
+        self.card_notification = CardNotificationBanner()
+        main_layout.addWidget(self.card_notification)
+
+        # 3. Main Horizontal Splitter (Sidebar left, Workspace right)
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
         main_splitter.setChildrenCollapsible(False)
 
@@ -169,7 +177,7 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(main_splitter)
 
-        # 3. Status Bar
+        # 4. Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self.lbl_status_stats = QLabel("Bereit. Wählen Sie ein Quelllaufwerk und klicken Sie auf 'Scannen'.")
@@ -180,6 +188,9 @@ class MainWindow(QMainWindow):
         self.header_banner.drive_selected.connect(self._on_header_drive_selected)
         self.header_banner.open_history.connect(self._open_history_dialog)
         self.header_banner.open_help.connect(self._open_help_dialog)
+
+        # Notification banner signals
+        self.card_notification.scan_requested.connect(self._on_card_scan_requested)
 
         # Empty state scan button
         self.empty_state.scan_requested.connect(self._start_scan)
@@ -212,6 +223,31 @@ class MainWindow(QMainWindow):
         # Model changes update stats
         self.table_model.selection_changed.connect(self._update_stats_bar)
         self.gallery_view.selection_toggled.connect(self._update_stats_bar)
+
+    def _init_drive_watcher(self):
+        if self.config.auto_detect_drives and not self._drive_watcher:
+            self._drive_watcher = DriveWatcherThread(interval_sec=2.0, parent=self)
+            self._drive_watcher.drive_inserted.connect(self._on_drive_inserted)
+            self._drive_watcher.drive_removed.connect(self._on_drive_removed)
+            self._drive_watcher.drives_updated.connect(self.header_banner.set_drives)
+            self._drive_watcher.start()
+
+    def _on_drive_inserted(self, drive: DriveInfo):
+        target_path = str(drive.dcim_path or drive.path)
+        self.path_selector.edit_source.setText(target_path)
+        if self.config.auto_scan_on_insert:
+            self._start_scan()
+        else:
+            self.card_notification.show_card(drive)
+
+    def _on_drive_removed(self, drive: DriveInfo):
+        if self.card_notification.current_drive_path == str(drive.path):
+            self.card_notification.hide_card()
+        self.status_bar.showMessage(f"Laufwerk '{drive.letter}' wurde entfernt.", 4000)
+
+    def _on_card_scan_requested(self, path: str):
+        self.path_selector.edit_source.setText(path)
+        self._start_scan()
 
     def _open_quick_preview(self, index):
         if not index.isValid():
@@ -248,6 +284,15 @@ class MainWindow(QMainWindow):
         self.pattern_editor.update_preview(self.config.type_folder_organization)
         self.config.save()
         self._update_stats_bar()
+
+        # Update drive watcher running state
+        if self.config.auto_detect_drives:
+            if not self._drive_watcher or not self._drive_watcher.isRunning():
+                self._init_drive_watcher()
+        else:
+            if self._drive_watcher and self._drive_watcher.isRunning():
+                self._drive_watcher.stop()
+                self._drive_watcher = None
 
     def _update_view_selection(self):
         items = self.table_model.get_items()
@@ -409,5 +454,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         self._cancel_task()
+        if self._drive_watcher and self._drive_watcher.isRunning():
+            self._drive_watcher.stop()
+            self._drive_watcher.wait(1000)
         self._on_settings_changed()
         event.accept()

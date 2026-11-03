@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QApplication
 
 from core.config import AppConfig
 from core.drive_detector import (
-    DriveInfo, DiskSpaceInfo, _detect_drives_linux,
+    DriveInfo, DiskSpaceInfo, DriveMonitor, _detect_drives_linux,
     detect_drives, format_size, get_disk_space
 )
 from core.exif_reader import MediaMetadata
@@ -23,6 +23,7 @@ from gui_qt.models.filter_proxy import ScanFilterProxyModel
 from gui_qt.widgets.storage_bar import StorageBarWidget
 from gui_qt.widgets.filter_bar import FilterBarWidget
 from gui_qt.widgets.path_selector import PathSelectorWidget
+from gui_qt.widgets.card_notification import CardNotificationBanner
 from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
 
 
@@ -30,7 +31,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.7.0")
+        self.assertEqual(__version__, "0.8.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -75,6 +76,40 @@ class TestLinuxDriveDetector(unittest.TestCase):
             self.assertTrue(info.has_dcim)
             self.assertIn("DCIM", info.display_name)
             self.assertIn("EOS_DIGITAL", info.display_name)
+
+
+class TestDriveMonitor(unittest.TestCase):
+    def test_drive_monitor_hotplug_detection(self):
+        d1 = DriveInfo(letter="E:", label="CARD1", path=Path("E:\\"), has_dcim=True)
+        d2 = DriveInfo(letter="F:", label="CARD2", path=Path("F:\\"), has_dcim=False)
+
+        current_drives = [d1]
+
+        def fake_detector():
+            return list(current_drives)
+
+        monitor = DriveMonitor(detector_func=fake_detector)
+        # Initial state knows d1
+        self.assertIn(str(d1.path).rstrip("\\/").upper(), monitor._known_drives)
+
+        # 1. No changes
+        added, removed = monitor.check_changes()
+        self.assertEqual(len(added), 0)
+        self.assertEqual(len(removed), 0)
+
+        # 2. Insert d2 (hotplug)
+        current_drives.append(d2)
+        added, removed = monitor.check_changes()
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added[0].letter, "F:")
+        self.assertEqual(len(removed), 0)
+
+        # 3. Remove d1 (unplug)
+        current_drives.remove(d1)
+        added, removed = monitor.check_changes()
+        self.assertEqual(len(added), 0)
+        self.assertEqual(len(removed), 1)
+        self.assertEqual(removed[0].letter, "E:")
 
 
 class TestThumbnailHelper(unittest.TestCase):
@@ -288,17 +323,46 @@ class TestQtScanModels(unittest.TestCase):
         selector = PathSelectorWidget()
         self.assertTrue(selector.chk_pair_raw.isChecked())
         self.assertTrue(selector.chk_sync_xmp.isChecked())
+        self.assertTrue(selector.chk_auto_detect.isChecked())
 
-        cfg = AppConfig(pair_raw_jpg=False, sync_xmp_sidecars=False)
+        cfg = AppConfig(pair_raw_jpg=False, sync_xmp_sidecars=False, auto_detect_drives=False)
         selector.load_config(cfg)
         self.assertFalse(selector.chk_pair_raw.isChecked())
         self.assertFalse(selector.chk_sync_xmp.isChecked())
+        self.assertFalse(selector.chk_auto_detect.isChecked())
 
         selector.chk_pair_raw.setChecked(True)
         selector.chk_sync_xmp.setChecked(True)
+        selector.chk_auto_detect.setChecked(True)
         selector.sync_to_config(cfg)
         self.assertTrue(cfg.pair_raw_jpg)
         self.assertTrue(cfg.sync_xmp_sidecars)
+        self.assertTrue(cfg.auto_detect_drives)
+
+    def test_card_notification_banner(self):
+        banner = CardNotificationBanner()
+        self.assertTrue(banner.isHidden())
+
+        drive = DriveInfo(
+            letter="G:",
+            label="EOS_DIGITAL",
+            path=Path("G:\\"),
+            has_dcim=True,
+            dcim_path=Path("G:\\DCIM"),
+            space=DiskSpaceInfo(total_bytes=1000000, used_bytes=400000, free_bytes=600000)
+        )
+        banner.show_card(drive)
+        self.assertFalse(banner.isHidden())
+        self.assertIn("G: (EOS_DIGITAL)", banner.lbl_text.text())
+        self.assertIn("DCIM", banner.lbl_text.text())
+
+        # Test scan request click
+        scan_signals = []
+        banner.scan_requested.connect(lambda p: scan_signals.append(p))
+        banner.btn_scan.click()
+        self.assertEqual(len(scan_signals), 1)
+        self.assertIn("DCIM", scan_signals[0])
+        self.assertTrue(banner.isHidden())
 
 
 if __name__ == "__main__":

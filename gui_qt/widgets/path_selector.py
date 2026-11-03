@@ -132,7 +132,12 @@ class PathSelectorWidget(QWidget):
 
         layout.addSpacing(4)
 
-        # 6. Safety & Pairing options
+        # 6. Safety, Pairing & Detection options
+        self.chk_auto_detect = QCheckBox("⚡ SD-Karten automatisch beim Einstecken erkennen")
+        self.chk_auto_detect.setChecked(True)
+        self.chk_auto_detect.toggled.connect(lambda *args: self.changed.emit())
+        layout.addWidget(self.chk_auto_detect)
+
         self.chk_pair_raw = QCheckBox("🔗 RAW & JPG als logische Einheit koppeln")
         self.chk_pair_raw.setChecked(True)
         self.chk_pair_raw.toggled.connect(lambda *args: self.changed.emit())
@@ -236,6 +241,7 @@ class PathSelectorWidget(QWidget):
         self.chk_video.setChecked(config.separate_video_dir)
         self.edit_video_target.setText(config.video_target_dir)
         self.set_type_org(config.type_folder_organization)
+        self.chk_auto_detect.setChecked(config.auto_detect_drives)
         self.chk_pair_raw.setChecked(config.pair_raw_jpg)
         self.chk_sync_xmp.setChecked(config.sync_xmp_sidecars)
         self.chk_only_new.setChecked(config.only_new_files)
@@ -254,6 +260,7 @@ class PathSelectorWidget(QWidget):
         config.separate_video_dir = self.chk_video.isChecked()
         config.video_target_dir = self.edit_video_target.text().strip()
         config.type_folder_organization = self.get_type_org()
+        config.auto_detect_drives = self.chk_auto_detect.isChecked()
         config.pair_raw_jpg = self.chk_pair_raw.isChecked()
         config.sync_xmp_sidecars = self.chk_sync_xmp.isChecked()
         config.only_new_files = self.chk_only_new.isChecked()

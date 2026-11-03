@@ -8,6 +8,10 @@ Lauffähig unter **Windows** und **Linux**.
 
 ## ✨ Funktionen
 
+- ⚡ **Automatische Speicherkartenerkennung bei Einstecken (Hotplug / Auto-Detect):**
+  - Erkennt eingesteckte SD-Karten sofort im Hintergrund ohne manuelles Neuladen.
+  - Zeigt ein dezentes Benachrichtigungsbanner mit Kamera-Label, Speicherplatz und einem **„🔍 Jetzt Fotos scannen“**-Button für einen nahtlosen 1-Klick-Workflow.
+  - Entfernte Speicherkarten werden sauber ausgeblendet.
 - 🔗 **RAW + JPG Kopplung als Einheit:**
   - Erkennt zusammengehörige RAW- und JPG-Aufnahmen desselben Motivs automatisch und behandelt sie als logische Einheit.
   - Gewährleistet exakt dieselbe Umbenennung und Nummerierung für beide Dateien, auch bei getrennter Ordnerablage (`.../RAW` und `.../JPG`).
