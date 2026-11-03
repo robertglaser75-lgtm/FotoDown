@@ -42,20 +42,41 @@ QWidget {
 /* Collapsible Sections */
 #collapsibleHeader {
     background-color: #1e293b;
+    border: 1px solid #334155;
     border-radius: 6px;
+}
+
+#collapsibleHeader:hover {
+    background-color: #273549;
+    border-color: #0284c7;
+}
+
+#chevronIcon {
+    font-size: 11px;
+    font-weight: bold;
+    color: #38bdf8;
+    margin-right: 2px;
 }
 
 #sectionTitle {
     font-weight: 600;
     font-size: 13px;
-    color: #e2e8f0;
+    color: #f1f5f9;
 }
 
-#toggleBtn {
-    background: transparent;
-    border: none;
-    color: #38bdf8;
+#toggleHint {
     font-size: 11px;
+    color: #38bdf8;
+    background-color: #0f172a;
+    border: 1px solid #0284c7;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-weight: 600;
+}
+
+#toggleHint:hover {
+    background-color: #0284c7;
+    color: #ffffff;
 }
 
 #collapsibleContent {
@@ -430,4 +451,12 @@ QSlider::handle:horizontal:hover {
 #btnCardDismiss:hover {
     background-color: #047857;
     color: #ffffff;
+}
+
+
+/* Profile Bar */
+#profileBar {
+    background-color: #162032;
+    border: 1px solid #334155;
+    border-radius: 6px;
 }

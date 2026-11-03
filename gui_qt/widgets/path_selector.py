@@ -1,10 +1,10 @@
-"""Path and organization configuration widget with vertical form layout, dual backup and storage bars."""
+"""Path and storage target configuration widget with vertical form layout, dual backup and storage bars."""
 
 from pathlib import Path
 from typing import Optional, Tuple
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QFileDialog, QFrame,
+    QCheckBox, QFileDialog, QFrame,
     QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QSizePolicy, QVBoxLayout, QWidget
 )
@@ -116,48 +116,6 @@ class PathSelectorWidget(QWidget):
         video_row.addWidget(self.btn_browse_video)
         layout.addLayout(video_row)
 
-        layout.addSpacing(4)
-
-        # 5. JPG & RAW Organization dropdown
-        lbl_org = QLabel("JPG/RAW-Organisation:")
-        lbl_org.setObjectName("sectionSubTitle")
-        layout.addWidget(lbl_org)
-
-        self.combo_org = QComboBox()
-        self.combo_org.addItem("Alle Fotos gemeinsam in einem Ordner", "same")
-        self.combo_org.addItem("Getrennte Unterordner (.../JPG und .../RAW)", "subfolders")
-        self.combo_org.addItem("Getrennte Hauptordner (JPG/... und RAW/...)", "parent_folders")
-        self.combo_org.currentIndexChanged.connect(lambda *args: self.changed.emit())
-        layout.addWidget(self.combo_org)
-
-        layout.addSpacing(4)
-
-        # 6. Safety, Pairing & Detection options
-        self.chk_auto_detect = QCheckBox("⚡ SD-Karten automatisch beim Einstecken erkennen")
-        self.chk_auto_detect.setChecked(True)
-        self.chk_auto_detect.toggled.connect(lambda *args: self.changed.emit())
-        layout.addWidget(self.chk_auto_detect)
-
-        self.chk_pair_raw = QCheckBox("🔗 RAW & JPG als logische Einheit koppeln")
-        self.chk_pair_raw.setChecked(True)
-        self.chk_pair_raw.toggled.connect(lambda *args: self.changed.emit())
-        layout.addWidget(self.chk_pair_raw)
-
-        self.chk_sync_xmp = QCheckBox("📄 XMP-Sidecars (.xmp) synchron mitführen")
-        self.chk_sync_xmp.setChecked(True)
-        self.chk_sync_xmp.toggled.connect(lambda *args: self.changed.emit())
-        layout.addWidget(self.chk_sync_xmp)
-
-        self.chk_only_new = QCheckBox("Nur neue Fotos && Videos importieren (Duplikate überspringen)")
-        self.chk_only_new.setChecked(True)
-        self.chk_only_new.toggled.connect(lambda *args: self.changed.emit())
-        layout.addWidget(self.chk_only_new)
-
-        self.chk_verify = QCheckBox("\u2714 Bit-genaue Integritätsprüfung (SHA-256 Hashes prüfen)")
-        self.chk_verify.setChecked(True)
-        self.chk_verify.toggled.connect(lambda *args: self.changed.emit())
-        layout.addWidget(self.chk_verify)
-
     def _on_source_text_changed(self, text: str):
         self.source_storage_bar.set_path(text)
         self.changed.emit()
@@ -220,16 +178,6 @@ class PathSelectorWidget(QWidget):
         self.btn_browse_video.setEnabled(checked)
         self.changed.emit()
 
-    def get_type_org(self) -> str:
-        return self.combo_org.currentData() or "same"
-
-    def set_type_org(self, val: str):
-        idx = self.combo_org.findData(val)
-        if idx >= 0:
-            self.combo_org.setCurrentIndex(idx)
-        else:
-            self.combo_org.setCurrentIndex(0)
-
     def load_config(self, config: AppConfig):
         self.edit_source.setText(config.source_dir)
         self.edit_target.setText(config.target_dir)
@@ -240,12 +188,6 @@ class PathSelectorWidget(QWidget):
         self.backup_storage_bar.setVisible(config.enable_dual_backup)
         self.chk_video.setChecked(config.separate_video_dir)
         self.edit_video_target.setText(config.video_target_dir)
-        self.set_type_org(config.type_folder_organization)
-        self.chk_auto_detect.setChecked(config.auto_detect_drives)
-        self.chk_pair_raw.setChecked(config.pair_raw_jpg)
-        self.chk_sync_xmp.setChecked(config.sync_xmp_sidecars)
-        self.chk_only_new.setChecked(config.only_new_files)
-        self.chk_verify.setChecked(config.verify_checksums)
         # Update storage bars
         self.source_storage_bar.set_path(config.source_dir)
         self.target_storage_bar.set_path(config.target_dir)
@@ -259,9 +201,3 @@ class PathSelectorWidget(QWidget):
         config.backup_target_dir = self.edit_backup_target.text().strip()
         config.separate_video_dir = self.chk_video.isChecked()
         config.video_target_dir = self.edit_video_target.text().strip()
-        config.type_folder_organization = self.get_type_org()
-        config.auto_detect_drives = self.chk_auto_detect.isChecked()
-        config.pair_raw_jpg = self.chk_pair_raw.isChecked()
-        config.sync_xmp_sidecars = self.chk_sync_xmp.isChecked()
-        config.only_new_files = self.chk_only_new.isChecked()
-        config.verify_checksums = self.chk_verify.isChecked()

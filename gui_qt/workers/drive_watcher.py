@@ -41,3 +41,4 @@ class DriveWatcherThread(QThread):
                 if not self._running:
                     break
                 time.sleep(0.1)
+

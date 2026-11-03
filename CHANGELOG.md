@@ -3,6 +3,23 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.9.0] - 2026-11-03
+
+### Hinzugefügt
+- **Import-Profile & Voreinstellungen (Presets) (`core/config.py`, `gui_qt/widgets/profile_bar.py`):**
+  - Schnelles Umschalten zwischen vorkonfigurierten Profilen: *„Standard“*, *„Urlaub & Reise“*, *„Studio & Shooting“* und *„Drohne & Actioncam“*.
+  - Jedes Profil sichert Zielordner, Video-Ablage, 2. Backup, Dateinamen-Muster, Ordnerstruktur, RAW+JPG-Organisation und Sicherheitsoptionen.
+  - Profile können direkt über die Profil-Leiste gespeichert (`💾`), neu angelegt (`➕`) oder gelöscht (`🗑️`) werden.
+- **Eigene einklappbare Sektion für Allgemeine Einstellungen (`gui_qt/widgets/general_settings.py`):**
+  - Trennung der Konfiguration in logische Blöcke:
+    - *1. Quell- und Zielordner* (Pfade & Speicherplatzbalken)
+    - *2. Namens- und Ordnerstruktur-Muster* (Dateinamen, Ordner und Tags)
+    - *3. Allgemeine Einstellungen & Optionen* (JPG/RAW-Organisation, RAW+JPG Kopplung, XMP-Sidecars, Hotplug-Erkennung, Duplikatsprüfung, Bit-Integritätsprüfung).
+- **Interaktive, intuitive Ein-/Ausklapp-Balken (`gui_qt/widgets/collapsible_box.py`):**
+  - Der gesamte Header-Balken ist jetzt klickbar und signalisiert die Interaktivität mit Hand-Cursor (`PointingHandCursor`) und deutlicher Hover-Hervorhebung.
+  - Rechter Hand zeigt ein deutlicher Aktions-Button (`[ Einklappen ▲ ]` bzw. `[ Ausklappen ▼ ]`) unmissverständlich an, wo geklickt werden kann.
+  - Visuelle Chevron-Icons (`▼` / `▶`) auf der linken Seite.
+
 ## [0.8.0] - 2026-11-03
 
 ### Hinzugefügt

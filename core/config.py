@@ -4,7 +4,7 @@ from dataclasses import dataclass, field, asdict
 import json
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 RAW_EXTENSIONS = {
     ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2",
@@ -19,6 +19,53 @@ DEFAULT_IMAGE_EXTENSIONS = [
 DEFAULT_VIDEO_EXTENSIONS = [
     ".mp4", ".mov", ".mts", ".m2ts", ".avi", ".mkv"
 ]
+
+DEFAULT_PROFILES: Dict[str, dict] = {
+    "Standard": {
+        "type_folder_organization": "same",
+        "file_pattern": "{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}",
+        "folder_pattern": "{YYYY}/{YYYY}-{MM}-{DD}",
+        "pair_raw_jpg": True,
+        "sync_xmp_sidecars": True,
+        "only_new_files": True,
+        "verify_checksums": True,
+        "separate_video_dir": False,
+        "enable_dual_backup": False,
+    },
+    "Urlaub & Reise": {
+        "type_folder_organization": "same",
+        "file_pattern": "{YYYY}-{MM}-{DD}_Urlaub_{num:04d}_{orig_name}",
+        "folder_pattern": "{YYYY}/{YYYY}-{MM}_Urlaub",
+        "pair_raw_jpg": True,
+        "sync_xmp_sidecars": True,
+        "only_new_files": True,
+        "verify_checksums": True,
+        "separate_video_dir": False,
+        "enable_dual_backup": False,
+    },
+    "Studio & Shooting": {
+        "type_folder_organization": "subfolders",
+        "file_pattern": "{YYYY}-{MM}-{DD}_{camera}_{orig_name}",
+        "folder_pattern": "{YYYY}/{YYYY}-{MM}-{DD}_Shooting",
+        "pair_raw_jpg": True,
+        "sync_xmp_sidecars": True,
+        "only_new_files": True,
+        "verify_checksums": True,
+        "separate_video_dir": False,
+        "enable_dual_backup": True,
+    },
+    "Drohne & Actioncam": {
+        "type_folder_organization": "same",
+        "file_pattern": "{YYYY}-{MM}-{DD}_{orig_name}",
+        "folder_pattern": "{YYYY}/{YYYY}-{MM}-{DD}",
+        "pair_raw_jpg": False,
+        "sync_xmp_sidecars": False,
+        "only_new_files": True,
+        "verify_checksums": True,
+        "separate_video_dir": True,
+        "enable_dual_backup": False,
+    },
+}
 
 
 @dataclass
@@ -44,6 +91,44 @@ class AppConfig:
     sync_xmp_sidecars: bool = True
     auto_detect_drives: bool = True
     auto_scan_on_insert: bool = False
+    active_profile: str = "Standard"
+    profiles: Dict[str, dict] = field(default_factory=lambda: dict(DEFAULT_PROFILES))
+
+    def apply_profile(self, name: str) -> bool:
+        """Applies configuration settings from a profile by name."""
+        if name not in self.profiles:
+            return False
+        p = self.profiles[name]
+        self.active_profile = name
+        for k, v in p.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+        return True
+
+    def save_current_as_profile(self, name: str) -> None:
+        """Saves current settings under given profile name."""
+        self.active_profile = name
+        self.profiles[name] = {
+            "type_folder_organization": self.type_folder_organization,
+            "file_pattern": self.file_pattern,
+            "folder_pattern": self.folder_pattern,
+            "pair_raw_jpg": self.pair_raw_jpg,
+            "sync_xmp_sidecars": self.sync_xmp_sidecars,
+            "only_new_files": self.only_new_files,
+            "verify_checksums": self.verify_checksums,
+            "separate_video_dir": self.separate_video_dir,
+            "enable_dual_backup": self.enable_dual_backup,
+        }
+
+    def delete_profile(self, name: str) -> bool:
+        """Deletes a profile if more than one exists."""
+        if name in self.profiles and len(self.profiles) > 1:
+            del self.profiles[name]
+            if self.active_profile == name:
+                self.active_profile = next(iter(self.profiles.keys()))
+                self.apply_profile(self.active_profile)
+            return True
+        return False
 
     @classmethod
     def get_default_config_path(cls) -> Path:
@@ -64,7 +149,12 @@ class AppConfig:
             try:
                 with open(config_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+                cfg = cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+                # Ensure all default profiles exist in loaded config
+                for p_name, p_data in DEFAULT_PROFILES.items():
+                    if p_name not in cfg.profiles:
+                        cfg.profiles[p_name] = dict(p_data)
+                return cfg
             except Exception as e:
                 print(f"[Warnung] Konfigurationsdatei konnte nicht geladen werden: {e}")
         return cls()

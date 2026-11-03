@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""FotoDown Main Window implementation in PySide6 with professional layout, storage visualization and hotplug detection."""
+"""FotoDown Main Window implementation in PySide6 with professional layout, presets, and collapsible sections."""
 
 from pathlib import Path
 import sys
@@ -25,8 +25,10 @@ from .views.table_view import MediaTableView
 from .views.gallery_view import MediaGalleryView
 from .widgets.header_banner import HeaderBanner
 from .widgets.collapsible_box import CollapsibleBox
+from .widgets.profile_bar import ProfileBarWidget
 from .widgets.path_selector import PathSelectorWidget
 from .widgets.pattern_editor import PatternEditorWidget
+from .widgets.general_settings import GeneralSettingsWidget
 from .widgets.action_bar import ActionBarWidget
 from .widgets.filter_bar import FilterBarWidget
 from .widgets.splash_screen import FotoDownSplashScreen
@@ -119,8 +121,12 @@ class MainWindow(QMainWindow):
         sidebar_layout.setContentsMargins(12, 10, 8, 10)
         sidebar_layout.setSpacing(10)
 
+        # Profile / Preset Selection Bar
+        self.profile_bar = ProfileBarWidget()
+        sidebar_layout.addWidget(self.profile_bar)
+
         # Collapsible Section 1: Paths & Storage
-        self.box_paths = CollapsibleBox("1. Quell- und Zielordner festlegen", is_expanded=True)
+        self.box_paths = CollapsibleBox("1. Quell- und Zielordner", is_expanded=True)
         self.path_selector = PathSelectorWidget()
         self.box_paths.set_content_widget(self.path_selector)
         sidebar_layout.addWidget(self.box_paths)
@@ -130,6 +136,12 @@ class MainWindow(QMainWindow):
         self.pattern_editor = PatternEditorWidget()
         self.box_patterns.set_content_widget(self.pattern_editor)
         sidebar_layout.addWidget(self.box_patterns)
+
+        # Collapsible Section 3: General Settings & Options (eigens ein-/ausklappbar)
+        self.box_general = CollapsibleBox("3. Allgemeine Einstellungen & Optionen", is_expanded=False)
+        self.general_settings = GeneralSettingsWidget()
+        self.box_general.set_content_widget(self.general_settings)
+        sidebar_layout.addWidget(self.box_general)
 
         # Action Buttons, Capacity Info & Progress
         self.action_bar = ActionBarWidget()
@@ -195,9 +207,16 @@ class MainWindow(QMainWindow):
         # Empty state scan button
         self.empty_state.scan_requested.connect(self._start_scan)
 
-        # Path & Pattern changes
+        # Profile selection & management
+        self.profile_bar.profile_selected.connect(self._on_profile_selected)
+        self.profile_bar.profile_saved.connect(self._on_profile_saved)
+        self.profile_bar.profile_created.connect(self._on_profile_created)
+        self.profile_bar.profile_deleted.connect(self._on_profile_deleted)
+
+        # Path, Pattern & General Settings changes
         self.path_selector.changed.connect(self._on_settings_changed)
         self.pattern_editor.changed.connect(self._on_settings_changed)
+        self.general_settings.changed.connect(self._on_settings_changed)
 
         # Actions
         self.action_bar.scan_clicked.connect(self._start_scan)
@@ -249,6 +268,29 @@ class MainWindow(QMainWindow):
         self.path_selector.edit_source.setText(path)
         self._start_scan()
 
+    def _on_profile_selected(self, name: str):
+        if self.config.apply_profile(name):
+            self._load_config_to_ui()
+            self.config.save()
+            self._update_stats_bar()
+
+    def _on_profile_saved(self, name: str):
+        self._on_settings_changed()
+        self.config.save_current_as_profile(name)
+        self.config.save()
+
+    def _on_profile_created(self, name: str):
+        self._on_settings_changed()
+        self.config.save_current_as_profile(name)
+        self.config.save()
+        self.profile_bar.load_profiles(self.config)
+
+    def _on_profile_deleted(self, name: str):
+        if self.config.delete_profile(name):
+            self.config.save()
+            self._load_config_to_ui()
+            self._update_stats_bar()
+
     def _open_quick_preview(self, index):
         if not index.isValid():
             return
@@ -274,13 +316,16 @@ class MainWindow(QMainWindow):
         self.path_selector.source_storage_bar.set_path(path)
 
     def _load_config_to_ui(self):
+        self.profile_bar.load_profiles(self.config)
         self.path_selector.load_config(self.config)
         self.pattern_editor.load_config(self.config)
+        self.general_settings.load_config(self.config)
         self.pattern_editor.update_preview(self.config.type_folder_organization)
 
     def _on_settings_changed(self):
         self.path_selector.sync_to_config(self.config)
         self.pattern_editor.sync_to_config(self.config)
+        self.general_settings.sync_to_config(self.config)
         self.pattern_editor.update_preview(self.config.type_folder_organization)
         self.config.save()
         self._update_stats_bar()

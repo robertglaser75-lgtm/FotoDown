@@ -23,6 +23,9 @@ from gui_qt.models.filter_proxy import ScanFilterProxyModel
 from gui_qt.widgets.storage_bar import StorageBarWidget
 from gui_qt.widgets.filter_bar import FilterBarWidget
 from gui_qt.widgets.path_selector import PathSelectorWidget
+from gui_qt.widgets.general_settings import GeneralSettingsWidget
+from gui_qt.widgets.collapsible_box import CollapsibleBox
+from gui_qt.widgets.profile_bar import ProfileBarWidget
 from gui_qt.widgets.card_notification import CardNotificationBanner
 from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
 
@@ -31,7 +34,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.8.0")
+        self.assertEqual(__version__, "0.9.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -319,25 +322,92 @@ class TestQtScanModels(unittest.TestCase):
         empty.btn_scan.click()
         self.assertEqual(len(emitted), 1)
 
-    def test_path_selector_options(self):
+    def test_collapsible_box_interactive_toggle(self):
+        box = CollapsibleBox("Test Box", is_expanded=True)
+        self.assertTrue(box.is_expanded)
+        self.assertFalse(box.content_area.isHidden())
+        self.assertIn("Einklappen", box.btn_toggle_hint.text())
+
+        # Click header to collapse
+        toggled_events = []
+        box.toggled.connect(lambda state: toggled_events.append(state))
+        box.toggle()
+        self.assertFalse(box.is_expanded)
+        self.assertTrue(box.content_area.isHidden())
+        self.assertIn("Ausklappen", box.btn_toggle_hint.text())
+        self.assertEqual(toggled_events, [False])
+
+        # Click button to expand
+        box.btn_toggle_hint.click()
+        self.assertTrue(box.is_expanded)
+        self.assertFalse(box.content_area.isHidden())
+        self.assertEqual(toggled_events, [False, True])
+
+    def test_path_selector_paths_only(self):
         selector = PathSelectorWidget()
-        self.assertTrue(selector.chk_pair_raw.isChecked())
-        self.assertTrue(selector.chk_sync_xmp.isChecked())
-        self.assertTrue(selector.chk_auto_detect.isChecked())
-
-        cfg = AppConfig(pair_raw_jpg=False, sync_xmp_sidecars=False, auto_detect_drives=False)
+        cfg = AppConfig(
+            source_dir="/source/path",
+            target_dir="/target/path",
+            enable_dual_backup=True,
+            backup_target_dir="/backup/path",
+            separate_video_dir=True,
+            video_target_dir="/video/path"
+        )
         selector.load_config(cfg)
-        self.assertFalse(selector.chk_pair_raw.isChecked())
-        self.assertFalse(selector.chk_sync_xmp.isChecked())
-        self.assertFalse(selector.chk_auto_detect.isChecked())
+        self.assertEqual(selector.edit_source.text(), "/source/path")
+        self.assertEqual(selector.edit_target.text(), "/target/path")
+        self.assertTrue(selector.chk_dual_backup.isChecked())
+        self.assertEqual(selector.edit_backup_target.text(), "/backup/path")
+        self.assertTrue(selector.chk_video.isChecked())
+        self.assertEqual(selector.edit_video_target.text(), "/video/path")
 
-        selector.chk_pair_raw.setChecked(True)
-        selector.chk_sync_xmp.setChecked(True)
-        selector.chk_auto_detect.setChecked(True)
-        selector.sync_to_config(cfg)
-        self.assertTrue(cfg.pair_raw_jpg)
-        self.assertTrue(cfg.sync_xmp_sidecars)
-        self.assertTrue(cfg.auto_detect_drives)
+    def test_general_settings_widget(self):
+        settings = GeneralSettingsWidget()
+        cfg = AppConfig(
+            type_folder_organization="subfolders",
+            pair_raw_jpg=True,
+            sync_xmp_sidecars=True,
+            auto_detect_drives=True,
+            only_new_files=False,
+            verify_checksums=False
+        )
+        settings.load_config(cfg)
+        self.assertEqual(settings.get_type_org(), "subfolders")
+        self.assertTrue(settings.chk_pair_raw.isChecked())
+        self.assertTrue(settings.chk_sync_xmp.isChecked())
+        self.assertTrue(settings.chk_auto_detect.isChecked())
+        self.assertFalse(settings.chk_only_new.isChecked())
+        self.assertFalse(settings.chk_verify.isChecked())
+
+        settings.set_type_org("parent_folders")
+        settings.chk_only_new.setChecked(True)
+        settings.sync_to_config(cfg)
+        self.assertEqual(cfg.type_folder_organization, "parent_folders")
+        self.assertTrue(cfg.only_new_files)
+
+    def test_profile_bar_and_config(self):
+        cfg = AppConfig()
+        self.assertIn("Standard", cfg.profiles)
+        self.assertIn("Studio & Shooting", cfg.profiles)
+
+        # Apply profile
+        self.assertTrue(cfg.apply_profile("Studio & Shooting"))
+        self.assertEqual(cfg.type_folder_organization, "subfolders")
+        self.assertEqual(cfg.active_profile, "Studio & Shooting")
+
+        # Create custom profile
+        cfg.type_folder_organization = "parent_folders"
+        cfg.save_current_as_profile("Custom Profile")
+        self.assertIn("Custom Profile", cfg.profiles)
+
+        # Test ProfileBarWidget
+        bar = ProfileBarWidget()
+        bar.load_profiles(cfg)
+        self.assertIn("Custom Profile", [bar.combo_profiles.itemText(i) for i in range(bar.combo_profiles.count())])
+
+        # Delete custom profile
+        self.assertTrue(cfg.delete_profile("Custom Profile"))
+        self.assertNotIn("Custom Profile", cfg.profiles)
 
     def test_card_notification_banner(self):
         banner = CardNotificationBanner()

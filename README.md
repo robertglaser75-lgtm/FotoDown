@@ -8,6 +8,14 @@ Lauffähig unter **Windows** und **Linux**.
 
 ## ✨ Funktionen
 
+- 📋 **Import-Profile & Voreinstellungen (Presets):**
+  - Schnelles Umschalten zwischen Workflows (z.B. *Standard*, *Urlaub & Reise*, *Studio & Shooting*, *Drohne & Actioncam*).
+  - Speichern eigener Profile mit benutzerdefinierten Pfaden, Ordnerstrukturen und Namensmustern.
+- 📂 **Übersichtliche, interaktive Ein-/Ausklapp-Sektionen:**
+  - *1. Quell- und Zielordner* (inkl. Speicherplatz-Füllstandsbalken)
+  - *2. Namens- und Ordnerstruktur-Muster*
+  - *3. Allgemeine Einstellungen & Optionen* (eigens ein- und ausklappbar)
+  - Klar ersichtliche Klickziele mit Hover-Effekt, Zeiger-Cursor und deutlichem `[ Einklappen ▲ ]` / `[ Ausklappen ▼ ]`-Button.
 - ⚡ **Automatische Speicherkartenerkennung bei Einstecken (Hotplug / Auto-Detect):**
   - Erkennt eingesteckte SD-Karten sofort im Hintergrund ohne manuelles Neuladen.
   - Zeigt ein dezentes Benachrichtigungsbanner mit Kamera-Label, Speicherplatz und einem **„🔍 Jetzt Fotos scannen“**-Button für einen nahtlosen 1-Klick-Workflow.
@@ -43,7 +51,7 @@ Lauffähig unter **Windows** und **Linux**.
   - RAW-Formate: Canon (`.cr2`, `.cr3`), Nikon (`.nef`), Sony (`.arw`), Adobe (`.dng`), Panasonic (`.rw2`), Olympus (`.orf`), Fuji (`.raf`), Pentax (`.pef`)
   - Videoformate: `.mp4`, `.mov`, `.mts`, `.m2ts`, `.avi`, `.mkv`
 - 🖥️ **Moderne 2-Spalten-Benutzeroberfläche (PySide6 / Qt 6):**
-  - Vertikaler Splitter durch Sidebar-Layout ersetzt: Steuer- und Konfigurationsleiste links, maximaler Raum für Fotobetrachtung rechts.
+  - Sidebar-Layout links: Voreinstellungen, Pfade, Muster und Optionen; maximaler Raum für Fotobetrachtung rechts.
   - Stufenloser **Zoom-Slider** für Miniaturbilder in der Fotogalerie (`QListView` im `IconMode`).
   - Sortier- und filterbare Tabellenansicht (`QTableView` mit `ScanFilterProxyModel`).
   - Fluent Dark Design optimiert für Windows 11 und moderne Linux-Desktops (GNOME, KDE Plasma).

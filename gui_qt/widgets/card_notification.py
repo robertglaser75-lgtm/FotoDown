@@ -73,3 +73,4 @@ class CardNotificationBanner(QFrame):
         if target:
             self.scan_requested.emit(target)
         self.hide_card()
+
