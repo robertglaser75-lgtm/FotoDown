@@ -368,13 +368,17 @@ class MainWindow(QMainWindow):
     def _on_import_finished(self, stats: ImportStats):
         self.action_bar.set_busy(False)
         mb = stats.bytes_copied / (1024 * 1024)
-        msg = (
-            f"Import abgeschlossen!\n\n"
-            f"✓ {stats.copied_success} Dateien kopiert ({mb:.1f} MB)\n"
-            f"⚠️ {stats.duplicates_skipped} Duplikate übersprungen\n"
-            f"✕ {stats.failed} Fehler"
-        )
-        QMessageBox.information(self, "Import abgeschlossen", msg)
+        msg_lines = [
+            "Import abgeschlossen!\n",
+            f"✓ {stats.copied_success} Dateien kopiert ({mb:.1f} MB)"
+        ]
+        if stats.backup_success > 0:
+            msg_lines.append(f"\U0001F6E1 {stats.backup_success} Dateien auf 2. Backup-Ziel gesichert")
+        msg_lines.append(f"⚠️ {stats.duplicates_skipped} Duplikate übersprungen")
+        if stats.failed > 0:
+            msg_lines.append(f"✕ {stats.failed} Fehler")
+
+        QMessageBox.information(self, "Import abgeschlossen", "\n".join(msg_lines))
         self.action_bar.lbl_status.setText(f"Fertig: {stats.copied_success} Dateien erfolgreich kopiert ({mb:.1f} MB).")
         self._start_scan()
 

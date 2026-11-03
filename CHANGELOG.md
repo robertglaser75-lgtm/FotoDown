@@ -3,6 +3,17 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.6.0] - 2026-11-03
+
+### Hinzugefügt
+- **Duales Backup / 2. Sicherungsziel (`core/importer.py`, `gui_qt/widgets/path_selector.py`):**
+  - Option zum automatischen simultanen Kopieren auf ein zweites Ziel (z.B. NAS oder externe Backup-Festplatte) direkt während des Imports.
+  - Eigener Füllstandsbalken mit Speicherplatzprüfung für das 2. Backup-Ziel.
+  - Quelllöschung (sofern aktiviert) erfolgt erst nach erfolgreichem Schreiben und Verifizieren *beider* Ziele.
+- **Bit-genaue Integritätsprüfung (SHA-256 Checksum Verification):**
+  - Automatischer Vergleich der SHA-256 Prüfsummen nach dem Schreibvorgang zwischen Quell- und Zieldatei (sowie Backup-Datei).
+  - Erkennt Übertragungsfehler oder Dateibeschädigungen sofort und schützt vor Datenverlust.
+
 ## [0.5.1] - 2026-11-03
 
 ### Behoben & Verbessert

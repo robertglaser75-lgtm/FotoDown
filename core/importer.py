@@ -1,4 +1,4 @@
-"""Scanning and importing orchestration engine."""
+"""Scanning and importing orchestration engine with dual-backup and integrity verification."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -33,6 +33,7 @@ class ImportStats:
     new_files: int = 0
     duplicates_skipped: int = 0
     copied_success: int = 0
+    backup_success: int = 0
     failed: int = 0
     bytes_copied: int = 0
 
@@ -154,7 +155,7 @@ class ImporterEngine:
             else:
                 status = "Neu"
 
-            # Default pre-selection (Vorauswahl): 'nur Neue' files selected
+            # Default pre-selection: 'Neu' files selected
             is_selected = (status == "Neu")
 
             items.append(ScanItem(
@@ -192,10 +193,9 @@ class ImporterEngine:
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
         cancel_event: Optional[threading.Event] = None,
     ) -> ImportStats:
-        """Copies/moves the scanned items to their designated targets and updates history."""
+        """Copies/moves the scanned items to primary and optional backup targets with integrity check."""
         stats = ImportStats(total_found=len(items))
 
-        # Filter items that are selected for download
         to_process = [it for it in items if getattr(it, 'selected', True)]
         stats.new_files = len(to_process)
         stats.duplicates_skipped = len(items) - len(to_process)
@@ -226,7 +226,7 @@ class ImporterEngine:
             try:
                 dest = item.target_path
 
-                # Handle collisions
+                # Handle collisions on primary destination
                 if dest.exists():
                     if config.collision_mode == "skip":
                         stats.duplicates_skipped += 1
@@ -234,12 +234,42 @@ class ImporterEngine:
                     elif config.collision_mode == "rename":
                         dest = self._get_unique_target_path(dest)
 
-                # Ensure destination folder exists
+                # 1. Primary Copy
                 dest.parent.mkdir(parents=True, exist_ok=True)
-
-                # Copy file preserving timestamp
                 shutil.copy2(item.source_path, dest)
                 stats.bytes_copied += item.metadata.file_size
+
+                # Checksum verification for primary destination
+                if config.verify_checksums:
+                    dest_hash = compute_file_hash(dest)
+                    if dest_hash != item.file_hash:
+                        raise IOError(
+                            f"Prüfsummenfehler bei Ziel {dest.name} (Quelle: {item.file_hash[:8]}..., Ziel: {dest_hash[:8]}...)"
+                        )
+
+                # 2. Dual Backup Copy (if enabled and configured)
+                if config.enable_dual_backup and config.backup_target_dir:
+                    backup_root = Path(config.backup_target_dir)
+                    backup_dest = resolve_destination(
+                        backup_root,
+                        config.folder_pattern,
+                        config.file_pattern,
+                        item.metadata,
+                        index=item.index,
+                        type_folder_organization=config.type_folder_organization,
+                    )
+                    if backup_dest.exists() and config.collision_mode == "rename":
+                        backup_dest = self._get_unique_target_path(backup_dest)
+
+                    backup_dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(item.source_path, backup_dest)
+                    stats.backup_success += 1
+
+                    if config.verify_checksums:
+                        bk_hash = compute_file_hash(backup_dest)
+                        if bk_hash != item.file_hash:
+                            raise IOError(f"Prüfsummenfehler bei Backup-Ziel {backup_dest.name}")
+
                 stats.copied_success += 1
 
                 # Record in history
@@ -250,7 +280,7 @@ class ImporterEngine:
                     file_hash=item.file_hash,
                 )
 
-                # Optional: Delete from source if configured (e.g. Move)
+                # Delete from source only if all copies & verifications succeeded
                 if config.delete_source_after_import:
                     item.source_path.unlink()
 

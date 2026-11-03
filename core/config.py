@@ -27,6 +27,9 @@ class AppConfig:
     target_dir: str = str(Path.home() / "Pictures" / "FotoDown_Imports")
     separate_video_dir: bool = False
     video_target_dir: str = str(Path.home() / "Videos" / "FotoDown_Videos")
+    enable_dual_backup: bool = False
+    backup_target_dir: str = ""
+    verify_checksums: bool = True
     type_folder_organization: str = "same"  # "same", "subfolders" (.../JPG, .../RAW), "parent_folders" (JPG/..., RAW/...)
     file_pattern: str = "{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}"
     folder_pattern: str = "{YYYY}/{YYYY}-{MM}-{DD}"

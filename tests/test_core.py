@@ -243,8 +243,6 @@ class TestHistoryAndImport(unittest.TestCase):
         self.assertEqual(len(jpg_items), 1)
         self.assertEqual(jpg_items[0].source_path.name, "IMG_100.JPG")
 
-
-
     def test_eject_drive_empty(self):
         success, msg = eject_drive("")
         self.assertFalse(success)
@@ -253,6 +251,32 @@ class TestHistoryAndImport(unittest.TestCase):
     def test_eject_drive_invalid_path(self):
         success, msg = eject_drive("UNC_PATH_WITHOUT_LETTER")
         self.assertFalse(success)
+
+    def test_dual_backup_and_checksum_verification(self):
+        img = self._create_dummy_image("PHOTO_01.JPG", b"content_for_photo_01")
+        with tempfile.TemporaryDirectory() as backup_dir:
+            cfg = AppConfig(
+                source_dir=str(self.source_dir),
+                target_dir=str(self.target_dir),
+                enable_dual_backup=True,
+                backup_target_dir=str(backup_dir),
+                verify_checksums=True,
+            )
+            items = self.engine.scan(self.source_dir, cfg)
+            self.assertEqual(len(items), 1)
+
+            stats = self.engine.execute_import(items, cfg)
+            self.assertEqual(stats.copied_success, 1)
+            self.assertEqual(stats.backup_success, 1)
+            self.assertEqual(stats.failed, 0)
+
+            target_files = list(Path(self.target_dir).rglob("*.jpg"))
+            backup_files = list(Path(backup_dir).rglob("*.jpg"))
+            self.assertEqual(len(target_files), 1)
+            self.assertEqual(len(backup_files), 1)
+            self.assertEqual(compute_file_hash(target_files[0]), items[0].file_hash)
+            self.assertEqual(compute_file_hash(backup_files[0]), items[0].file_hash)
+
 
 if __name__ == "__main__":
     unittest.main()

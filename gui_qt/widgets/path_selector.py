@@ -1,4 +1,4 @@
-"""Path and organization configuration widget with vertical form layout and storage bars."""
+"""Path and organization configuration widget with vertical form layout, dual backup and storage bars."""
 
 from pathlib import Path
 from typing import Optional, Tuple
@@ -71,7 +71,33 @@ class PathSelectorWidget(QWidget):
 
         layout.addSpacing(4)
 
-        # 3. Video Target Dir Section
+        # 3. Dual-Backup Target Section (Parallel Backup)
+        self.chk_dual_backup = QCheckBox("\U0001F6E1 Gleichzeitig 2. Backup erstellen (z.B. NAS oder externe Festplatte)")
+        self.chk_dual_backup.toggled.connect(self._on_dual_backup_toggled)
+        layout.addWidget(self.chk_dual_backup)
+
+        backup_row = QHBoxLayout()
+        backup_row.setSpacing(6)
+        self.edit_backup_target = QLineEdit()
+        self.edit_backup_target.setPlaceholderText("Pfad zum 2. Sicherungsziel (z.B. NAS)...")
+        self.edit_backup_target.setEnabled(False)
+        self.edit_backup_target.textChanged.connect(self._on_backup_text_changed)
+        backup_row.addWidget(self.edit_backup_target, stretch=1)
+
+        self.btn_browse_backup = QPushButton("\U0001F4C2 Durchsuchen")
+        self.btn_browse_backup.setObjectName("secondaryBtn")
+        self.btn_browse_backup.setEnabled(False)
+        self.btn_browse_backup.clicked.connect(self._browse_backup)
+        backup_row.addWidget(self.btn_browse_backup)
+        layout.addLayout(backup_row)
+
+        self.backup_storage_bar = StorageBarWidget("Speicherplatz 2. Backup-Ziel")
+        self.backup_storage_bar.setVisible(False)
+        layout.addWidget(self.backup_storage_bar)
+
+        layout.addSpacing(4)
+
+        # 4. Video Target Dir Section
         self.chk_video = QCheckBox("Separater Zielordner für Videos")
         self.chk_video.toggled.connect(self._on_video_toggled)
         layout.addWidget(self.chk_video)
@@ -93,7 +119,7 @@ class PathSelectorWidget(QWidget):
 
         layout.addSpacing(4)
 
-        # 4. JPG & RAW Organization dropdown (fits compact widths perfectly)
+        # 5. JPG & RAW Organization dropdown
         lbl_org = QLabel("JPG/RAW-Organisation:")
         lbl_org.setObjectName("sectionSubTitle")
         layout.addWidget(lbl_org)
@@ -107,11 +133,16 @@ class PathSelectorWidget(QWidget):
 
         layout.addSpacing(4)
 
-        # 5. Only new files check
+        # 6. Safety options: Only new files + Bit-Checksum verification
         self.chk_only_new = QCheckBox("Nur neue Fotos && Videos importieren (Duplikate automatisch überspringen)")
         self.chk_only_new.setChecked(True)
         self.chk_only_new.toggled.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.chk_only_new)
+
+        self.chk_verify = QCheckBox("\u2714 Bit-genaue Integritätsprüfung (SHA-256 Hashes nach dem Kopieren prüfen)")
+        self.chk_verify.setChecked(True)
+        self.chk_verify.toggled.connect(lambda *args: self.changed.emit())
+        layout.addWidget(self.chk_verify)
 
     def _on_source_text_changed(self, text: str):
         self.source_storage_bar.set_path(text)
@@ -121,9 +152,30 @@ class PathSelectorWidget(QWidget):
         self.target_storage_bar.set_path(text)
         self.changed.emit()
 
+    def _on_backup_text_changed(self, text: str):
+        self.backup_storage_bar.set_path(text)
+        self.changed.emit()
+
+    def _on_dual_backup_toggled(self, checked: bool):
+        self.edit_backup_target.setEnabled(checked)
+        self.btn_browse_backup.setEnabled(checked)
+        self.backup_storage_bar.setVisible(checked)
+        if checked:
+            self.backup_storage_bar.set_path(self.edit_backup_target.text().strip())
+        self.changed.emit()
+
     def check_capacity(self, required_bytes: int) -> Tuple[bool, str]:
-        """Validates if target has sufficient space for selected import items."""
-        return self.target_storage_bar.check_capacity(required_bytes)
+        """Validates if primary target (and optional backup) have sufficient space for import items."""
+        ok_prim, msg_prim = self.target_storage_bar.check_capacity(required_bytes)
+        if not ok_prim:
+            return False, f"Hauptziel: {msg_prim}"
+
+        if self.chk_dual_backup.isChecked():
+            ok_bk, msg_bk = self.backup_storage_bar.check_capacity(required_bytes)
+            if not ok_bk:
+                return False, f"Backup-Ziel: {msg_bk}"
+
+        return True, msg_prim
 
     def _browse_source(self):
         curr = self.edit_source.text().strip() or str(Path.home())
@@ -136,6 +188,12 @@ class PathSelectorWidget(QWidget):
         folder = QFileDialog.getExistingDirectory(self, "Zielordner wählen", curr)
         if folder:
             self.edit_target.setText(folder)
+
+    def _browse_backup(self):
+        curr = self.edit_backup_target.text().strip() or str(Path.home())
+        folder = QFileDialog.getExistingDirectory(self, "2. Sicherungsziel (Backup) wählen", curr)
+        if folder:
+            self.edit_backup_target.setText(folder)
 
     def _browse_video(self):
         curr = self.edit_video_target.text().strip() or self.edit_target.text().strip() or str(Path.home())
@@ -161,18 +219,29 @@ class PathSelectorWidget(QWidget):
     def load_config(self, config: AppConfig):
         self.edit_source.setText(config.source_dir)
         self.edit_target.setText(config.target_dir)
+        self.chk_dual_backup.setChecked(config.enable_dual_backup)
+        self.edit_backup_target.setText(config.backup_target_dir)
+        self.edit_backup_target.setEnabled(config.enable_dual_backup)
+        self.btn_browse_backup.setEnabled(config.enable_dual_backup)
+        self.backup_storage_bar.setVisible(config.enable_dual_backup)
         self.chk_video.setChecked(config.separate_video_dir)
         self.edit_video_target.setText(config.video_target_dir)
         self.set_type_org(config.type_folder_organization)
         self.chk_only_new.setChecked(config.only_new_files)
+        self.chk_verify.setChecked(config.verify_checksums)
         # Update storage bars
         self.source_storage_bar.set_path(config.source_dir)
         self.target_storage_bar.set_path(config.target_dir)
+        if config.enable_dual_backup:
+            self.backup_storage_bar.set_path(config.backup_target_dir)
 
     def sync_to_config(self, config: AppConfig):
         config.source_dir = self.edit_source.text().strip()
         config.target_dir = self.edit_target.text().strip()
+        config.enable_dual_backup = self.chk_dual_backup.isChecked()
+        config.backup_target_dir = self.edit_backup_target.text().strip()
         config.separate_video_dir = self.chk_video.isChecked()
         config.video_target_dir = self.edit_video_target.text().strip()
         config.type_folder_organization = self.get_type_org()
         config.only_new_files = self.chk_only_new.isChecked()
+        config.verify_checksums = self.chk_verify.isChecked()
