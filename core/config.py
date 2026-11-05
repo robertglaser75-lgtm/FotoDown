@@ -114,6 +114,12 @@ class AppConfig:
     iptc_creator: str = ""
     iptc_copyright: str = "© {YYYY} {creator}. Alle Rechte vorbehalten."
     iptc_keywords: str = ""
+    # Sichten & Culling (Phase 2 Workflow)
+    culling_last_folder: str = ""
+    reject_action: str = "move_folder"  # "move_folder", "trash", "flag_only"
+    reject_folder_name: str = "_Abgelehnt"
+    darktable_path: str = r"C:\Program Files\darktable\bin\darktable.exe"
+    topaz_path: str = r"C:\Program Files\Topaz Labs LLC\Topaz Photo\Topaz Photo.exe"
 
     def apply_profile(self, name: str) -> bool:
         """Applies configuration settings from a profile by name."""

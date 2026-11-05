@@ -17,6 +17,7 @@ class HeaderBanner(QFrame):
     drive_ejected = Signal(str)   # Emits ejected drive path
     open_history = Signal()
     open_help = Signal()
+    tab_changed = Signal(int)     # Emits 0 for Import, 1 for Culling
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -50,7 +51,44 @@ class HeaderBanner(QFrame):
         title_box.addWidget(lbl_version, 0, Qt.AlignmentFlag.AlignVCenter)
         layout.addLayout(title_box)
 
-        layout.addSpacing(10)
+        layout.addSpacing(6)
+
+        # Main Workflow Tabs (1. Importieren | 2. Sichten & Sortieren)
+        tabs_box = QHBoxLayout()
+        tabs_box.setSpacing(2)
+        self.btn_tab_import = QPushButton("📥 1. Importieren")
+        self.btn_tab_import.setCheckable(True)
+        self.btn_tab_import.setChecked(True)
+        self.btn_tab_import.setStyleSheet("""
+            QPushButton {
+                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
+                border-radius: 4px; padding: 4px 10px; font-weight: 600; font-size: 11px;
+            }
+            QPushButton:checked {
+                background-color: #0284c7; color: white; border: 1px solid #38bdf8;
+            }
+        """)
+
+        self.btn_tab_culling = QPushButton("👁️ 2. Sichten & Sortieren")
+        self.btn_tab_culling.setCheckable(True)
+        self.btn_tab_culling.setChecked(False)
+        self.btn_tab_culling.setStyleSheet("""
+            QPushButton {
+                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
+                border-radius: 4px; padding: 4px 10px; font-weight: 600; font-size: 11px;
+            }
+            QPushButton:checked {
+                background-color: #0284c7; color: white; border: 1px solid #38bdf8;
+            }
+        """)
+
+        self.btn_tab_import.clicked.connect(lambda: self.switch_tab(0))
+        self.btn_tab_culling.clicked.connect(lambda: self.switch_tab(1))
+        tabs_box.addWidget(self.btn_tab_import)
+        tabs_box.addWidget(self.btn_tab_culling)
+        layout.addLayout(tabs_box)
+
+        layout.addSpacing(6)
 
         # Drive selector section
         lbl_drive = QLabel("Speicherkarte / Laufwerk:")
@@ -87,6 +125,11 @@ class HeaderBanner(QFrame):
         self.btn_help.setObjectName("secondaryBtn")
         self.btn_help.clicked.connect(self.open_help.emit)
         layout.addWidget(self.btn_help, 0, Qt.AlignmentFlag.AlignVCenter)
+
+    def switch_tab(self, tab_idx: int):
+        self.btn_tab_import.setChecked(tab_idx == 0)
+        self.btn_tab_culling.setChecked(tab_idx == 1)
+        self.tab_changed.emit(tab_idx)
 
     def set_drives(self, drives: List[DriveInfo]):
         """Updates the dropdown list with a given set of drives, preserving selection if possible."""

@@ -8,6 +8,15 @@ Lauffähig unter **Windows** und **Linux**.
 
 ## ✨ Funktionen
 
+- 👁️ **2. Hauptfunktion: Sichten & Sortieren (Culling & Editor-Export):**
+  - **Zwei-Phasen-Workflow:** Bequemes Umschalten zwischen *„📥 1. Importieren“* und *„👁️ 2. Sichten & Sortieren“*.
+  - **Schneller Bildbetrachter:** Blitzschnelles Durchsehen mit Tastaturnavigation (`◀` / `▶` bzw. `A` / `D`), stufenlosem Zoom und 100%-Schärfelupe (`F`).
+  - **RAW+JPEG Koppelung:** Anzeige als ein Paar mit sofortiger Umschaltung zwischen JPEG-Kameraansicht und RAW-Vorschau (`J` / `R`).
+  - **XMP-Sterne- & Farbbewertung:** Vergabe von 1–5 Sternen (`1`–`5`), Pick (`P`) und Reject (`X`), die sofort in `.xmp`-Sidecars synchronisiert werden (voll kompatibel mit Darktable und Lightroom).
+  - **Direkte Editor-Übergabe:**
+    - 🎨 **Darktable (`Strg+D`):** Übergabe der ausgewählten Aufnahmen **ausschließlich als RAW-Dateien**.
+    - ✨ **Topaz Photo (`Strg+T`):** Übergabe der ausgewählten Aufnahmen **ausschließlich als JPEG-Dateien**.
+  - **Konfigurierbares Reject-Handling:** Aussortierte Bilder wahlweise in `_Abgelehnt/` verschieben, löschen oder nur kennzeichnen.
 - 🔍 **Integrierte Einzelansicht & Schärfebeurteilung:**
   - Neuer Ansichtsmodus *„🔍 Einzelansicht“* im Hauptarbeitsbereich.
   - Großformatige, gestochen scharfe Bildbetrachtung direkt im Anwendungsfenster (bis 2560px).

@@ -23,6 +23,7 @@ from .views.table_view import MediaTableView
 from .views.gallery_view import MediaGalleryView
 from .views.single_view import MediaSingleView
 from .views.tree_view import MediaTreeView
+from .views.culling_tab import CullingTabView
 from .widgets.header_banner import HeaderBanner
 from .widgets.collapsible_box import CollapsibleBox
 from .widgets.profile_bar import ProfileBarWidget
@@ -108,7 +109,16 @@ class MainWindow(QMainWindow):
         self.card_notification = CardNotificationBanner()
         main_layout.addWidget(self.card_notification)
 
-        # 3. Main Horizontal Splitter (Sidebar left, Workspace right)
+        # 3. Main Central Workflow Stack (Index 0 = Import, Index 1 = Culling)
+        self.main_workflow_stack = QStackedWidget()
+
+        # Page 0: Import Workflow
+        self.import_page_widget = QWidget()
+        import_page_layout = QVBoxLayout(self.import_page_widget)
+        import_page_layout.setContentsMargins(0, 0, 0, 0)
+        import_page_layout.setSpacing(0)
+
+        # Main Horizontal Splitter (Sidebar left, Workspace right)
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
         main_splitter.setChildrenCollapsible(False)
 
@@ -221,7 +231,14 @@ class MainWindow(QMainWindow):
         main_splitter.setStretchFactor(0, 0)
         main_splitter.setStretchFactor(1, 1)
 
-        main_layout.addWidget(main_splitter)
+        import_page_layout.addWidget(main_splitter)
+        self.main_workflow_stack.addWidget(self.import_page_widget)
+
+        # Page 1: Culling & Review Workflow (Tab 2)
+        self.culling_tab_view = CullingTabView(self.config)
+        self.main_workflow_stack.addWidget(self.culling_tab_view)
+
+        main_layout.addWidget(self.main_workflow_stack, stretch=1)
 
         # 4. Status Bar
         self.status_bar = QStatusBar()
@@ -233,6 +250,7 @@ class MainWindow(QMainWindow):
         # Header signals
         self.header_banner.drive_selected.connect(self._on_header_drive_selected)
         self.header_banner.drive_ejected.connect(self._on_drive_ejected)
+        self.header_banner.tab_changed.connect(self._on_main_tab_changed)
         self.header_banner.open_history.connect(self._open_history_dialog)
         self.header_banner.open_help.connect(self._open_help_dialog)
 
@@ -308,6 +326,25 @@ class MainWindow(QMainWindow):
             self._start_scan()
         else:
             self.card_notification.show_card(drive)
+
+    def _on_main_tab_changed(self, tab_idx: int):
+        self.main_workflow_stack.setCurrentIndex(tab_idx)
+        if tab_idx == 1:
+            # Switching to Culling tab: if no folder loaded yet, load target_dir or last folder
+            if not self.culling_tab_view.current_folder:
+                target_to_load = Path(self.config.culling_last_folder) if (self.config.culling_last_folder and Path(self.config.culling_last_folder).exists()) else Path(self.config.target_dir)
+                if target_to_load.exists():
+                    self.culling_tab_view.load_folder(target_to_load)
+            self.culling_tab_view.setFocus()
+            self.status_bar.showMessage("Sichten & Sortieren aktiv: Tasten [1-5] Sterne, [P] Behalten, [X] Ablehnen, [J/R] RAW/JPG.", 5000)
+        else:
+            self.status_bar.showMessage("Import-Arbeitsbereich aktiv.", 3000)
+
+    def open_culling_tab(self, folder_path: Optional[Path] = None):
+        """Switches to Culling tab and loads the given folder."""
+        self.header_banner.switch_tab(1)
+        if folder_path and folder_path.exists():
+            self.culling_tab_view.load_folder(folder_path)
 
     def clear_preview(self):
         """Clears all previewed items, thumbnails, EXIF details, and resets view stack to empty state."""
@@ -614,9 +651,20 @@ class MainWindow(QMainWindow):
         if stats.failed > 0:
             msg_lines.append(f"✕ {stats.failed} Fehler")
 
-        QMessageBox.information(self, "Import abgeschlossen", "\n".join(msg_lines))
+        box = QMessageBox(self)
+        box.setWindowTitle("Import abgeschlossen")
+        box.setText("\n".join(msg_lines))
+        btn_cull = box.addButton("👁️ Jetzt sichten & bewerten ➔", QMessageBox.ButtonRole.ActionRole)
+        btn_ok = box.addButton("OK", QMessageBox.ButtonRole.AcceptRole)
+        box.setDefaultButton(btn_cull)
+        box.exec()
+
         self.action_bar.lbl_status.setText(f"Fertig: {stats.copied_success} Einheiten erfolgreich kopiert ({mb:.1f} MB).")
         self._start_scan()
+
+        if box.clickedButton() == btn_cull:
+            target_p = Path(self.config.target_dir)
+            self.open_culling_tab(target_p)
 
     def _on_worker_error(self, err_msg: str):
         self.action_bar.set_busy(False)

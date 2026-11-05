@@ -92,6 +92,20 @@ class GeneralSettingsWidget(QWidget):
         self.edit_keywords.textChanged.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.edit_keywords)
 
+        layout.addSpacing(6)
+
+        # 5. Culling & Reject Action Settings
+        lbl_culling = QLabel("👁️ Sichten & Aussortieren:")
+        lbl_culling.setObjectName("sectionSubTitle")
+        layout.addWidget(lbl_culling)
+
+        self.combo_reject_action = QComboBox()
+        self.combo_reject_action.addItem("In Unterordner verschieben (_Abgelehnt/)", "move_folder")
+        self.combo_reject_action.addItem("In den Papierkorb / Löschen", "trash")
+        self.combo_reject_action.addItem("Nur in Metadaten als abgelehnt markieren", "flag_only")
+        self.combo_reject_action.currentIndexChanged.connect(lambda *args: self.changed.emit())
+        layout.addWidget(self.combo_reject_action)
+
     def _on_iptc_toggled(self, checked: bool):
         self.edit_creator.setEnabled(checked)
         self.edit_copyright.setEnabled(checked)
@@ -112,7 +126,8 @@ class GeneralSettingsWidget(QWidget):
         widgets = [
             self.combo_org, self.chk_auto_detect, self.chk_pair_raw,
             self.chk_sync_xmp, self.chk_only_new, self.chk_verify,
-            self.chk_enable_iptc, self.edit_creator, self.edit_copyright, self.edit_keywords
+            self.chk_enable_iptc, self.edit_creator, self.edit_copyright, self.edit_keywords,
+            self.combo_reject_action
         ]
         for w in widgets:
             w.blockSignals(True)
@@ -130,6 +145,13 @@ class GeneralSettingsWidget(QWidget):
             self.edit_creator.setEnabled(config.enable_iptc)
             self.edit_copyright.setEnabled(config.enable_iptc)
             self.edit_keywords.setEnabled(config.enable_iptc)
+
+            # Reject action
+            idx_act = self.combo_reject_action.findData(config.reject_action)
+            if idx_act >= 0:
+                self.combo_reject_action.setCurrentIndex(idx_act)
+            else:
+                self.combo_reject_action.setCurrentIndex(0)
         finally:
             for w in widgets:
                 w.blockSignals(False)
@@ -145,3 +167,4 @@ class GeneralSettingsWidget(QWidget):
         config.iptc_creator = self.edit_creator.text().strip()
         config.iptc_copyright = self.edit_copyright.text().strip()
         config.iptc_keywords = self.edit_keywords.text().strip()
+        config.reject_action = self.combo_reject_action.currentData() or "move_folder"

@@ -3,6 +3,30 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.14.0] - 2026-11-05
+
+### Hinzugefügt
+- **2. Hauptfunktion: Tab „Sichten & Sortieren“ (Culling, Bewertung & Editor-Export):**
+  - **Zwei-Phasen-Workflow:** Hauptumschaltung im Header zwischen *„📥 1. Importieren“* und *„👁️ 2. Sichten & Sortieren“*.
+  - **Direkter Absprung nach Import:** Nach erfolgreichem Kopiervorgang bietet FotoDown die Schaltfläche *„👁️ Jetzt sichten & bewerten ➔“*, die den Zielordner direkt im 2. Tab öffnet.
+  - **High-Performance Culling-Workspace ([`CullingTabView`](gui_qt/views/culling_tab.py)):**
+    - Schneller Bildbetrachter mit stufenloser Anpassung und 100%-Schärfelupe (<kbd>F</kbd> / Doppelklick).
+    - Horizontaler Filmstreifen mit synchronisierter Kartenvorschau, Bewertungssternen und Statusanzeige.
+    - Schnelle Tastaturnavigation (<kbd>◀</kbd> / <kbd>▶</kbd>, <kbd>A</kbd> / <kbd>D</kbd>).
+  - **Logische RAW + JPEG Koppelung:**
+    - RAW und JPEG werden als eine konsolidierte Einheit geführt.
+    - Mit Taste <kbd>J</kbd> / <kbd>R</kbd> kann unterbrechungsfrei zwischen der Kamera-JPEG-Farbwiedergabe und der RAW-Sensor-Vorschau umgeschaltet werden.
+  - **Standard-XMP-Synchronisation ([`core/xmp_sync.py`](core/xmp_sync.py)):**
+    - Bewertungen (1–5 Sterne mit Tasten <kbd>1</kbd>–<kbd>5</kbd>, <kbd>0</kbd> zum Zurücksetzen) sowie Pick (<kbd>P</kbd>) und Reject (<kbd>X</kbd>) werden sofort und synchron in standardkonforme `.xmp`-Sidecar-Dateien geschrieben.
+    - Voll kompatibel mit Darktable, Lightroom und DigiKam.
+  - **Direkte Übergabe an externe Programme ([`core/external_tools.py`](core/external_tools.py)):**
+    - 🎨 **Darktable-Übergabe (<kbd>Strg+D</kbd>):** Übergibt selektierte oder 3★+ bewertete **ausschließlich als RAW-Dateien** an Darktable.
+    - ✨ **Topaz Photo Übergabe (<kbd>Strg+T</kbd>):** Übergibt selektierte oder 3★+ bewertete **ausschließlich als JPEG-Dateien** an Topaz Photo zur KI-Optimierung.
+    - Automatische Programmerkennung unter Windows (`C:\Program Files\...`) und Linux.
+  - **Konfigurierbares Reject-Handling:**
+    - In den Einstellungen wählbar: *In Unterordner verschieben (`_Abgelehnt/`)*, *In den Papierkorb / Löschen* oder *Nur in Metadaten als abgelehnt markieren*.
+    - Button *„🗑️ Aussortierte verarbeiten“* mit Sicherheitsabfrage.
+
 ## [0.13.0] - 2026-11-03
 
 ### Hinzugefügt

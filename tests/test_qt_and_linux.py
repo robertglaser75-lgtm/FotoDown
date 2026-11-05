@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.13.0")
+        self.assertEqual(__version__, "0.14.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -829,6 +829,81 @@ class TestRawPreviewExtraction(unittest.TestCase):
         img = extract_raw_embedded_jpeg(raw_file)
         self.assertIsNotNone(img)
         self.assertEqual(img.size, (640, 480))
+
+
+class TestCullingAndExternalTools(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.dir_path = Path(self.temp_dir.name)
+
+        # Create dummy JPG and RAW pair
+        self.raw_file = self.dir_path / "IMG_1001.CR3"
+        self.raw_file.write_bytes(b"DUMMY_RAW_BYTES")
+
+        self.jpg_file = self.dir_path / "IMG_1001.JPG"
+        from PIL import Image
+        im = Image.new("RGB", (400, 300), "red")
+        im.save(str(self.jpg_file), "JPEG")
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_xmp_metadata_sync(self):
+        from core.xmp_sync import write_xmp_metadata, read_xmp_metadata, sync_pair_xmp
+
+        # Write rating 4 and label Red
+        sync_pair_xmp(self.raw_file, self.jpg_file, rating=4, label="Red", is_rejected=False)
+
+        r_raw, l_raw, rej_raw = read_xmp_metadata(self.raw_file)
+        self.assertEqual(r_raw, 4)
+        self.assertEqual(l_raw, "Red")
+        self.assertFalse(rej_raw)
+
+        r_jpg, l_jpg, rej_jpg = read_xmp_metadata(self.jpg_file)
+        self.assertEqual(r_jpg, 4)
+        self.assertEqual(l_jpg, "Red")
+        self.assertFalse(rej_jpg)
+
+        # Update to rejected
+        sync_pair_xmp(self.raw_file, self.jpg_file, rating=0, label="", is_rejected=True)
+        r_raw2, _, rej_raw2 = read_xmp_metadata(self.raw_file)
+        self.assertTrue(rej_raw2)
+
+    def test_scan_culling_folder_and_reject(self):
+        from gui_qt.models.culling_model import scan_culling_folder, execute_reject_action
+
+        # Initial scan groups pair
+        items = scan_culling_folder(self.dir_path)
+        self.assertEqual(len(items), 1)
+        it = items[0]
+        self.assertTrue(it.is_pair)
+        self.assertEqual(it.raw_path, self.raw_file)
+        self.assertEqual(it.jpeg_path, self.jpg_file)
+
+        # Reject and move to subfolder
+        it.is_rejected = True
+        cnt, msg = execute_reject_action(items, action="move_folder", folder_name="_Abgelehnt")
+        self.assertEqual(cnt, 1)
+
+        # Check files moved
+        self.assertFalse(self.raw_file.exists())
+        self.assertFalse(self.jpg_file.exists())
+        rej_folder = self.dir_path / "_Abgelehnt"
+        self.assertTrue((rej_folder / "IMG_1001.CR3").exists())
+        self.assertTrue((rej_folder / "IMG_1001.JPG").exists())
+
+    def test_external_launch_filters(self):
+        from core.external_tools import launch_darktable, launch_topaz_photo
+
+        # Darktable rejects non-RAW
+        ok_d, msg_d = launch_darktable([self.jpg_file])
+        self.assertFalse(ok_d)
+        self.assertIn("Keine", msg_d)
+
+        # Topaz rejects non-JPEG
+        ok_t, msg_t = launch_topaz_photo([self.raw_file])
+        self.assertFalse(ok_t)
+        self.assertIn("Keine", msg_t)
 
 
 if __name__ == "__main__":
