@@ -40,3 +40,4 @@ class CullingScanWorker(QThread):
                 self.scan_finished.emit(items)
         except Exception as e:
             self.error.emit(str(e))
+

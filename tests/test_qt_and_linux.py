@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.14.1")
+        self.assertEqual(__version__, "0.14.2")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -922,6 +922,29 @@ class TestCullingAndExternalTools(unittest.TestCase):
         cur, total, msg = progress_events[0]
         self.assertEqual(cur, 1)
         self.assertEqual(total, 1)
+
+    def test_culling_tab_ultrawide_layout(self):
+        from gui_qt.views.culling_tab import CullingTabView
+        from core.config import AppConfig
+
+        cfg = AppConfig()
+        tab = CullingTabView(cfg)
+        tab.show()
+
+        # Check splitter layout
+        self.assertIsNotNone(tab.splitter)
+        self.assertEqual(tab.splitter.count(), 2)
+
+        # Check filmstrip toggle
+        self.assertTrue(tab.filmstrip.isVisible())
+        tab._toggle_filmstrip()
+        self.assertFalse(tab.filmstrip.isVisible())
+        self.assertIn("einblenden", tab.btn_toggle_filmstrip.text())
+        tab._toggle_filmstrip()
+        self.assertTrue(tab.filmstrip.isVisible())
+        self.assertIn("ausblenden", tab.btn_toggle_filmstrip.text())
+
+        tab.close()
 
 
 if __name__ == "__main__":

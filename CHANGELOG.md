@@ -3,6 +3,18 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.14.2] - 2026-11-05
+
+### Verbessert
+- **Ultrawide-optimiertes Layout für maximale Bildhöhe im Sichten-Tab ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py)):**
+  - **Neues 2-Spalten-Layout mit horizontalem Splitter:**
+    - Alle Bedienelemente (Ordnerwahl, Fortschrittsbalken, Navigation, Sternebewertung, Behalten/Ablehnen, externe Editoren Darktable & Topaz Photo sowie Statistiken) wurden in eine übersichtliche, vertikale linke Seitenleiste verlegt.
+  - **Maximale Bildhöhe für das Hauptfoto:**
+    - Über und unter dem Bild befinden sich keine sperrigen horizontalen Leisten mehr, sodass die volle Bildschirmhöhe auf 21:9 / 32:9 Monitoren dem Foto zur Verfügung steht.
+  - **Einklappbarer Filmstreifen:**
+    - Der untere Filmstreifen kann per Knopfdruck oder Shortcut <kbd>T</kbd> vollständig ein- und ausgeblendet werden, um dem angezeigten Foto 100% der vertikalen Monitorhöhe einzuräumen.
+  - **Tastatur-Schnellzugriff:** Integrierte Übersicht der Shortcuts direkt in der linken Seitenleiste.
+
 ## [0.14.1] - 2026-11-05
 
 ### Behoben

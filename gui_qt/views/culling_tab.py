@@ -252,62 +252,105 @@ class CullingTabView(QWidget):
         self._setup_ui()
 
     def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(6, 6, 6, 6)
-        main_layout.setSpacing(6)
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(4, 4, 4, 4)
+        main_layout.setSpacing(0)
 
-        # 1. Top Bar: Folder picker, Refresh & Target Info
-        top_bar = QFrame()
-        top_bar.setStyleSheet("background-color: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 4px;")
-        top_layout = QHBoxLayout(top_bar)
-        top_layout.setContentsMargins(6, 4, 6, 4)
-        top_layout.setSpacing(8)
+        # Ultrawide Splitter: Left Sidebar for Controls, Right Workspace for Maximum Height Canvas
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setChildrenCollapsible(False)
 
-        lbl_folder = QLabel("📁 Ordner:")
-        lbl_folder.setStyleSheet("font-weight: 600; color: #94a3b8;")
-        top_layout.addWidget(lbl_folder)
+        # -------------------------------------------------------------
+        # LEFT SIDEBAR (Controls, Ratings, Folders, Editors, Stats)
+        # -------------------------------------------------------------
+        sidebar_scroll = QScrollArea()
+        sidebar_scroll.setWidgetResizable(True)
+        sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        sidebar_scroll.setMinimumWidth(320)
+        sidebar_scroll.setMaximumWidth(420)
 
-        self.btn_choose_folder = QPushButton("Ordner zum Sichten wählen...")
+        sidebar_content = QWidget()
+        sidebar_layout = QVBoxLayout(sidebar_content)
+        sidebar_layout.setContentsMargins(4, 4, 6, 4)
+        sidebar_layout.setSpacing(8)
+
+        card_style = """
+            QFrame {
+                background-color: #0f172a;
+                border: 1px solid #1e293b;
+                border-radius: 6px;
+                padding: 6px;
+            }
+        """
+
+        # 1. Card: Folder Selection & Scan Progress
+        card_folder = QFrame()
+        card_folder.setStyleSheet(card_style)
+        layout_folder = QVBoxLayout(card_folder)
+        layout_folder.setContentsMargins(6, 6, 6, 6)
+        layout_folder.setSpacing(6)
+
+        lbl_sec_folder = QLabel("📁 ORDNER & QUELLVERZEICHNIS")
+        lbl_sec_folder.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        layout_folder.addWidget(lbl_sec_folder)
+
+        folder_btns_layout = QHBoxLayout()
+        folder_btns_layout.setSpacing(6)
+
+        self.btn_choose_folder = QPushButton("Ordner wählen...")
         self.btn_choose_folder.setStyleSheet("""
             QPushButton {
                 background-color: #1e293b; color: #f8fafc; border: 1px solid #334155;
-                border-radius: 4px; padding: 5px 12px; font-weight: 500;
+                border-radius: 4px; padding: 5px 12px; font-weight: 500; font-size: 12px;
             }
             QPushButton:hover { background-color: #334155; }
         """)
         self.btn_choose_folder.clicked.connect(self._on_choose_folder_clicked)
-        top_layout.addWidget(self.btn_choose_folder)
+        folder_btns_layout.addWidget(self.btn_choose_folder, stretch=1)
+
+        self.btn_refresh = QPushButton("🔄")
+        self.btn_refresh.setFixedSize(30, 28)
+        self.btn_refresh.setToolTip("Ordner neu scannen")
+        self.btn_refresh.setStyleSheet("background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; border-radius: 4px; font-size: 12px;")
+        self.btn_refresh.clicked.connect(self.refresh_current_folder)
+        folder_btns_layout.addWidget(self.btn_refresh)
+        layout_folder.addLayout(folder_btns_layout)
 
         self.lbl_folder_path = QLabel("Kein Ordner ausgewählt")
-        self.lbl_folder_path.setStyleSheet("color: #38bdf8; font-size: 12px; font-weight: 500;")
-        top_layout.addWidget(self.lbl_folder_path, stretch=1)
+        self.lbl_folder_path.setStyleSheet("color: #38bdf8; font-size: 11px; font-weight: 500;")
+        self.lbl_folder_path.setWordWrap(True)
+        layout_folder.addWidget(self.lbl_folder_path)
 
-        self.btn_refresh = QPushButton("🔄 Neu laden")
-        self.btn_refresh.setStyleSheet("background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; border-radius: 4px; padding: 5px 10px;")
-        self.btn_refresh.clicked.connect(self.refresh_current_folder)
-        top_layout.addWidget(self.btn_refresh)
-
-        main_layout.addWidget(top_bar)
-
-        # 1b. Scanning Progress Frame (asynchronous progress bar while opening a folder)
+        # Scanning Progress Frame
         self.progress_frame = QFrame()
         self.progress_frame.setStyleSheet("""
             QFrame {
                 background-color: #0b1329;
                 border: 1px solid #1d4ed8;
                 border-radius: 6px;
+                padding: 4px 6px;
             }
         """)
-        prog_layout = QHBoxLayout(self.progress_frame)
-        prog_layout.setContentsMargins(10, 6, 10, 6)
-        prog_layout.setSpacing(10)
+        prog_layout = QVBoxLayout(self.progress_frame)
+        prog_layout.setContentsMargins(6, 4, 6, 4)
+        prog_layout.setSpacing(4)
 
+        prog_head = QHBoxLayout()
         self.lbl_scan_status = QLabel("Lese Fotos ein...")
-        self.lbl_scan_status.setStyleSheet("color: #38bdf8; font-weight: 600; font-size: 11px;")
-        prog_layout.addWidget(self.lbl_scan_status)
+        self.lbl_scan_status.setStyleSheet("color: #38bdf8; font-weight: 600; font-size: 10px;")
+        prog_head.addWidget(self.lbl_scan_status, stretch=1)
+
+        self.btn_cancel_scan = QPushButton("✕")
+        self.btn_cancel_scan.setFixedSize(20, 20)
+        self.btn_cancel_scan.setToolTip("Scan abbrechen")
+        self.btn_cancel_scan.setStyleSheet("background-color: #7f1d1d; color: white; border: none; border-radius: 3px; font-size: 10px; font-weight: bold;")
+        self.btn_cancel_scan.clicked.connect(self._cancel_scan)
+        prog_head.addWidget(self.btn_cancel_scan)
+        prog_layout.addLayout(prog_head)
 
         self.scan_progress_bar = QProgressBar()
-        self.scan_progress_bar.setFixedHeight(12)
+        self.scan_progress_bar.setFixedHeight(8)
         self.scan_progress_bar.setRange(0, 100)
         self.scan_progress_bar.setValue(0)
         self.scan_progress_bar.setTextVisible(False)
@@ -315,79 +358,97 @@ class CullingTabView(QWidget):
             QProgressBar {
                 background-color: #1e293b;
                 border: 1px solid #334155;
-                border-radius: 4px;
+                border-radius: 3px;
             }
             QProgressBar::chunk {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0284c7, stop:1 #38bdf8);
-                border-radius: 3px;
+                border-radius: 2px;
             }
         """)
-        prog_layout.addWidget(self.scan_progress_bar, stretch=1)
-
-        self.btn_cancel_scan = QPushButton("✕ Abbrechen")
-        self.btn_cancel_scan.setStyleSheet("""
-            QPushButton {
-                background-color: #7f1d1d; color: #fca5a5; border: 1px solid #b91c1c;
-                border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: bold;
-            }
-            QPushButton:hover { background-color: #991b1b; color: white; }
-        """)
-        self.btn_cancel_scan.clicked.connect(self._cancel_scan)
-        prog_layout.addWidget(self.btn_cancel_scan)
-
+        prog_layout.addWidget(self.scan_progress_bar)
         self.progress_frame.setVisible(False)
-        main_layout.addWidget(self.progress_frame)
+        layout_folder.addWidget(self.progress_frame)
 
-        # 2. Control & Rating Bar
-        ctrl_bar = QFrame()
-        ctrl_bar.setStyleSheet("background-color: #090d16; border: 1px solid #1e293b; border-radius: 6px; padding: 4px;")
-        ctrl_layout = QHBoxLayout(ctrl_bar)
-        ctrl_layout.setContentsMargins(6, 4, 6, 4)
-        ctrl_layout.setSpacing(8)
+        sidebar_layout.addWidget(card_folder)
 
-        # Navigation Buttons
-        self.btn_prev = QPushButton("◀ Vorheriges [A]")
-        self.btn_prev.clicked.connect(self._prev_item)
-        ctrl_layout.addWidget(self.btn_prev)
+        # 2. Card: Active Photo & Navigation
+        card_photo = QFrame()
+        card_photo.setStyleSheet(card_style)
+        layout_photo = QVBoxLayout(card_photo)
+        layout_photo.setContentsMargins(6, 6, 6, 6)
+        layout_photo.setSpacing(6)
 
-        self.btn_next = QPushButton("Nächstes ▶ [D]")
-        self.btn_next.clicked.connect(self._next_item)
-        ctrl_layout.addWidget(self.btn_next)
+        lbl_sec_photo = QLabel("📷 AKTIVES FOTO")
+        lbl_sec_photo.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        layout_photo.addWidget(lbl_sec_photo)
 
-        # Filename & Pair Badge
         self.lbl_active_name = QLabel("Kein Foto geladen")
-        self.lbl_active_name.setStyleSheet("font-weight: bold; font-size: 13px; color: #f8fafc;")
-        ctrl_layout.addWidget(self.lbl_active_name)
+        self.lbl_active_name.setStyleSheet("font-weight: bold; font-size: 12px; color: #f8fafc;")
+        self.lbl_active_name.setWordWrap(True)
+        layout_photo.addWidget(self.lbl_active_name)
 
+        # Badges row
+        badges_layout = QHBoxLayout()
+        badges_layout.setSpacing(6)
         self.lbl_pair_badge = QLabel("")
         self.lbl_pair_badge.setStyleSheet("background-color: #0284c7; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;")
         self.lbl_pair_badge.setVisible(False)
-        ctrl_layout.addWidget(self.lbl_pair_badge)
+        badges_layout.addWidget(self.lbl_pair_badge)
 
-        # RAW vs JPG Toggle Switch (J/R)
         self.btn_toggle_raw_jpg = QPushButton("Ansicht: Auto")
         self.btn_toggle_raw_jpg.setToolTip("Zwischen JPEG und RAW Ansicht umschalten (Taste J oder R)")
         self.btn_toggle_raw_jpg.setStyleSheet("""
             QPushButton {
                 background-color: #1e293b; color: #38bdf8; border: 1px solid #0284c7;
-                border-radius: 4px; padding: 4px 10px; font-size: 11px; font-weight: 600;
+                border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600;
             }
             QPushButton:hover { background-color: #0369a1; color: white; }
         """)
         self.btn_toggle_raw_jpg.clicked.connect(self._toggle_raw_jpg_view)
-        ctrl_layout.addWidget(self.btn_toggle_raw_jpg)
+        badges_layout.addWidget(self.btn_toggle_raw_jpg)
+        badges_layout.addStretch()
+        layout_photo.addLayout(badges_layout)
 
-        ctrl_layout.addStretch()
+        # Navigation row
+        nav_layout = QHBoxLayout()
+        nav_layout.setSpacing(6)
+        self.btn_prev = QPushButton("◀ Vorheriges [A]")
+        self.btn_prev.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 5px;")
+        self.btn_prev.clicked.connect(self._prev_item)
+        nav_layout.addWidget(self.btn_prev)
 
-        # Star Rating Buttons (1 to 5)
-        lbl_stars_title = QLabel("Bewertung:")
-        lbl_stars_title.setStyleSheet("color: #94a3b8; font-size: 11px;")
-        ctrl_layout.addWidget(lbl_stars_title)
+        self.btn_next = QPushButton("Nächstes ▶ [D]")
+        self.btn_next.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 5px;")
+        self.btn_next.clicked.connect(self._next_item)
+        nav_layout.addWidget(self.btn_next)
+        layout_photo.addLayout(nav_layout)
 
+        # Zoom Button
+        self.btn_zoom = QPushButton("🔍 100% Schärfelupe [F]")
+        self.btn_zoom.setStyleSheet("background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; border-radius: 4px; padding: 4px; font-size: 11px;")
+        self.btn_zoom.clicked.connect(self._toggle_canvas_zoom)
+        layout_photo.addWidget(self.btn_zoom)
+
+        sidebar_layout.addWidget(card_photo)
+
+        # 3. Card: Rating & Culling
+        card_rating = QFrame()
+        card_rating.setStyleSheet(card_style)
+        layout_rating = QVBoxLayout(card_rating)
+        layout_rating.setContentsMargins(6, 6, 6, 6)
+        layout_rating.setSpacing(6)
+
+        lbl_sec_rating = QLabel("⭐ BEWERTUNG & CULLING")
+        lbl_sec_rating.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        layout_rating.addWidget(lbl_sec_rating)
+
+        # Stars row
+        stars_layout = QHBoxLayout()
+        stars_layout.setSpacing(4)
         self.star_buttons = []
         for s in range(1, 6):
             btn = QPushButton(f"{s}★")
-            btn.setFixedSize(30, 26)
+            btn.setFixedHeight(26)
             btn.setToolTip(f"Mit {s} Stern(en) bewerten (Taste {s})")
             btn.setStyleSheet("""
                 QPushButton {
@@ -397,113 +458,192 @@ class CullingTabView(QWidget):
                 QPushButton:hover { background-color: #d97706; color: white; }
             """)
             btn.clicked.connect(lambda _, val=s: self.set_current_rating(val))
-            ctrl_layout.addWidget(btn)
+            stars_layout.addWidget(btn)
             self.star_buttons.append(btn)
 
-        # Clear Rating Button (0)
         btn_star_zero = QPushButton("0")
         btn_star_zero.setFixedSize(26, 26)
         btn_star_zero.setToolTip("Bewertung entfernen (Taste 0)")
         btn_star_zero.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; font-size: 10px;")
         btn_star_zero.clicked.connect(lambda: self.set_current_rating(0))
-        ctrl_layout.addWidget(btn_star_zero)
+        stars_layout.addWidget(btn_star_zero)
+        layout_rating.addLayout(stars_layout)
 
-        ctrl_layout.addSpacing(10)
-
-        # Pick (P) & Reject (X)
+        # Pick & Reject row
+        pick_rej_layout = QHBoxLayout()
+        pick_rej_layout.setSpacing(6)
         self.btn_pick = QPushButton("✔ Behalten [P]")
         self.btn_pick.setStyleSheet("""
             QPushButton {
                 background-color: #065f46; color: #a7f3d0; border: 1px solid #059669;
-                border-radius: 4px; padding: 4px 10px; font-weight: 600; font-size: 11px;
+                border-radius: 4px; padding: 5px; font-weight: 600; font-size: 11px;
             }
             QPushButton:hover { background-color: #047857; color: white; }
         """)
         self.btn_pick.clicked.connect(self._toggle_pick)
-        ctrl_layout.addWidget(self.btn_pick)
+        pick_rej_layout.addWidget(self.btn_pick)
 
         self.btn_reject = QPushButton("✖ Ablehnen [X]")
         self.btn_reject.setStyleSheet("""
             QPushButton {
                 background-color: #7f1d1d; color: #fca5a5; border: 1px solid #b91c1c;
-                border-radius: 4px; padding: 4px 10px; font-weight: 600; font-size: 11px;
+                border-radius: 4px; padding: 5px; font-weight: 600; font-size: 11px;
             }
             QPushButton:hover { background-color: #991b1b; color: white; }
         """)
         self.btn_reject.clicked.connect(self._toggle_reject)
-        ctrl_layout.addWidget(self.btn_reject)
+        pick_rej_layout.addWidget(self.btn_reject)
+        layout_rating.addLayout(pick_rej_layout)
 
-        # Zoom Button (F)
-        self.btn_zoom = QPushButton("🔍 100% Zoom [F]")
-        self.btn_zoom.setStyleSheet("background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; border-radius: 4px; padding: 4px 10px; font-size: 11px;")
-        self.btn_zoom.clicked.connect(self._toggle_canvas_zoom)
-        ctrl_layout.addWidget(self.btn_zoom)
+        sidebar_layout.addWidget(card_rating)
 
-        main_layout.addWidget(ctrl_bar)
+        # 4. Card: External Editors & Reject Processing
+        card_external = QFrame()
+        card_external.setStyleSheet(card_style)
+        layout_ext = QVBoxLayout(card_external)
+        layout_ext.setContentsMargins(6, 6, 6, 6)
+        layout_ext.setSpacing(6)
 
-        # 3. Central Canvas Viewer
-        self.canvas = CullingCanvasWidget(self)
-        self.canvas.toggle_zoom_requested.connect(self._update_zoom_btn_text)
-        main_layout.addWidget(self.canvas, stretch=1)
+        lbl_sec_ext = QLabel("🚀 EXTERNE EDITOREN")
+        lbl_sec_ext.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        layout_ext.addWidget(lbl_sec_ext)
 
-        # 4. Filmstrip Bar (Thumbnails)
-        self.filmstrip = FilmstripBar(self)
-        self.filmstrip.item_clicked.connect(self._on_filmstrip_item_clicked)
-        main_layout.addWidget(self.filmstrip)
-
-        # 5. Bottom Action Bar: Darktable, Topaz, Reject Execution & Stats
-        bottom_bar = QFrame()
-        bottom_bar.setStyleSheet("background-color: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 4px;")
-        b_layout = QHBoxLayout(bottom_bar)
-        b_layout.setContentsMargins(6, 4, 6, 4)
-        b_layout.setSpacing(10)
-
-        # External Editor Buttons
         self.btn_darktable = QPushButton("🎨 In Darktable öffnen (RAW) [Strg+D]")
         self.btn_darktable.setToolTip("Ausgewählte RAW-Dateien direkt an Darktable übergeben")
         self.btn_darktable.setStyleSheet("""
             QPushButton {
                 background-color: #831843; color: #fbcfe8; border: 1px solid #be185d;
-                border-radius: 5px; padding: 6px 14px; font-weight: bold; font-size: 12px;
+                border-radius: 4px; padding: 6px 10px; font-weight: bold; font-size: 11px; text-align: left;
             }
             QPushButton:hover { background-color: #9d174d; color: white; }
         """)
         self.btn_darktable.clicked.connect(self._launch_darktable)
-        b_layout.addWidget(self.btn_darktable)
+        layout_ext.addWidget(self.btn_darktable)
 
         self.btn_topaz = QPushButton("✨ In Topaz Photo öffnen (JPEG) [Strg+T]")
         self.btn_topaz.setToolTip("Ausgewählte JPEG-Dateien direkt an Topaz Photo zur KI-Optimierung übergeben")
         self.btn_topaz.setStyleSheet("""
             QPushButton {
                 background-color: #1e3a8a; color: #bfdbfe; border: 1px solid #2563eb;
-                border-radius: 5px; padding: 6px 14px; font-weight: bold; font-size: 12px;
+                border-radius: 4px; padding: 6px 10px; font-weight: bold; font-size: 11px; text-align: left;
             }
             QPushButton:hover { background-color: #1d4ed8; color: white; }
         """)
         self.btn_topaz.clicked.connect(self._launch_topaz)
-        b_layout.addWidget(self.btn_topaz)
+        layout_ext.addWidget(self.btn_topaz)
 
-        # Reject Action Button
         self.btn_apply_reject = QPushButton("🗑️ Aussortierte verarbeiten")
         self.btn_apply_reject.setToolTip("Führt die konfigurierte Aktion für alle mit [X] abgelehnten Fotos aus")
         self.btn_apply_reject.setStyleSheet("""
             QPushButton {
                 background-color: #334155; color: #f87171; border: 1px solid #475569;
-                border-radius: 5px; padding: 6px 12px; font-size: 11px; font-weight: 600;
+                border-radius: 4px; padding: 5px 10px; font-size: 11px; font-weight: 600; text-align: left;
             }
             QPushButton:hover { background-color: #475569; color: white; }
         """)
         self.btn_apply_reject.clicked.connect(self._apply_reject_action)
-        b_layout.addWidget(self.btn_apply_reject)
+        layout_ext.addWidget(self.btn_apply_reject)
 
-        b_layout.addStretch()
+        sidebar_layout.addWidget(card_external)
 
-        # Stats Label
+        # 5. Card: Statistics
+        card_stats = QFrame()
+        card_stats.setStyleSheet(card_style)
+        layout_stats = QVBoxLayout(card_stats)
+        layout_stats.setContentsMargins(6, 6, 6, 6)
+        layout_stats.setSpacing(4)
+
+        lbl_sec_stats = QLabel("📊 STATISTIK")
+        lbl_sec_stats.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        layout_stats.addWidget(lbl_sec_stats)
+
         self.lbl_stats = QLabel("0 Fotos geladen")
-        self.lbl_stats.setStyleSheet("color: #94a3b8; font-size: 12px;")
-        b_layout.addWidget(self.lbl_stats)
+        self.lbl_stats.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        self.lbl_stats.setWordWrap(True)
+        layout_stats.addWidget(self.lbl_stats)
 
-        main_layout.addWidget(bottom_bar)
+        sidebar_layout.addWidget(card_stats)
+
+        # 6. Card: Keyboard Shortcuts
+        card_keys = QFrame()
+        card_keys.setStyleSheet(card_style)
+        layout_keys = QVBoxLayout(card_keys)
+        layout_keys.setContentsMargins(6, 6, 6, 6)
+        layout_keys.setSpacing(3)
+
+        lbl_sec_keys = QLabel("⌨️ SCHNELLZUGRIFF")
+        lbl_sec_keys.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        layout_keys.addWidget(lbl_sec_keys)
+
+        shortcuts_text = (
+            "<span style='color:#38bdf8;'>A / D</span> Blättern &nbsp;|&nbsp; "
+            "<span style='color:#38bdf8;'>1 - 5</span> Sterne &nbsp;|&nbsp; "
+            "<span style='color:#38bdf8;'>0</span> Reset<br>"
+            "<span style='color:#38bdf8;'>P</span> Behalten &nbsp;|&nbsp; "
+            "<span style='color:#38bdf8;'>X</span> Ablehnen &nbsp;|&nbsp; "
+            "<span style='color:#38bdf8;'>J / R</span> RAW/JPG<br>"
+            "<span style='color:#38bdf8;'>F</span> 100% Zoom &nbsp;|&nbsp; "
+            "<span style='color:#38bdf8;'>T</span> Filmstreifen &nbsp;|&nbsp; "
+            "<span style='color:#38bdf8;'>Strg+D/T</span> Editoren"
+        )
+        lbl_keys_desc = QLabel(shortcuts_text)
+        lbl_keys_desc.setStyleSheet("color: #64748b; font-size: 10px; line-height: 1.4;")
+        layout_keys.addWidget(lbl_keys_desc)
+
+        sidebar_layout.addWidget(card_keys)
+        sidebar_layout.addStretch()
+
+        sidebar_scroll.setWidget(sidebar_content)
+        self.splitter.addWidget(sidebar_scroll)
+
+        # -------------------------------------------------------------
+        # RIGHT WORKSPACE: Maximal Height Canvas & Optional Filmstrip
+        # -------------------------------------------------------------
+        workspace_container = QWidget()
+        workspace_layout = QVBoxLayout(workspace_container)
+        workspace_layout.setContentsMargins(0, 0, 0, 0)
+        workspace_layout.setSpacing(2)
+
+        # Minimal Top Toolbar on the image canvas (Filmstrip Toggle button on the right)
+        top_strip = QFrame()
+        top_strip.setStyleSheet("background-color: #070a12; border-bottom: 1px solid #1e293b; padding: 2px 6px;")
+        strip_layout = QHBoxLayout(top_strip)
+        strip_layout.setContentsMargins(4, 2, 4, 2)
+        strip_layout.setSpacing(8)
+
+        strip_layout.addStretch()
+
+        self.btn_toggle_filmstrip = QPushButton("🎞️ Filmstreifen ausblenden [T]")
+        self.btn_toggle_filmstrip.setStyleSheet("""
+            QPushButton {
+                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
+                border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: 500;
+            }
+            QPushButton:hover { background-color: #334155; color: white; }
+        """)
+        self.btn_toggle_filmstrip.clicked.connect(self._toggle_filmstrip)
+        strip_layout.addWidget(self.btn_toggle_filmstrip)
+
+        workspace_layout.addWidget(top_strip)
+
+        # Canvas: Takes all remaining vertical height!
+        self.canvas = CullingCanvasWidget(self)
+        self.canvas.toggle_zoom_requested.connect(self._update_zoom_btn_text)
+        workspace_layout.addWidget(self.canvas, stretch=1)
+
+        # Filmstrip Bar: Docked at bottom (can be collapsed with T)
+        self.filmstrip = FilmstripBar(self)
+        self.filmstrip.item_clicked.connect(self._on_filmstrip_item_clicked)
+        workspace_layout.addWidget(self.filmstrip)
+
+        self.splitter.addWidget(workspace_container)
+
+        # Splitter sizing: Left sidebar ~340px, Right canvas gets rest
+        self.splitter.setSizes([340, 1600])
+        self.splitter.setStretchFactor(0, 0)
+        self.splitter.setStretchFactor(1, 1)
+
+        main_layout.addWidget(self.splitter)
 
     def load_folder(self, folder: Path):
         """Loads and scans photos from folder into the Culling workflow with progress display."""
@@ -783,6 +923,11 @@ class CullingTabView(QWidget):
         picked = sum(1 for it in self.items if it.is_picked or it.rating >= 3)
         self.lbl_stats.setText(f"Gesamt: {total} | Bewertet: {rated} | ★★★+ Behalten: {picked} | [X] Abgelehnt: {rejected}")
 
+    def _toggle_filmstrip(self):
+        is_vis = not self.filmstrip.isVisible()
+        self.filmstrip.setVisible(is_vis)
+        self.btn_toggle_filmstrip.setText("🎞️ Filmstreifen ausblenden [T]" if is_vis else "🎞️ Filmstreifen einblenden [T]")
+
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
         # Modifiers
@@ -820,6 +965,10 @@ class CullingTabView(QWidget):
         # Zoom toggle
         elif key == Qt.Key.Key_F:
             self._toggle_canvas_zoom()
+            return
+        # Filmstrip toggle
+        elif key == Qt.Key.Key_T:
+            self._toggle_filmstrip()
             return
 
         super().keyPressEvent(event)
