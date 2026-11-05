@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 from pathlib import Path
 import shutil
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 from core.exif_reader import extract_metadata, MediaMetadata
 from core.thumbnail import RAW_EXTENSIONS
 from core.xmp_sync import read_xmp_metadata, sync_pair_xmp
@@ -79,7 +79,11 @@ class CullingItem:
         return files
 
 
-def scan_culling_folder(folder_path: Path) -> List[CullingItem]:
+def scan_culling_folder(
+    folder_path: Path,
+    progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    cancel_check: Optional[Callable[[], bool]] = None
+) -> List[CullingItem]:
     """Scans target folder and groups RAW+JPG into unified CullingItems with XMP ratings."""
     if not folder_path or not folder_path.exists() or not folder_path.is_dir():
         return []
@@ -99,6 +103,8 @@ def scan_culling_folder(folder_path: Path) -> List[CullingItem]:
         return []
 
     for entry in entries:
+        if cancel_check and cancel_check():
+            return []
         if not entry.is_file():
             continue
         ext = entry.suffix.lower()
@@ -111,11 +117,22 @@ def scan_culling_folder(folder_path: Path) -> List[CullingItem]:
             else:
                 other_candidates.append(entry)
 
+    total_units = len(raw_candidates) + sum(1 for s in jpg_candidates if s not in raw_candidates) + len(other_candidates)
+    if total_units == 0:
+        return []
+
     items: List[CullingItem] = []
     processed_stems = set()
+    current_count = 0
 
     # Process pairs first
     for stem, raw_p in raw_candidates.items():
+        if cancel_check and cancel_check():
+            return []
+        current_count += 1
+        if progress_callback:
+            progress_callback(current_count, total_units, raw_p.name)
+
         processed_stems.add(stem)
         companion_p = jpg_candidates.get(stem)
         
@@ -141,6 +158,12 @@ def scan_culling_folder(folder_path: Path) -> List[CullingItem]:
     for stem, jpg_p in jpg_candidates.items():
         if stem in processed_stems:
             continue
+        if cancel_check and cancel_check():
+            return []
+        current_count += 1
+        if progress_callback:
+            progress_callback(current_count, total_units, jpg_p.name)
+
         rating, label, is_rejected = read_xmp_metadata(jpg_p)
         meta = extract_metadata(jpg_p)
         items.append(CullingItem(
@@ -155,6 +178,12 @@ def scan_culling_folder(folder_path: Path) -> List[CullingItem]:
 
     # Process other formats (PNG, TIFF, etc.)
     for other_p in other_candidates:
+        if cancel_check and cancel_check():
+            return []
+        current_count += 1
+        if progress_callback:
+            progress_callback(current_count, total_units, other_p.name)
+
         rating, label, is_rejected = read_xmp_metadata(other_p)
         meta = extract_metadata(other_p)
         items.append(CullingItem(

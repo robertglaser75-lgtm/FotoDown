@@ -3,6 +3,15 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.14.1] - 2026-11-05
+
+### Behoben
+- **Asynchroner Ladefortschritt beim Öffnen von Ordnern im Sichten-Tab (`gui_qt/views/culling_tab.py`, `gui_qt/workers/culling_worker.py`, `gui_qt/models/culling_model.py`):**
+  - **Kein Einfrieren der Benutzeroberfläche:** Das Einlesen von Bilddateien, EXIF-Metadaten und XMP-Sidecars erfolgt nun in einem dedizierten Hintergrund-Thread (`CullingScanWorker`).
+  - **Live-Fortschrittsbalken:** Während des Einlesens wird ein Fortschrittsbalken mit Prozentangabe, aktuellem Dateinamen und Zähler (`Lese Fotos ein: X von Y (Z%)...`) angezeigt.
+  - **Abbruchmöglichkeit:** Über die Schaltfläche *„✕ Abbrechen“* kann das Einlesen sehr großer Ordner jederzeit ohne UI-Hänger gestoppt werden.
+  - Schaltflächen für Ordnerauswahl und Neuladen werden während des Scan-Vorgangs geschützt deaktiviert.
+
 ## [0.14.0] - 2026-11-05
 
 ### Hinzugefügt

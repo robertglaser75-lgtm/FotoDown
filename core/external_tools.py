@@ -118,3 +118,4 @@ def launch_topaz_photo(jpeg_paths: List[Path], custom_exe: Optional[str] = None)
         return True, f"Topaz Photo mit {len(valid_jpegs)} JPEG-Datei(en) gestartet."
     except Exception as e:
         return False, f"Fehler beim Starten von Topaz Photo: {e}"
+

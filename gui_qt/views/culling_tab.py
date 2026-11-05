@@ -18,7 +18,7 @@ from PySide6.QtCore import Qt, Signal, QSize, QTimer
 from PySide6.QtGui import QColor, QFont, QImage, QKeyEvent, QPainter, QPainterPath, QPen, QPixmap, QWheelEvent
 from PySide6.QtWidgets import (
     QButtonGroup, QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel,
-    QMessageBox, QPushButton, QScrollArea, QSizePolicy, QSplitter, QVBoxLayout, QWidget
+    QMessageBox, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QSplitter, QVBoxLayout, QWidget
 )
 
 from core.config import AppConfig
@@ -27,6 +27,7 @@ from core.external_tools import launch_darktable, launch_topaz_photo
 from core.thumbnail import generate_thumbnail, load_preview_image
 from core.xmp_sync import sync_pair_xmp
 from gui_qt.models.culling_model import CullingItem, execute_reject_action, scan_culling_folder
+from gui_qt.workers.culling_worker import CullingScanWorker
 
 
 class CullingCanvasWidget(QScrollArea):
@@ -245,6 +246,7 @@ class CullingTabView(QWidget):
         self.filtered_items: List[CullingItem] = []
         self.current_idx: int = -1
         self.current_folder: Optional[Path] = None
+        self._scan_worker: Optional[CullingScanWorker] = None
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._setup_ui()
@@ -286,6 +288,55 @@ class CullingTabView(QWidget):
         top_layout.addWidget(self.btn_refresh)
 
         main_layout.addWidget(top_bar)
+
+        # 1b. Scanning Progress Frame (asynchronous progress bar while opening a folder)
+        self.progress_frame = QFrame()
+        self.progress_frame.setStyleSheet("""
+            QFrame {
+                background-color: #0b1329;
+                border: 1px solid #1d4ed8;
+                border-radius: 6px;
+            }
+        """)
+        prog_layout = QHBoxLayout(self.progress_frame)
+        prog_layout.setContentsMargins(10, 6, 10, 6)
+        prog_layout.setSpacing(10)
+
+        self.lbl_scan_status = QLabel("Lese Fotos ein...")
+        self.lbl_scan_status.setStyleSheet("color: #38bdf8; font-weight: 600; font-size: 11px;")
+        prog_layout.addWidget(self.lbl_scan_status)
+
+        self.scan_progress_bar = QProgressBar()
+        self.scan_progress_bar.setFixedHeight(12)
+        self.scan_progress_bar.setRange(0, 100)
+        self.scan_progress_bar.setValue(0)
+        self.scan_progress_bar.setTextVisible(False)
+        self.scan_progress_bar.setStyleSheet("""
+            QProgressBar {
+                background-color: #1e293b;
+                border: 1px solid #334155;
+                border-radius: 4px;
+            }
+            QProgressBar::chunk {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0284c7, stop:1 #38bdf8);
+                border-radius: 3px;
+            }
+        """)
+        prog_layout.addWidget(self.scan_progress_bar, stretch=1)
+
+        self.btn_cancel_scan = QPushButton("✕ Abbrechen")
+        self.btn_cancel_scan.setStyleSheet("""
+            QPushButton {
+                background-color: #7f1d1d; color: #fca5a5; border: 1px solid #b91c1c;
+                border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: bold;
+            }
+            QPushButton:hover { background-color: #991b1b; color: white; }
+        """)
+        self.btn_cancel_scan.clicked.connect(self._cancel_scan)
+        prog_layout.addWidget(self.btn_cancel_scan)
+
+        self.progress_frame.setVisible(False)
+        main_layout.addWidget(self.progress_frame)
 
         # 2. Control & Rating Bar
         ctrl_bar = QFrame()
@@ -455,15 +506,46 @@ class CullingTabView(QWidget):
         main_layout.addWidget(bottom_bar)
 
     def load_folder(self, folder: Path):
-        """Loads and scans photos from folder into the Culling workflow."""
+        """Loads and scans photos from folder into the Culling workflow with progress display."""
         if not folder or not folder.exists() or not folder.is_dir():
             return
+
+        self._cancel_scan()
+
         self.current_folder = folder
         self.lbl_folder_path.setText(str(folder))
         self.config.culling_last_folder = str(folder)
         self.config.save()
 
-        self.items = scan_culling_folder(folder)
+        # Display progress frame and disable folder buttons while scanning
+        self.btn_choose_folder.setEnabled(False)
+        self.btn_refresh.setEnabled(False)
+        self.scan_progress_bar.setValue(0)
+        self.lbl_scan_status.setText("Durchsuche Verzeichnis nach Fotos & RAW-Dateien...")
+        self.progress_frame.setVisible(True)
+
+        self.canvas.set_pixmap(None)
+        self.lbl_active_name.setText("Lade Fotos...")
+        self.lbl_stats.setText("Lese Ordner ein...")
+
+        self._scan_worker = CullingScanWorker(folder, parent=self)
+        self._scan_worker.progress.connect(self._on_scan_progress)
+        self._scan_worker.scan_finished.connect(self._on_scan_finished)
+        self._scan_worker.error.connect(self._on_scan_error)
+        self._scan_worker.start()
+
+    def _on_scan_progress(self, cur: int, total: int, filename: str):
+        pct = int(cur / total * 100) if total > 0 else 0
+        self.scan_progress_bar.setValue(pct)
+        self.lbl_scan_status.setText(f"Lese Fotos ein: {cur} von {total} ({pct}%) • {filename}")
+        self.lbl_stats.setText(f"Scan läuft: {cur}/{total} ({pct}%)")
+
+    def _on_scan_finished(self, items: List[CullingItem]):
+        self.progress_frame.setVisible(False)
+        self.btn_choose_folder.setEnabled(True)
+        self.btn_refresh.setEnabled(True)
+
+        self.items = items
         self.filtered_items = list(self.items)
 
         self._update_stats_label()
@@ -475,6 +557,22 @@ class CullingTabView(QWidget):
             self.canvas.set_pixmap(None)
             self.lbl_active_name.setText("Keine Fotos im Ordner gefunden")
             self.lbl_pair_badge.setVisible(False)
+
+    def _on_scan_error(self, err_msg: str):
+        self.progress_frame.setVisible(False)
+        self.btn_choose_folder.setEnabled(True)
+        self.btn_refresh.setEnabled(True)
+        QMessageBox.critical(self, "Fehler beim Einlesen", f"Fehler beim Scannen des Ordners:\n{err_msg}")
+        self.lbl_active_name.setText("Fehler beim Laden")
+        self.lbl_stats.setText("Fehler beim Laden")
+
+    def _cancel_scan(self):
+        if self._scan_worker and self._scan_worker.isRunning():
+            self._scan_worker.cancel()
+            self._scan_worker.wait(1000)
+        self.progress_frame.setVisible(False)
+        self.btn_choose_folder.setEnabled(True)
+        self.btn_refresh.setEnabled(True)
 
     def refresh_current_folder(self):
         if self.current_folder:
@@ -725,3 +823,4 @@ class CullingTabView(QWidget):
             return
 
         super().keyPressEvent(event)
+

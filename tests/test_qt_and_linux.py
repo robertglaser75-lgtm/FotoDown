@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.14.0")
+        self.assertEqual(__version__, "0.14.1")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -904,6 +904,24 @@ class TestCullingAndExternalTools(unittest.TestCase):
         ok_t, msg_t = launch_topaz_photo([self.raw_file])
         self.assertFalse(ok_t)
         self.assertIn("Keine", msg_t)
+
+    def test_culling_scan_worker_progress(self):
+        from gui_qt.workers.culling_worker import CullingScanWorker
+
+        progress_events = []
+        finished_items = []
+
+        worker = CullingScanWorker(self.dir_path)
+        worker.progress.connect(lambda cur, total, msg: progress_events.append((cur, total, msg)))
+        worker.scan_finished.connect(lambda items: finished_items.extend(items))
+
+        worker.run()
+
+        self.assertGreater(len(progress_events), 0)
+        self.assertEqual(len(finished_items), 1)
+        cur, total, msg = progress_events[0]
+        self.assertEqual(cur, 1)
+        self.assertEqual(total, 1)
 
 
 if __name__ == "__main__":

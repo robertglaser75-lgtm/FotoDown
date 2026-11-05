@@ -132,3 +132,4 @@ def sync_pair_xmp(primary_path: Path, companion_path: Optional[Path], rating: in
     write_xmp_metadata(primary_path, rating, label, is_rejected)
     if companion_path and companion_path.exists() and companion_path != primary_path:
         write_xmp_metadata(companion_path, rating, label, is_rejected)
+
