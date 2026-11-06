@@ -5,7 +5,7 @@ from typing import List, Optional
 from PIL import Image
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QFont, QImage, QKeyEvent, QPainter, QPixmap, QResizeEvent
+from PySide6.QtGui import QColor, QFont, QImage, QKeyEvent, QPainter, QPixmap, QResizeEvent, QWheelEvent
 from PySide6.QtWidgets import (
     QCheckBox, QFrame, QHBoxLayout, QLabel,
     QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
@@ -16,6 +16,9 @@ from core.drive_detector import format_size
 from core.importer import ScanItem
 from core.thumbnail import load_preview_image
 from core.xmp_sync import read_xmp_workflow_info
+from gui_qt.key_navigation import (
+    DEFAULT_NAVIGATION_SCHEME, get_nav_hint, get_nav_labels, is_nav_next, is_nav_prev
+)
 
 
 class MediaSingleView(QWidget):
@@ -115,6 +118,8 @@ class MediaSingleView(QWidget):
 
         # 2. Main Scrollable Image Viewport
         self.scroll_area = QScrollArea()
+        self.scroll_area.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.scroll_area.viewport().setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll_area.setStyleSheet("""
@@ -177,9 +182,9 @@ class MediaSingleView(QWidget):
 
         bottom_layout.addStretch()
 
-        lbl_hint = QLabel("Navigation: ◀ / ▶ oder A / D | Zoom: F oder Doppelklick | Vollbild: Leertaste")
-        lbl_hint.setStyleSheet("color: #64748b; font-size: 11px;")
-        bottom_layout.addWidget(lbl_hint)
+        self.lbl_hint = QLabel("Navigation: ◀ / ▶ oder A / D | Zoom: F oder Doppelklick | Vollbild: Leertaste")
+        self.lbl_hint.setStyleSheet("color: #64748b; font-size: 11px;")
+        bottom_layout.addWidget(self.lbl_hint)
 
         main_layout.addWidget(bottom_bar)
 
@@ -212,9 +217,19 @@ class MediaSingleView(QWidget):
             self._render_current_item()
 
     def apply_config(self, config: Optional[AppConfig] = None):
-        """Applies updated configuration options and refreshes visible fields."""
+        """Applies updated configuration options and refreshes visible fields and shortcuts."""
         if config:
             self.config = config
+        cfg = self.config
+        scheme = getattr(cfg, "navigation_scheme", DEFAULT_NAVIGATION_SCHEME) if cfg else DEFAULT_NAVIGATION_SCHEME
+        prev_lbl, next_lbl = get_nav_labels(scheme)
+        hint = get_nav_hint(scheme)
+        self.btn_prev.setText(prev_lbl)
+        self.btn_next.setText(next_lbl)
+        self.btn_prev.setToolTip(f"Vorheriges Foto ({hint})")
+        self.btn_next.setToolTip(f"Nächstes Foto ({hint})")
+        if hasattr(self, "lbl_hint"):
+            self.lbl_hint.setText(f"Navigation: {hint} | Zoom: F oder Doppelklick | Vollbild: Leertaste")
         self._render_current_item()
 
     def get_current_item(self) -> Optional[ScanItem]:
@@ -385,11 +400,25 @@ class MediaSingleView(QWidget):
         if self._zoom_mode == "fit":
             self._update_display()
 
+    def wheelEvent(self, event: QWheelEvent):
+        if self.config and getattr(self.config, "navigation_enable_mouse_wheel", False) and self._zoom_mode == "fit":
+            delta = event.angleDelta().y()
+            if delta > 0:
+                self._prev_item()
+                event.accept()
+                return
+            elif delta < 0:
+                self._next_item()
+                event.accept()
+                return
+        super().wheelEvent(event)
+
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
-        if key in (Qt.Key.Key_Left, Qt.Key.Key_A):
+        scheme = getattr(self.config, "navigation_scheme", DEFAULT_NAVIGATION_SCHEME) if self.config else DEFAULT_NAVIGATION_SCHEME
+        if is_nav_prev(key, scheme):
             self._prev_item()
-        elif key in (Qt.Key.Key_Right, Qt.Key.Key_D):
+        elif is_nav_next(key, scheme):
             self._next_item()
         elif key == Qt.Key.Key_S:
             self.chk_selected.setChecked(not self.chk_selected.isChecked())

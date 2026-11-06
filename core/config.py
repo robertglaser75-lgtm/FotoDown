@@ -134,6 +134,9 @@ class AppConfig:
     single_view_show_exposure: bool = True      # Blende, Belichtungszeit, ISO, Brennweite
     single_view_show_date: bool = True          # Aufnahmedatum / Uhrzeit
     single_view_show_filesize: bool = True      # Dateigröße & Megapixel/Dimensionen
+    # Tastatur & Weiterschalten von Bildern
+    navigation_scheme: str = "arrows_ad"        # "arrows", "arrows_ad", "arrows_all", "ad_only", "page_keys", "all"
+    navigation_enable_mouse_wheel: bool = False
 
     def apply_profile(self, name: str) -> bool:
         """Applies configuration settings from a profile by name."""

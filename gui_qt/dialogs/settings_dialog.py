@@ -11,6 +11,9 @@ from PySide6.QtWidgets import (
 )
 
 from core.config import AppConfig
+from gui_qt.key_navigation import (
+    DEFAULT_NAVIGATION_SCHEME, NAVIGATION_SCHEMES, get_nav_hint
+)
 
 
 class SettingsDialog(QDialog):
@@ -219,8 +222,57 @@ class SettingsDialog(QDialog):
         preview_layout.addWidget(self.lbl_preview_chips_row)
 
         layout.addWidget(self.frame_preview)
+
+        # Tastatur & Weiterschalten Box
+        box_nav = QGroupBox("Tastatur & Bild-Navigation (Weiterschalten)")
+        box_nav.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid #1e293b;
+                border-radius: 6px;
+                margin-top: 10px;
+                padding-top: 14px;
+                font-weight: bold;
+                color: #38bdf8;
+            }
+        """)
+        nav_vbox = QVBoxLayout(box_nav)
+        nav_vbox.setSpacing(6)
+
+        nav_row = QHBoxLayout()
+        lbl_nav = QLabel("Tastenbelegung zum Weiterschalten:")
+        lbl_nav.setStyleSheet("color: #cbd5e1; font-weight: normal; font-size: 11px;")
+        nav_row.addWidget(lbl_nav)
+
+        self.combo_nav_scheme = QComboBox()
+        self.combo_nav_scheme.setStyleSheet("""
+            QComboBox {
+                background-color: #1e293b; color: #f8fafc; border: 1px solid #334155;
+                border-radius: 4px; padding: 4px 8px; min-width: 280px;
+            }
+        """)
+        for s_id, s_data in NAVIGATION_SCHEMES.items():
+            self.combo_nav_scheme.addItem(s_data["name"], s_id)
+        self.combo_nav_scheme.currentIndexChanged.connect(self._update_nav_hint)
+        nav_row.addWidget(self.combo_nav_scheme)
+        nav_row.addStretch()
+        nav_vbox.addLayout(nav_row)
+
+        self.lbl_nav_hint = QLabel("")
+        self.lbl_nav_hint.setStyleSheet("color: #38bdf8; font-size: 11px; margin-left: 2px;")
+        nav_vbox.addWidget(self.lbl_nav_hint)
+
+        self.chk_nav_mouse_wheel = QCheckBox("Mausrad zum Weiterschalten nutzen (in Normalansicht ohne Zoom)")
+        self.chk_nav_mouse_wheel.setStyleSheet("color: #cbd5e1; font-size: 11px;")
+        nav_vbox.addWidget(self.chk_nav_mouse_wheel)
+
+        layout.addWidget(box_nav)
         layout.addStretch()
         return w
+
+    def _update_nav_hint(self):
+        """Updates the description hint below the navigation scheme selector."""
+        scheme_id = self.combo_nav_scheme.currentData() or DEFAULT_NAVIGATION_SCHEME
+        self.lbl_nav_hint.setText(f"ℹ️ {get_nav_hint(scheme_id)}")
 
     def _update_live_preview(self):
         """Updates the interactive live preview banner according to checked boxes."""
@@ -272,7 +324,11 @@ class SettingsDialog(QDialog):
         self.chk_sv_exposure.setChecked(True)
         self.chk_sv_date.setChecked(True)
         self.chk_sv_filesize.setChecked(True)
+        idx_def = self.combo_nav_scheme.findData(DEFAULT_NAVIGATION_SCHEME)
+        self.combo_nav_scheme.setCurrentIndex(max(0, idx_def))
+        self.chk_nav_mouse_wheel.setChecked(False)
         self._update_live_preview()
+        self._update_nav_hint()
 
     # -------------------------------------------------------------------------
     # TAB 2: IMPORT & ORGANISATION
@@ -495,7 +551,12 @@ class SettingsDialog(QDialog):
         self.chk_sv_exposure.setChecked(c.single_view_show_exposure)
         self.chk_sv_date.setChecked(c.single_view_show_date)
         self.chk_sv_filesize.setChecked(c.single_view_show_filesize)
+        scheme = getattr(c, "navigation_scheme", DEFAULT_NAVIGATION_SCHEME)
+        idx_nav = self.combo_nav_scheme.findData(scheme)
+        self.combo_nav_scheme.setCurrentIndex(max(0, idx_nav))
+        self.chk_nav_mouse_wheel.setChecked(getattr(c, "navigation_enable_mouse_wheel", False))
         self._update_live_preview()
+        self._update_nav_hint()
 
         # 2. Import & Org
         idx_org = self.combo_org.findData(c.type_folder_organization)
@@ -535,6 +596,8 @@ class SettingsDialog(QDialog):
         c.single_view_show_exposure = self.chk_sv_exposure.isChecked()
         c.single_view_show_date = self.chk_sv_date.isChecked()
         c.single_view_show_filesize = self.chk_sv_filesize.isChecked()
+        c.navigation_scheme = self.combo_nav_scheme.currentData() or DEFAULT_NAVIGATION_SCHEME
+        c.navigation_enable_mouse_wheel = self.chk_nav_mouse_wheel.isChecked()
 
         # 2. Import & Org
         c.type_folder_organization = self.combo_org.currentData() or "same"

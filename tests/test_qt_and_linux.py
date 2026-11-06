@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.18.2")
+        self.assertEqual(__version__, "0.19.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1663,6 +1663,192 @@ class TestSettingsAndSingleViewConfig(unittest.TestCase):
 
         tab.canvas.hide_loading()
         self.assertEqual(tab.canvas._canvas_loading_anim.state(), QPropertyAnimation.State.Stopped)
+
+        tab.close()
+
+
+class TestKeyNavigationAndImageSwitching(unittest.TestCase):
+    def test_navigation_schemes_and_key_matching(self):
+        from gui_qt.key_navigation import (
+            DEFAULT_NAVIGATION_SCHEME, NAVIGATION_SCHEMES,
+            get_nav_hint, get_nav_labels, is_nav_next, is_nav_prev
+        )
+        from PySide6.QtCore import Qt
+
+        self.assertEqual(DEFAULT_NAVIGATION_SCHEME, "arrows_ad")
+        self.assertIn("arrows", NAVIGATION_SCHEMES)
+        self.assertIn("arrows_ad", NAVIGATION_SCHEMES)
+        self.assertIn("arrows_all", NAVIGATION_SCHEMES)
+        self.assertIn("ad_only", NAVIGATION_SCHEMES)
+        self.assertIn("page_keys", NAVIGATION_SCHEMES)
+        self.assertIn("all", NAVIGATION_SCHEMES)
+
+        # 1. Arrows only
+        self.assertTrue(is_nav_prev(Qt.Key.Key_Left, "arrows"))
+        self.assertTrue(is_nav_next(Qt.Key.Key_Right, "arrows"))
+        self.assertFalse(is_nav_prev(Qt.Key.Key_A, "arrows"))
+        self.assertFalse(is_nav_next(Qt.Key.Key_D, "arrows"))
+
+        # 2. Arrows & A/D
+        self.assertTrue(is_nav_prev(Qt.Key.Key_Left, "arrows_ad"))
+        self.assertTrue(is_nav_prev(Qt.Key.Key_A, "arrows_ad"))
+        self.assertTrue(is_nav_next(Qt.Key.Key_Right, "arrows_ad"))
+        self.assertTrue(is_nav_next(Qt.Key.Key_D, "arrows_ad"))
+
+        # 3. A/D only
+        self.assertTrue(is_nav_prev(Qt.Key.Key_A, "ad_only"))
+        self.assertTrue(is_nav_next(Qt.Key.Key_D, "ad_only"))
+        self.assertFalse(is_nav_prev(Qt.Key.Key_Left, "ad_only"))
+        self.assertFalse(is_nav_next(Qt.Key.Key_Right, "ad_only"))
+
+        # 4. Page Up / Page Down
+        self.assertTrue(is_nav_prev(Qt.Key.Key_PageUp, "page_keys"))
+        self.assertTrue(is_nav_next(Qt.Key.Key_PageDown, "page_keys"))
+
+        # Labels & Hints
+        prev_lbl, next_lbl = get_nav_labels("arrows")
+        self.assertIn("←", prev_lbl)
+        self.assertIn("→", next_lbl)
+        self.assertIn("←", get_nav_hint("arrows"))
+
+    def test_settings_dialog_navigation_sync(self):
+        from core.config import AppConfig
+        from gui_qt.dialogs.settings_dialog import SettingsDialog
+
+        cfg = AppConfig()
+        cfg.navigation_scheme = "arrows_ad"
+        cfg.navigation_enable_mouse_wheel = False
+
+        dlg = SettingsDialog(cfg)
+        self.assertEqual(dlg.combo_nav_scheme.currentData(), "arrows_ad")
+        self.assertFalse(dlg.chk_nav_mouse_wheel.isChecked())
+
+        # Change scheme to "arrows"
+        idx_arrows = dlg.combo_nav_scheme.findData("arrows")
+        dlg.combo_nav_scheme.setCurrentIndex(idx_arrows)
+        dlg.chk_nav_mouse_wheel.setChecked(True)
+        dlg.save_to_config()
+
+        self.assertEqual(cfg.navigation_scheme, "arrows")
+        self.assertTrue(cfg.navigation_enable_mouse_wheel)
+
+        # Reset defaults
+        dlg._reset_single_view_defaults()
+        self.assertEqual(dlg.combo_nav_scheme.currentData(), "arrows_ad")
+        self.assertFalse(dlg.chk_nav_mouse_wheel.isChecked())
+
+        dlg.close()
+
+    def test_header_banner_navigation_menu(self):
+        from core.config import AppConfig
+        from gui_qt.widgets.header_banner import HeaderBanner
+
+        cfg = AppConfig()
+        cfg.navigation_scheme = "arrows_ad"
+        banner = HeaderBanner(cfg)
+
+        self.assertIn("arrows", banner.nav_actions)
+        self.assertIn("arrows_ad", banner.nav_actions)
+        self.assertTrue(banner.nav_actions["arrows_ad"].isChecked())
+
+        # Select "arrows" via menu action
+        signal_emitted = []
+        banner.single_view_config_changed.connect(lambda: signal_emitted.append(True))
+        banner.nav_actions["arrows"].trigger()
+
+        self.assertEqual(cfg.navigation_scheme, "arrows")
+        self.assertTrue(banner.nav_actions["arrows"].isChecked())
+        self.assertTrue(signal_emitted)
+
+        banner.close()
+
+    def test_media_single_view_navigation_labels_and_switching(self):
+        from core.config import AppConfig
+        from core.importer import ScanItem
+        from gui_qt.views.single_view import MediaSingleView
+        from PySide6.QtGui import QKeyEvent
+        from PySide6.QtCore import QEvent, Qt
+        from pathlib import Path
+
+        cfg = AppConfig()
+        cfg.navigation_scheme = "arrows"
+        view = MediaSingleView(cfg)
+        view.show()
+
+        # Check button label updated to arrow
+        view.apply_config(cfg)
+        self.assertIn("[←]", view.btn_prev.text())
+        self.assertIn("[→]", view.btn_next.text())
+
+        # Mock 2 items
+        from datetime import datetime
+        from core.exif_reader import MediaMetadata
+        m1 = MediaMetadata(file_path=Path("img1.jpg"), orig_name="img1", extension=".jpg", file_size=100, date_taken=datetime(2026, 1, 1), date_source="exif")
+        m2 = MediaMetadata(file_path=Path("img2.jpg"), orig_name="img2", extension=".jpg", file_size=100, date_taken=datetime(2026, 1, 1), date_source="exif")
+        it1 = ScanItem(source_path=Path("img1.jpg"), metadata=m1, target_path=Path("img1.jpg"), is_duplicate=False, file_hash="h1", status="Neu")
+        it2 = ScanItem(source_path=Path("img2.jpg"), metadata=m2, target_path=Path("img2.jpg"), is_duplicate=False, file_hash="h2", status="Neu")
+        view.set_items([it1, it2], it1)
+        self.assertEqual(view.current_idx, 0)
+
+        # Press 'D' - with "arrows" scheme, D must NOT advance
+        ev_d = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_D, Qt.KeyboardModifier.NoModifier)
+        view.keyPressEvent(ev_d)
+        self.assertEqual(view.current_idx, 0)
+
+        # Press Right Arrow - must advance to index 1
+        ev_right = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Right, Qt.KeyboardModifier.NoModifier)
+        view.keyPressEvent(ev_right)
+        self.assertEqual(view.current_idx, 1)
+
+        # Press Left Arrow - must return to index 0
+        ev_left = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Left, Qt.KeyboardModifier.NoModifier)
+        view.keyPressEvent(ev_left)
+        self.assertEqual(view.current_idx, 0)
+
+        view.close()
+
+    def test_culling_view_navigation_labels_and_switching(self):
+        from core.config import AppConfig
+        from gui_qt.views.culling_tab import CullingTabView
+        from gui_qt.models.culling_model import CullingItem
+        from PySide6.QtGui import QKeyEvent
+        from PySide6.QtCore import QEvent, Qt
+        from pathlib import Path
+
+        cfg = AppConfig()
+        cfg.navigation_scheme = "arrows"
+        tab = CullingTabView(cfg)
+        tab.show()
+
+        tab.apply_config()
+        self.assertIn("[←]", tab.btn_prev.text())
+        self.assertIn("[→]", tab.btn_next.text())
+
+        it1 = CullingItem(primary_path=Path("p1.orf"))
+        it2 = CullingItem(primary_path=Path("p2.orf"))
+        tab._on_scan_finished([it1, it2])
+        self.assertEqual(tab.current_idx, 0)
+
+        # Press 'D' - should not advance when scheme is "arrows"
+        ev_d = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_D, Qt.KeyboardModifier.NoModifier)
+        tab.keyPressEvent(ev_d)
+        self.assertEqual(tab.current_idx, 0)
+
+        # Press Right Arrow - advances
+        ev_right = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Right, Qt.KeyboardModifier.NoModifier)
+        tab.keyPressEvent(ev_right)
+        self.assertEqual(tab.current_idx, 1)
+
+        # Switch scheme to "arrows_ad"
+        cfg.navigation_scheme = "arrows_ad"
+        tab.apply_config()
+        self.assertIn("[← / A]", tab.btn_prev.text())
+        self.assertIn("[→ / D]", tab.btn_next.text())
+
+        # Press 'A' - returns to 0
+        ev_a = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_A, Qt.KeyboardModifier.NoModifier)
+        tab.keyPressEvent(ev_a)
+        self.assertEqual(tab.current_idx, 0)
 
         tab.close()
 

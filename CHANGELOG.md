@@ -3,6 +3,27 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.19.0] - 2026-11-07
+
+### Hinzugefügt
+- **Konfigurierbare Tastenbelegung für Bildwechsel / Weiterschalten ([`gui_qt/key_navigation.py`](gui_qt/key_navigation.py), [`core/config.py`](core/config.py)):**
+  - Neues modulares Navigationssystem mit frei wählbaren Tasten-Schemata für das Weiterschalten zwischen Fotos in der Einzelansicht und beim Sichten:
+    - **Nur Pfeiltasten (← Links / → Rechts):** Reine Pfeiltastennavigation, verhindert versehentliches Schalten über A/D.
+    - **Pfeiltasten & A / D (Kombiniert - Standard):** Parallele Unterstützung von Pfeiltasten und Tastaturkürzeln `A` (Vorheriges) und `D` (Nächstes).
+    - **Pfeiltasten alle Richtungen (← / → & ↑ / ↓):** Weiterschalten über Links/Rechts oder Oben/Unten.
+    - **Nur A / D Tasten (A = Zurück, D = Vor):** Kompakte Einhand-Tastaturnavigation.
+    - **Bild auf / Bild ab (Page Up / Page Down):** Schnelles Blättern über die Standard-Dokumentnavigationstasten.
+    - **Alle gängigen Navigationstasten:** Unterstützung sämtlicher Navigationsvarianten.
+- **Mausrad-Weiterschalten ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/views/single_view.py`](gui_qt/views/single_view.py)):**
+  - Optionale Einstellung `navigation_enable_mouse_wheel`: Erlaubt das komfortable Durchblättern von Fotos mit dem Mausrad (solange nicht vergrößert / 100% Zoom aktiv ist).
+- **Zahnrad-Menü Direktumschaltung ([`gui_qt/widgets/header_banner.py`](gui_qt/widgets/header_banner.py)):**
+  - Schnelle 1-Klick-Auswahl des gewünschten Navigationsschemas direkt im Dropdown-Menü des oberen Einstellungs-Zahnrads über exklusive Radio-Aktionen.
+- **Einstellungsdialog Integration ([`gui_qt/dialogs/settings_dialog.py`](gui_qt/dialogs/settings_dialog.py)):**
+  - Gruppe *„Tastatur & Bild-Navigation (Weiterschalten)“* im Tab *„👁️ Einzelansicht“* mit Auswahlliste, dynamischem Hinweistext und Mausrad-Option.
+- **Dynamische Button-Beschriftungen & Tooltips:**
+  - Die Navigations-Buttons (`btn_prev` und `btn_next`) in Tab 1 und Tab 2 aktualisieren ihre Beschriftung (`◀ Vorheriges [←]`, `Nächstes ▶ [→]`) sowie Tooltips automatisch anhand des gewählten Schemas.
+  - Das Viewport-Widget leitet Tastaturereignisse zuverlässig an die übergeordnete Ansicht weiter, auch wenn die Bildfläche Fokus besitzt.
+
 ## [0.18.2] - 2026-11-07
 
 ### Verbessert

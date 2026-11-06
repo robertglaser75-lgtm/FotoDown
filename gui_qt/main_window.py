@@ -431,7 +431,7 @@ class MainWindow(QMainWindow):
         if target_item and target_item in items:
             start_idx = items.index(target_item)
 
-        dlg = QuickPreviewDialog(items, start_index=start_idx, parent=self)
+        dlg = QuickPreviewDialog(items, start_index=start_idx, parent=self, config=self.config)
         dlg.selection_changed.connect(self._on_preview_selection_changed)
         dlg.exec()
 

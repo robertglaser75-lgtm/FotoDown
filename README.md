@@ -34,6 +34,7 @@ Lauffähig unter **Windows** und **Linux**.
   - Schnellzugriff per Zahnrad-Button `[ ⚙️ ]` in der oberen Leiste mit Dropdown-Menü.
   - Vollständiger Einstellungsdialog (`SettingsDialog`) mit Reitern für *Einzelansicht*, *Import & Organisation*, *NAS & Familienalbum*, *Externe Editoren* und *IPTC*.
   - **Granular anpassbare Einzelansicht:** Frei konfigurierbar, welche Informationen eingeblendet werden (Name des Bildes, Dateiendung, Sterne & Bewertungen, Speicherort/Pfad, Kamera & Objektiv, Belichtung, Aufnahmedatum, Dateigröße).
+  - **Frei konfigurierbares Weiterschalten / Tastaturnavigation:** Auswahl zwischen *Nur Pfeiltasten*, *Pfeiltasten & A/D (Standard)*, *Pfeiltasten alle Richtungen*, *Nur A/D*, *Bild auf/ab* oder *Mausrad*. Schnellumschaltung direkt im Zahnrad-Menü oder in den Einstellungen.
 - 🔍 **Integrierte Einzelansicht & Schärfebeurteilung:**
   - Neuer Ansichtsmodus *„🔍 Einzelansicht“* im Hauptarbeitsbereich.
   - Großformatige, gestochen scharfe Bildbetrachtung direkt im Anwendungsfenster (bis 2560px).

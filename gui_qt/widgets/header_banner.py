@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import List, Optional
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import (
     QComboBox, QFrame, QHBoxLayout, QLabel, QMenu,
     QMessageBox, QPushButton, QSizePolicy, QWidget
@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 from core.config import AppConfig
 from core.drive_detector import detect_drives, DriveInfo, eject_drive
 from core.version import __version__
+from gui_qt.key_navigation import DEFAULT_NAVIGATION_SCHEME, NAVIGATION_SCHEMES
 from gui_qt.styles.icons import get_gear_icon
 
 
@@ -188,6 +189,22 @@ class HeaderBanner(QFrame):
 
         self.settings_menu.addSeparator()
 
+        lbl_nav = self.settings_menu.addAction("── ⌨️ Bildwechsel / Navigation ──")
+        lbl_nav.setEnabled(False)
+
+        self.nav_action_group = QActionGroup(self)
+        self.nav_action_group.setExclusive(True)
+        self.nav_actions = {}
+
+        for s_id, s_data in NAVIGATION_SCHEMES.items():
+            act = self.settings_menu.addAction(s_data["short_name"])
+            act.setCheckable(True)
+            self.nav_action_group.addAction(act)
+            act.triggered.connect(lambda checked=False, s=s_id: self._on_menu_nav_selected(s))
+            self.nav_actions[s_id] = act
+
+        self.settings_menu.addSeparator()
+
         act_nas = self.settings_menu.addAction("🏠 NAS & Familienalbum...")
         act_nas.triggered.connect(lambda: self.open_settings.emit(2))
 
@@ -214,6 +231,18 @@ class HeaderBanner(QFrame):
             act.blockSignals(True)
             act.setChecked(val)
             act.blockSignals(False)
+
+        curr_scheme = getattr(config, "navigation_scheme", DEFAULT_NAVIGATION_SCHEME)
+        if curr_scheme in self.nav_actions:
+            self.nav_actions[curr_scheme].blockSignals(True)
+            self.nav_actions[curr_scheme].setChecked(True)
+            self.nav_actions[curr_scheme].blockSignals(False)
+
+    def _on_menu_nav_selected(self, scheme_id: str):
+        if self.config:
+            self.config.navigation_scheme = scheme_id
+            self.config.save()
+            self.single_view_config_changed.emit()
 
     def _on_menu_sv_toggled(self, attr_name: str, checked: bool):
         if self.config:

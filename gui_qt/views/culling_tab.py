@@ -26,6 +26,9 @@ from core.drive_detector import format_size
 from core.external_tools import launch_darktable, launch_topaz_photo
 from core.thumbnail import generate_thumbnail, load_preview_image
 from core.xmp_sync import sync_pair_xmp
+from gui_qt.key_navigation import (
+    DEFAULT_NAVIGATION_SCHEME, get_nav_hint, get_nav_labels, is_nav_next, is_nav_prev
+)
 from gui_qt.models.culling_model import CullingItem, execute_reject_action, scan_culling_folder
 from gui_qt.styles.icons import (
     get_collapse_panel_icon, get_expand_panel_icon, get_filmstrip_icon,
@@ -124,6 +127,32 @@ class CullingCanvasWidget(QScrollArea):
             self.toggle_zoom()
             self.toggle_zoom_requested.emit()
         super().mouseDoubleClickEvent(event)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        p = self.parent()
+        scheme = DEFAULT_NAVIGATION_SCHEME
+        if p and hasattr(p, "config") and p.config:
+            scheme = getattr(p.config, "navigation_scheme", DEFAULT_NAVIGATION_SCHEME)
+        if is_nav_prev(event.key(), scheme) or is_nav_next(event.key(), scheme):
+            if p and hasattr(p, "keyPressEvent"):
+                p.keyPressEvent(event)
+                return
+        super().keyPressEvent(event)
+
+    def wheelEvent(self, event: QWheelEvent):
+        p = self.parent()
+        cfg = getattr(p, "config", None) if p else None
+        if cfg and getattr(cfg, "navigation_enable_mouse_wheel", False) and self._zoom_mode == "fit":
+            delta = event.angleDelta().y()
+            if delta > 0 and hasattr(p, "_prev_item"):
+                p._prev_item()
+                event.accept()
+                return
+            elif delta < 0 and hasattr(p, "_next_item"):
+                p._next_item()
+                event.accept()
+                return
+        super().wheelEvent(event)
 
 
 class FilmstripBar(QScrollArea):
@@ -456,12 +485,17 @@ class CullingTabView(QWidget):
         # Navigation row
         nav_layout = QHBoxLayout()
         nav_layout.setSpacing(6)
-        self.btn_prev = QPushButton("◀ Vorheriges [A]")
+        _scheme = self.config.navigation_scheme if self.config else DEFAULT_NAVIGATION_SCHEME
+        _prev_lbl, _next_lbl = get_nav_labels(_scheme)
+        _hint = get_nav_hint(_scheme)
+        self.btn_prev = QPushButton(_prev_lbl)
+        self.btn_prev.setToolTip(f"Vorheriges Foto ({_hint})")
         self.btn_prev.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 5px;")
         self.btn_prev.clicked.connect(self._prev_item)
         nav_layout.addWidget(self.btn_prev)
 
-        self.btn_next = QPushButton("Nächstes ▶ [D]")
+        self.btn_next = QPushButton(_next_lbl)
+        self.btn_next.setToolTip(f"Nächstes Foto ({_hint})")
         self.btn_next.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 5px;")
         self.btn_next.clicked.connect(self._next_item)
         nav_layout.addWidget(self.btn_next)
@@ -909,7 +943,14 @@ class CullingTabView(QWidget):
         self._render_current_item()
 
     def apply_config(self):
-        """Applies updated configuration options and re-renders active photo."""
+        """Applies updated configuration options, navigation keys, and re-renders active photo."""
+        scheme = self.config.navigation_scheme if self.config else DEFAULT_NAVIGATION_SCHEME
+        prev_lbl, next_lbl = get_nav_labels(scheme)
+        hint = get_nav_hint(scheme)
+        self.btn_prev.setText(prev_lbl)
+        self.btn_next.setText(next_lbl)
+        self.btn_prev.setToolTip(f"Vorheriges Foto ({hint})")
+        self.btn_next.setToolTip(f"Nächstes Foto ({hint})")
         self._render_current_item()
 
     def _render_current_item(self):
@@ -1244,10 +1285,11 @@ class CullingTabView(QWidget):
                 return
 
         # Navigation
-        if key in (Qt.Key.Key_Left, Qt.Key.Key_A):
+        scheme = self.config.navigation_scheme if self.config else DEFAULT_NAVIGATION_SCHEME
+        if is_nav_prev(key, scheme):
             self._prev_item()
             return
-        elif key in (Qt.Key.Key_Right, Qt.Key.Key_D):
+        elif is_nav_next(key, scheme):
             self._next_item()
             return
         # Rating 0-5

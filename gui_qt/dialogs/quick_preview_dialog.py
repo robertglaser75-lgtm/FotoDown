@@ -12,15 +12,18 @@ from PySide6.QtWidgets import (
 )
 
 from core.drive_detector import format_size
+from core.config import AppConfig
 from core.importer import ScanItem
 from core.thumbnail import extract_raw_embedded_jpeg, load_preview_image
+from gui_qt.key_navigation import DEFAULT_NAVIGATION_SCHEME, is_nav_next, is_nav_prev
 
 
 class QuickPreviewDialog(QDialog):
     selection_changed = Signal()
 
-    def __init__(self, items: List[ScanItem], start_index: int = 0, parent=None):
+    def __init__(self, items: List[ScanItem], start_index: int = 0, parent=None, config: Optional[AppConfig] = None):
         super().__init__(parent)
+        self.config = config
         self.items = items
         self.current_idx = max(0, min(start_index, len(items) - 1)) if items else 0
         self._current_pixmap: Optional[QPixmap] = None
@@ -209,11 +212,12 @@ class QuickPreviewDialog(QDialog):
 
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
+        scheme = self.config.navigation_scheme if self.config else DEFAULT_NAVIGATION_SCHEME
         if key in (Qt.Key.Key_Space, Qt.Key.Key_Escape):
             self.accept()
-        elif key in (Qt.Key.Key_Left, Qt.Key.Key_A):
+        elif is_nav_prev(key, scheme):
             self._prev_item()
-        elif key in (Qt.Key.Key_Right, Qt.Key.Key_D):
+        elif is_nav_next(key, scheme):
             self._next_item()
         elif key == Qt.Key.Key_S:
             self.chk_selected.setChecked(not self.chk_selected.isChecked())
