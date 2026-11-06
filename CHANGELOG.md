@@ -3,6 +3,23 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.15.1] - 2026-11-06
+
+### Behoben
+- **Plattformunabhängige Vektor-Icons für Verzeichnisbaum- und Aktions-Buttons ([`gui_qt/styles/icons.py`](gui_qt/styles/icons.py), [`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py)):**
+  - Ersetzung nativer Unicode-Emojis durch saubere, hochauflösende Vektor-Icons (`QPainter`):
+    - *Aktualisieren*: Runder Reload-Pfeil (`⟳`)
+    - *Unterordner ausklappen*: Crisp Plus (`+`)
+    - *Alle Ordner einklappen*: Crisp Minus (`−`)
+    - *Verzeichnisbaum-Leiste einklappen*: Einklapp-Pfeil (`◀`)
+    - *Ordner in der Baumansicht*: Fluent-Folder-Icons für alle Zeilen und Ordnerwahl-Buttons
+  - Beseitigt fehlende Glyphen, gelbe Rechtecke und Emoji-Fallback-Artefakte auf Windows und Linux vollständig.
+
+### Verbessert
+- **Einklappbare Bereiche für Verzeichnisse und Quellordner ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py)):**
+  - **Einklappbares Quellverzeichnis:** Die Sektion *„Ordner & Quellverzeichnis“* in der Seitenleiste wurde in eine interaktive `CollapsibleBox` umgewandelt und kann per Klick auf den Header oder `[ Einklappen ▲ ]` / `[ Ausklappen ▼ ]` platzsparend zusammengefaltet werden.
+  - **Verzeichnisbaum einklappen:** Der gesamte Verzeichnisbaum kann nun direkt über den Header-Button `[ ◀ ]` im Verzeichnisbaum selbst oder über die obere Symbolleiste bzw. Shortcut <kbd>V</kbd> vollständig ein- und ausgeklappt werden.
+
 ## [0.15.0] - 2026-11-06
 
 ### Hinzugefügt

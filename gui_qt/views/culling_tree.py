@@ -14,8 +14,8 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from PySide6.QtCore import Qt, Signal, QUrl
-from PySide6.QtGui import QColor, QDesktopServices, QFont, QStandardItem, QStandardItemModel
+from PySide6.QtCore import QSize, Qt, Signal, QUrl
+from PySide6.QtGui import QColor, QDesktopServices, QFont, QIcon, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QFileDialog, QFrame, QHBoxLayout, QHeaderView, QLabel,
     QMenu, QPushButton, QSizePolicy, QTreeView, QVBoxLayout, QWidget
@@ -23,6 +23,10 @@ from PySide6.QtWidgets import (
 
 from core.config import AppConfig
 from gui_qt.models.culling_model import count_folder_images
+from gui_qt.styles.icons import (
+    get_collapse_panel_icon, get_folder_icon, get_minus_icon,
+    get_plus_icon, get_refresh_icon
+)
 
 
 DUMMY_ITEM_TEXT = "..."
@@ -32,6 +36,7 @@ class CullingDirectoryTreeWidget(QWidget):
     """Hierarchical folder tree widget showing photo counts (Total, RAW, JPEG)."""
     folder_selected = Signal(Path)
     root_changed = Signal(Path)
+    collapse_panel_requested = Signal()
 
     def __init__(self, config: AppConfig, parent=None):
         super().__init__(parent)
@@ -60,48 +65,69 @@ class CullingDirectoryTreeWidget(QWidget):
         h_layout.setSpacing(6)
 
         title_row = QHBoxLayout()
-        lbl_title = QLabel("📁 VERZEICHNISSE")
+        lbl_title = QLabel("VERZEICHNISSE")
         lbl_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
         title_row.addWidget(lbl_title, stretch=1)
 
-        self.btn_refresh = QPushButton("🔄")
+        self.btn_refresh = QPushButton()
+        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 14))
+        self.btn_refresh.setIconSize(QSize(14, 14))
         self.btn_refresh.setFixedSize(26, 24)
         self.btn_refresh.setToolTip("Verzeichnisbaum aktualisieren")
         self.btn_refresh.setStyleSheet("""
             QPushButton {
-                background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;
-                border-radius: 3px; font-size: 11px;
+                background-color: #1e293b; border: 1px solid #334155;
+                border-radius: 3px;
             }
             QPushButton:hover { background-color: #334155; }
         """)
         self.btn_refresh.clicked.connect(self.refresh)
         title_row.addWidget(self.btn_refresh)
 
-        self.btn_expand_all = QPushButton("➕")
-        self.btn_expand_all.setFixedSize(24, 24)
+        self.btn_expand_all = QPushButton()
+        self.btn_expand_all.setIcon(get_plus_icon("#cbd5e1", 14))
+        self.btn_expand_all.setIconSize(QSize(14, 14))
+        self.btn_expand_all.setFixedSize(26, 24)
         self.btn_expand_all.setToolTip("Unterordner ausklappen")
         self.btn_expand_all.setStyleSheet("""
             QPushButton {
-                background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;
-                border-radius: 3px; font-size: 11px;
+                background-color: #1e293b; border: 1px solid #334155;
+                border-radius: 3px;
             }
             QPushButton:hover { background-color: #334155; }
         """)
         self.btn_expand_all.clicked.connect(self._expand_two_levels)
         title_row.addWidget(self.btn_expand_all)
 
-        self.btn_collapse_all = QPushButton("➖")
-        self.btn_collapse_all.setFixedSize(24, 24)
-        self.btn_collapse_all.setToolTip("Alle einklappen")
+        self.btn_collapse_all = QPushButton()
+        self.btn_collapse_all.setIcon(get_minus_icon("#cbd5e1", 14))
+        self.btn_collapse_all.setIconSize(QSize(14, 14))
+        self.btn_collapse_all.setFixedSize(26, 24)
+        self.btn_collapse_all.setToolTip("Verzeichnisbaum einklappen (Alle Ordner schließen)")
         self.btn_collapse_all.setStyleSheet("""
             QPushButton {
-                background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;
-                border-radius: 3px; font-size: 11px;
+                background-color: #1e293b; border: 1px solid #334155;
+                border-radius: 3px;
             }
             QPushButton:hover { background-color: #334155; }
         """)
         self.btn_collapse_all.clicked.connect(self.tree_view.collapseAll if hasattr(self, 'tree_view') else lambda: None)
         title_row.addWidget(self.btn_collapse_all)
+
+        self.btn_collapse_panel = QPushButton()
+        self.btn_collapse_panel.setIcon(get_collapse_panel_icon("#cbd5e1", 14))
+        self.btn_collapse_panel.setIconSize(QSize(14, 14))
+        self.btn_collapse_panel.setFixedSize(26, 24)
+        self.btn_collapse_panel.setToolTip("Verzeichnisbaum-Leiste einklappen [V]")
+        self.btn_collapse_panel.setStyleSheet("""
+            QPushButton {
+                background-color: #1e293b; border: 1px solid #334155;
+                border-radius: 3px;
+            }
+            QPushButton:hover { background-color: #334155; }
+        """)
+        self.btn_collapse_panel.clicked.connect(self.collapse_panel_requested.emit)
+        title_row.addWidget(self.btn_collapse_panel)
 
         h_layout.addLayout(title_row)
 
@@ -110,6 +136,8 @@ class CullingDirectoryTreeWidget(QWidget):
         path_box.setSpacing(4)
 
         self.btn_change_root = QPushButton("Einstiegspunkt...")
+        self.btn_change_root.setIcon(get_folder_icon("#38bdf8", 13))
+        self.btn_change_root.setIconSize(QSize(13, 13))
         self.btn_change_root.setToolTip("Neuen Einstiegspunkt (Hauptordner) für die Navigation auswählen")
         self.btn_change_root.setStyleSheet("""
             QPushButton {
@@ -230,7 +258,7 @@ class CullingDirectoryTreeWidget(QWidget):
 
         # Update label
         display_text = path.name if path.name else str(path)
-        self.lbl_root_path.setText(f"📂 {display_text}")
+        self.lbl_root_path.setText(display_text)
         self.lbl_root_path.setToolTip(str(path.resolve()))
 
         self.refresh()
@@ -259,7 +287,8 @@ class CullingDirectoryTreeWidget(QWidget):
         total, raw, jpg = count_folder_images(folder)
 
         folder_name = folder.name if folder.name else str(folder)
-        item_name = QStandardItem(f"📁 {folder_name}")
+        item_name = QStandardItem(folder_name)
+        item_name.setIcon(get_folder_icon("#38bdf8", 14))
         item_name.setData(str(folder.resolve()), Qt.ItemDataRole.UserRole)
         item_name.setToolTip(f"{folder.resolve()}\nBilder: {total} | RAW: {raw} | JPG: {jpg}")
         item_name.setEditable(False)

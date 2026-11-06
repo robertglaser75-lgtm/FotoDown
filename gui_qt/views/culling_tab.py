@@ -27,7 +27,12 @@ from core.external_tools import launch_darktable, launch_topaz_photo
 from core.thumbnail import generate_thumbnail, load_preview_image
 from core.xmp_sync import sync_pair_xmp
 from gui_qt.models.culling_model import CullingItem, execute_reject_action, scan_culling_folder
+from gui_qt.styles.icons import (
+    get_collapse_panel_icon, get_expand_panel_icon, get_filmstrip_icon,
+    get_folder_icon, get_refresh_icon
+)
 from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+from gui_qt.widgets.collapsible_box import CollapsibleBox
 from gui_qt.workers.culling_worker import CullingScanWorker
 
 
@@ -268,6 +273,7 @@ class CullingTabView(QWidget):
         self.dir_tree.setMinimumWidth(280)
         self.dir_tree.setMaximumWidth(480)
         self.dir_tree.folder_selected.connect(self._on_tree_folder_selected)
+        self.dir_tree.collapse_panel_requested.connect(self._toggle_dir_tree)
         self.splitter.addWidget(self.dir_tree)
 
         # -------------------------------------------------------------
@@ -294,21 +300,19 @@ class CullingTabView(QWidget):
             }
         """
 
-        # 1. Card: Folder Selection & Scan Progress
-        card_folder = QFrame()
-        card_folder.setStyleSheet(card_style)
-        layout_folder = QVBoxLayout(card_folder)
-        layout_folder.setContentsMargins(6, 6, 6, 6)
+        # 1. Collapsible Section: Folder Selection & Scan Progress
+        self.box_folder = CollapsibleBox("Ordner & Quellverzeichnis", is_expanded=True)
+        content_folder = QWidget()
+        layout_folder = QVBoxLayout(content_folder)
+        layout_folder.setContentsMargins(2, 4, 2, 4)
         layout_folder.setSpacing(6)
-
-        lbl_sec_folder = QLabel("📁 ORDNER & QUELLVERZEICHNIS")
-        lbl_sec_folder.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
-        layout_folder.addWidget(lbl_sec_folder)
 
         folder_btns_layout = QHBoxLayout()
         folder_btns_layout.setSpacing(6)
 
         self.btn_choose_folder = QPushButton("Ordner wählen...")
+        self.btn_choose_folder.setIcon(get_folder_icon("#38bdf8", 14))
+        self.btn_choose_folder.setIconSize(QSize(14, 14))
         self.btn_choose_folder.setStyleSheet("""
             QPushButton {
                 background-color: #1e293b; color: #f8fafc; border: 1px solid #334155;
@@ -319,10 +323,12 @@ class CullingTabView(QWidget):
         self.btn_choose_folder.clicked.connect(self._on_choose_folder_clicked)
         folder_btns_layout.addWidget(self.btn_choose_folder, stretch=1)
 
-        self.btn_refresh = QPushButton("🔄")
+        self.btn_refresh = QPushButton()
+        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 14))
+        self.btn_refresh.setIconSize(QSize(14, 14))
         self.btn_refresh.setFixedSize(30, 28)
         self.btn_refresh.setToolTip("Ordner neu scannen")
-        self.btn_refresh.setStyleSheet("background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; border-radius: 4px; font-size: 12px;")
+        self.btn_refresh.setStyleSheet("background-color: #1e293b; border: 1px solid #334155; border-radius: 4px;")
         self.btn_refresh.clicked.connect(self.refresh_current_folder)
         folder_btns_layout.addWidget(self.btn_refresh)
         layout_folder.addLayout(folder_btns_layout)
@@ -379,7 +385,8 @@ class CullingTabView(QWidget):
         self.progress_frame.setVisible(False)
         layout_folder.addWidget(self.progress_frame)
 
-        sidebar_layout.addWidget(card_folder)
+        self.box_folder.set_content_widget(content_folder)
+        sidebar_layout.addWidget(self.box_folder)
 
         # 2. Card: Active Photo & Navigation
         card_photo = QFrame()
@@ -622,7 +629,9 @@ class CullingTabView(QWidget):
         strip_layout.setContentsMargins(4, 2, 4, 2)
         strip_layout.setSpacing(8)
 
-        self.btn_toggle_tree = QPushButton("📁 Verzeichnisbaum ausblenden [V]")
+        self.btn_toggle_tree = QPushButton("Verzeichnisbaum ausblenden [V]")
+        self.btn_toggle_tree.setIcon(get_folder_icon("#38bdf8", 14))
+        self.btn_toggle_tree.setIconSize(QSize(14, 14))
         self.btn_toggle_tree.setStyleSheet("""
             QPushButton {
                 background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
@@ -635,7 +644,9 @@ class CullingTabView(QWidget):
 
         strip_layout.addStretch()
 
-        self.btn_toggle_filmstrip = QPushButton("🎞️ Filmstreifen ausblenden [T]")
+        self.btn_toggle_filmstrip = QPushButton("Filmstreifen ausblenden [T]")
+        self.btn_toggle_filmstrip.setIcon(get_filmstrip_icon("#94a3b8", 14))
+        self.btn_toggle_filmstrip.setIconSize(QSize(14, 14))
         self.btn_toggle_filmstrip.setStyleSheet("""
             QPushButton {
                 background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
@@ -751,7 +762,8 @@ class CullingTabView(QWidget):
     def _toggle_dir_tree(self):
         is_vis = not self.dir_tree.isVisible()
         self.dir_tree.setVisible(is_vis)
-        self.btn_toggle_tree.setText("📁 Verzeichnisbaum ausblenden [V]" if is_vis else "📁 Verzeichnisbaum einblenden [V]")
+        self.btn_toggle_tree.setText("Verzeichnisbaum ausblenden [V]" if is_vis else "Verzeichnisbaum einblenden [V]")
+        self.btn_toggle_tree.setIcon(get_folder_icon("#38bdf8" if is_vis else "#94a3b8", 14))
 
     def _on_choose_folder_clicked(self):
         start_dir = str(self.current_folder) if self.current_folder else self.config.target_dir
@@ -961,7 +973,8 @@ class CullingTabView(QWidget):
     def _toggle_filmstrip(self):
         is_vis = not self.filmstrip.isVisible()
         self.filmstrip.setVisible(is_vis)
-        self.btn_toggle_filmstrip.setText("🎞️ Filmstreifen ausblenden [T]" if is_vis else "🎞️ Filmstreifen einblenden [T]")
+        self.btn_toggle_filmstrip.setText("Filmstreifen ausblenden [T]" if is_vis else "Filmstreifen einblenden [T]")
+        self.btn_toggle_filmstrip.setIcon(get_filmstrip_icon("#38bdf8" if is_vis else "#94a3b8", 14))
 
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()

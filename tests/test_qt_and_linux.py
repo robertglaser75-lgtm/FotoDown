@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.15.0")
+        self.assertEqual(__version__, "0.15.1")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -979,6 +979,12 @@ class TestCullingAndExternalTools(unittest.TestCase):
             self.assertEqual(sub1_raw_item.text(), "1")
             self.assertEqual(sub1_jpg_item.text(), "1")
 
+            # Check vector icons on tree action buttons
+            self.assertFalse(tree_widget.btn_refresh.icon().isNull())
+            self.assertFalse(tree_widget.btn_expand_all.icon().isNull())
+            self.assertFalse(tree_widget.btn_collapse_all.icon().isNull())
+            self.assertFalse(tree_widget.btn_collapse_panel.icon().isNull())
+
             tree_widget._on_item_clicked(tree_widget.model.indexFromItem(child_item))
             self.assertEqual(len(emitted_paths), 1)
             self.assertEqual(emitted_paths[0].resolve(), sub1.resolve())
@@ -987,6 +993,7 @@ class TestCullingAndExternalTools(unittest.TestCase):
 
     def test_culling_tab_ultrawide_layout(self):
         from gui_qt.views.culling_tab import CullingTabView
+        from gui_qt.widgets.collapsible_box import CollapsibleBox
         from core.config import AppConfig
 
         cfg = AppConfig()
@@ -998,11 +1005,21 @@ class TestCullingAndExternalTools(unittest.TestCase):
         self.assertEqual(tab.splitter.count(), 3)
         self.assertIsNotNone(tab.dir_tree)
 
-        # Check directory tree toggle
+        # Check collapsible folder section in sidebar
+        self.assertIsInstance(tab.box_folder, CollapsibleBox)
+        self.assertTrue(tab.box_folder.is_expanded)
+        tab.box_folder.toggle()
+        self.assertFalse(tab.box_folder.is_expanded)
+        tab.box_folder.toggle()
+        self.assertTrue(tab.box_folder.is_expanded)
+
+        # Check directory tree toggle via panel button
         self.assertTrue(tab.dir_tree.isVisible())
-        tab._toggle_dir_tree()
+        tab.dir_tree.btn_collapse_panel.click()
         self.assertFalse(tab.dir_tree.isVisible())
         self.assertIn("einblenden", tab.btn_toggle_tree.text())
+
+        # Check directory tree toggle via canvas button
         tab._toggle_dir_tree()
         self.assertTrue(tab.dir_tree.isVisible())
         self.assertIn("ausblenden", tab.btn_toggle_tree.text())
