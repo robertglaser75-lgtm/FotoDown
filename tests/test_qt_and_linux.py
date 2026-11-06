@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.17.0")
+        self.assertEqual(__version__, "0.18.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1485,6 +1485,154 @@ class TestWorkflowStatusTracking(unittest.TestCase):
         widget.sync_to_config(cfg_new)
         self.assertEqual(cfg_new.family_album_dir, "//new_nas/0001_Unsere_Fotos")
         self.assertEqual(cfg_new.nas_archive_dir, "//new_nas/archive")
+
+
+class TestSettingsAndSingleViewConfig(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.dir_path = Path(self.test_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def test_settings_dialog_tabs_and_single_view_options(self):
+        from gui_qt.dialogs.settings_dialog import SettingsDialog
+        from core.config import AppConfig
+
+        cfg = AppConfig()
+        cfg.single_view_show_filename = True
+        cfg.single_view_show_extension = True
+        cfg.single_view_show_ratings = True
+        cfg.single_view_show_path = True
+
+        dlg = SettingsDialog(cfg)
+        dlg.show()
+        self.assertEqual(dlg.tabs.count(), 5)
+        self.assertTrue(dlg.chk_sv_filename.isChecked())
+        self.assertTrue(dlg.chk_sv_extension.isChecked())
+
+        # Uncheck extension and ratings
+        dlg.chk_sv_extension.setChecked(False)
+        dlg.chk_sv_ratings.setChecked(False)
+        self.assertIn("P1010042", dlg.lbl_preview_title_row.text())
+        self.assertNotIn(".ORF", dlg.lbl_preview_title_row.text())
+
+        # Click save
+        dlg._on_save_clicked()
+        self.assertFalse(cfg.single_view_show_extension)
+        self.assertFalse(cfg.single_view_show_ratings)
+
+        # Reset to defaults
+        dlg._reset_single_view_defaults()
+        self.assertTrue(dlg.chk_sv_extension.isChecked())
+        self.assertTrue(dlg.chk_sv_ratings.isChecked())
+
+        dlg.close()
+
+    def test_header_banner_gear_button_and_menu(self):
+        from gui_qt.widgets.header_banner import HeaderBanner
+        from core.config import AppConfig
+
+        cfg = AppConfig()
+        cfg.single_view_show_path = True
+        banner = HeaderBanner(config=cfg)
+        banner.show()
+
+        self.assertTrue(hasattr(banner, "btn_settings"))
+        self.assertTrue(hasattr(banner, "settings_menu"))
+        self.assertTrue(banner.act_sv_path.isChecked())
+
+        # Toggling an action in the menu updates config & emits signal
+        emitted = []
+        banner.single_view_config_changed.connect(lambda: emitted.append(True))
+        banner.act_sv_path.setChecked(False)
+        self.assertFalse(cfg.single_view_show_path)
+        self.assertGreater(len(emitted), 0)
+
+        # Test open settings signal
+        settings_opened = []
+        banner.open_settings.connect(lambda tab: settings_opened.append(tab))
+        banner.settings_menu.actions()[0].trigger()
+        self.assertIn(0, settings_opened)
+
+        banner.close()
+
+    def test_media_single_view_display_preferences(self):
+        from gui_qt.views.single_view import MediaSingleView
+        from core.importer import ScanItem
+        from core.exif_reader import MediaMetadata
+        from core.config import AppConfig
+
+        cfg = AppConfig()
+        cfg.single_view_show_filename = True
+        cfg.single_view_show_extension = True
+        cfg.single_view_show_path = True
+        cfg.single_view_show_ratings = True
+
+        view = MediaSingleView(config=cfg)
+        view.show()
+
+        dummy_path = self.dir_path / "DSC_9999.JPG"
+        dummy_path.write_text("img", encoding="utf-8")
+        meta = MediaMetadata(file_path=dummy_path, orig_name="DSC_9999", extension=".jpg", file_size=100, date_taken=datetime(2026, 4, 15), date_source="exif")
+        item = ScanItem(source_path=dummy_path, metadata=meta, target_path=dummy_path, is_duplicate=False, file_hash="h", status="Neu")
+
+        view.set_items([item])
+        self.assertEqual(view.lbl_title.text(), "DSC_9999.JPG")
+        self.assertTrue(view.lbl_title.isVisible())
+        self.assertTrue(view.lbl_path.isVisible())
+        self.assertIn(str(self.dir_path), view.lbl_path.text())
+        self.assertTrue(view.lbl_ratings.isVisible())
+
+        # Hide extension
+        cfg.single_view_show_extension = False
+        view.apply_config(cfg)
+        self.assertEqual(view.lbl_title.text(), "DSC_9999")
+
+        # Hide path and ratings
+        cfg.single_view_show_path = False
+        cfg.single_view_show_ratings = False
+        view.apply_config(cfg)
+        self.assertFalse(view.lbl_path.isVisible())
+        self.assertFalse(view.lbl_ratings.isVisible())
+
+        # Hide filename entirely
+        cfg.single_view_show_filename = False
+        view.apply_config(cfg)
+        self.assertFalse(view.lbl_title.isVisible())
+
+        view.close()
+
+    def test_culling_tab_display_preferences(self):
+        from gui_qt.views.culling_tab import CullingTabView
+        from gui_qt.models.culling_model import CullingItem
+        from core.config import AppConfig
+
+        cfg = AppConfig()
+        cfg.single_view_show_filename = True
+        cfg.single_view_show_extension = True
+        cfg.single_view_show_path = True
+
+        tab = CullingTabView(cfg)
+        tab.show()
+
+        it = CullingItem(primary_path=self.dir_path / "RAW_99.ORF")
+        tab._on_scan_finished([it])
+
+        self.assertIn("RAW_99.ORF", tab.lbl_canvas_name.text())
+        self.assertTrue(tab.lbl_canvas_path.isVisible())
+
+        # Hide extension
+        cfg.single_view_show_extension = False
+        tab.apply_config()
+        self.assertEqual(tab.lbl_canvas_name.text(), "RAW_99")
+
+        # Hide path
+        cfg.single_view_show_path = False
+        tab.apply_config()
+        self.assertFalse(tab.lbl_canvas_path.isVisible())
+
+        tab.close()
 
 
 if __name__ == "__main__":

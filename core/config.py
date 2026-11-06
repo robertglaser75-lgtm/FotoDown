@@ -125,6 +125,15 @@ class AppConfig:
     nas_archive_dir: str = ""
     family_album_dir: str = ""
     family_album_pattern: str = "0001_Unsere_Fotos/{YYYY}/{MM}"
+    # Einzelansicht Anzeige-Optionen
+    single_view_show_filename: bool = True
+    single_view_show_extension: bool = True
+    single_view_show_ratings: bool = True       # Sterne (1-5★), Pick/Reject, Workflow-Status
+    single_view_show_path: bool = True          # Speicherort / Ordnerpfad
+    single_view_show_camera_lens: bool = True   # Kamera & Objektiv
+    single_view_show_exposure: bool = True      # Blende, Belichtungszeit, ISO, Brennweite
+    single_view_show_date: bool = True          # Aufnahmedatum / Uhrzeit
+    single_view_show_filesize: bool = True      # Dateigröße & Megapixel/Dimensionen
 
     def apply_profile(self, name: str) -> bool:
         """Applies configuration settings from a profile by name."""

@@ -400,6 +400,11 @@ class CullingTabView(QWidget):
         self.lbl_active_name.setWordWrap(True)
         layout_photo.addWidget(self.lbl_active_name)
 
+        self.lbl_active_path = QLabel("")
+        self.lbl_active_path.setStyleSheet("color: #94a3b8; font-size: 10px;")
+        self.lbl_active_path.setWordWrap(True)
+        layout_photo.addWidget(self.lbl_active_path)
+
         # Badges row
         badges_layout = QHBoxLayout()
         badges_layout.setSpacing(6)
@@ -662,12 +667,28 @@ class CullingTabView(QWidget):
         workspace_layout.setContentsMargins(0, 0, 0, 0)
         workspace_layout.setSpacing(2)
 
-        # Minimal Top Toolbar on the image canvas (Filmstrip Toggle)
+        # Minimal Top Toolbar on the image canvas (Filmstrip Toggle & Photo Details)
         top_strip = QFrame()
         top_strip.setStyleSheet("background-color: #070a12; border-bottom: 1px solid #1e293b; padding: 2px 6px;")
         strip_layout = QHBoxLayout(top_strip)
         strip_layout.setContentsMargins(4, 2, 4, 2)
         strip_layout.setSpacing(8)
+
+        self.lbl_canvas_name = QLabel("")
+        self.lbl_canvas_name.setStyleSheet("color: #38bdf8; font-weight: 600; font-size: 12px;")
+        strip_layout.addWidget(self.lbl_canvas_name)
+
+        self.lbl_canvas_path = QLabel("")
+        self.lbl_canvas_path.setStyleSheet("color: #94a3b8; font-size: 11px; background-color: #1e293b; border-radius: 3px; padding: 1px 6px;")
+        strip_layout.addWidget(self.lbl_canvas_path)
+
+        self.lbl_canvas_rating = QLabel("")
+        self.lbl_canvas_rating.setStyleSheet("color: #fbbf24; font-size: 11px; font-weight: bold;")
+        strip_layout.addWidget(self.lbl_canvas_rating)
+
+        self.lbl_canvas_meta = QLabel("")
+        self.lbl_canvas_meta.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        strip_layout.addWidget(self.lbl_canvas_meta)
 
         strip_layout.addStretch()
 
@@ -831,13 +852,69 @@ class CullingTabView(QWidget):
         self.filmstrip.set_current_index(idx)
         self._render_current_item()
 
+    def apply_config(self):
+        """Applies updated configuration options and re-renders active photo."""
+        self._render_current_item()
+
     def _render_current_item(self):
         if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):
             return
 
         it = self.filtered_items[self.current_idx]
+
+        # Display preferences from AppConfig
+        cfg = self.config
+        show_name = cfg.single_view_show_filename if cfg else True
+        show_ext = cfg.single_view_show_extension if cfg else True
+        show_ratings = cfg.single_view_show_ratings if cfg else True
+        show_path = cfg.single_view_show_path if cfg else True
+        show_cam = cfg.single_view_show_camera_lens if cfg else True
+        show_exp = cfg.single_view_show_exposure if cfg else True
+
+        if show_name and show_ext:
+            disp_name = it.primary_path.name
+        elif show_name:
+            disp_name = it.primary_path.stem
+        elif show_ext:
+            disp_name = it.primary_path.suffix.upper()
+        else:
+            disp_name = ""
+
         filter_tag = " [Filter aktiv]" if (self._current_filter and self._current_filter.is_active()) else ""
-        self.lbl_active_name.setText(f"{it.primary_path.name} ({self.current_idx + 1} von {len(self.filtered_items)}){filter_tag}")
+        cnt_str = f"({self.current_idx + 1} von {len(self.filtered_items)})"
+        self.lbl_active_name.setText(f"{disp_name} {cnt_str}{filter_tag}" if disp_name else f"{cnt_str}{filter_tag}")
+
+        parent_dir = str(it.primary_path.parent)
+        self.lbl_active_path.setText(f"📁 {parent_dir}")
+        self.lbl_active_path.setVisible(show_path)
+
+        # Canvas top strip updates
+        self.lbl_canvas_name.setText(disp_name)
+        self.lbl_canvas_name.setVisible(bool(disp_name))
+
+        self.lbl_canvas_path.setText(f"📁 {parent_dir}")
+        self.lbl_canvas_path.setToolTip(f"Speicherort:\n{it.primary_path}")
+        self.lbl_canvas_path.setVisible(show_path)
+
+        r_str = "★" * it.rating if it.rating > 0 else "0★"
+        rej_str = " [X]" if it.is_rejected else ""
+        _, _, wf_sym = it.workflow_status_info
+        self.lbl_canvas_rating.setText(f"⭐ {r_str}{rej_str} {wf_sym}")
+        self.lbl_canvas_rating.setVisible(show_ratings)
+
+        cam_lens = []
+        if it.metadata:
+            cam = it.metadata.camera_name or it.metadata.camera_model
+            lens = it.metadata.lens_model
+            exp = it.metadata.formatted_exposure
+            if show_cam and cam:
+                cam_lens.append(f"📷 {cam}")
+            if show_cam and lens:
+                cam_lens.append(lens)
+            if show_exp and exp:
+                cam_lens.append(f"⚙️ {exp}")
+        self.lbl_canvas_meta.setText(" • ".join(cam_lens))
+        self.lbl_canvas_meta.setVisible(bool(cam_lens))
 
         if it.is_pair:
             self.lbl_pair_badge.setText(f"RAW+JPG ({it.active_view_mode})")

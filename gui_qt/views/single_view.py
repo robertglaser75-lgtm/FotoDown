@@ -11,9 +11,11 @@ from PySide6.QtWidgets import (
     QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 )
 
+from core.config import AppConfig
 from core.drive_detector import format_size
 from core.importer import ScanItem
 from core.thumbnail import load_preview_image
+from core.xmp_sync import read_xmp_workflow_info
 
 
 class MediaSingleView(QWidget):
@@ -21,8 +23,9 @@ class MediaSingleView(QWidget):
     item_focused = Signal(object)
     open_quick_preview_requested = Signal(object)
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, config: Optional[AppConfig] = None, parent: Optional[QWidget] = None):
         super().__init__(parent)
+        self.config = config
         self.items: List[ScanItem] = []
         self.current_idx: int = -1
         self._current_pixmap: Optional[QPixmap] = None
@@ -73,6 +76,18 @@ class MediaSingleView(QWidget):
         self.lbl_counter = QLabel("")
         self.lbl_counter.setStyleSheet("color: #94a3b8; font-size: 12px;")
         top_layout.addWidget(self.lbl_counter)
+
+        # Storage location / folder path
+        self.lbl_path = QLabel("")
+        self.lbl_path.setObjectName("tagChip")
+        self.lbl_path.setStyleSheet("color: #94a3b8; font-size: 11px; background-color: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px;")
+        top_layout.addWidget(self.lbl_path)
+
+        # Sterne & Bewertungen
+        self.lbl_ratings = QLabel("")
+        self.lbl_ratings.setObjectName("tagChip")
+        self.lbl_ratings.setStyleSheet("color: #fbbf24; font-size: 11px; font-weight: bold; background-color: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px;")
+        top_layout.addWidget(self.lbl_ratings)
 
         top_layout.addStretch()
 
@@ -196,6 +211,12 @@ class MediaSingleView(QWidget):
             self.current_idx = idx
             self._render_current_item()
 
+    def apply_config(self, config: Optional[AppConfig] = None):
+        """Applies updated configuration options and refreshes visible fields."""
+        if config:
+            self.config = config
+        self._render_current_item()
+
     def get_current_item(self) -> Optional[ScanItem]:
         if 0 <= self.current_idx < len(self.items):
             return self.items[self.current_idx]
@@ -206,11 +227,60 @@ class MediaSingleView(QWidget):
             return
 
         item = self.items[self.current_idx]
-        self.lbl_title.setText(item.source_path.name)
+
+        # Read display preferences from AppConfig
+        cfg = self.config
+        show_name = cfg.single_view_show_filename if cfg else True
+        show_ext = cfg.single_view_show_extension if cfg else True
+        show_ratings = cfg.single_view_show_ratings if cfg else True
+        show_path = cfg.single_view_show_path if cfg else True
+        show_cam = cfg.single_view_show_camera_lens if cfg else True
+        show_exp = cfg.single_view_show_exposure if cfg else True
+        show_date = cfg.single_view_show_date if cfg else True
+        show_size = cfg.single_view_show_filesize if cfg else True
+
+        # Name and Extension
+        if show_name and show_ext:
+            name_text = item.source_path.name
+        elif show_name:
+            name_text = item.source_path.stem
+        elif show_ext:
+            name_text = item.source_path.suffix.upper()
+        else:
+            name_text = ""
+
+        self.lbl_title.setText(name_text)
+        self.lbl_title.setVisible(bool(name_text))
         self.lbl_counter.setText(f"({self.current_idx + 1} von {len(self.items)})")
 
         self.btn_prev.setEnabled(self.current_idx > 0)
         self.btn_next.setEnabled(self.current_idx < len(self.items) - 1)
+
+        # Storage location
+        parent_dir = str(item.source_path.parent)
+        self.lbl_path.setText(f"📁 {parent_dir}")
+        self.lbl_path.setToolTip(f"Speicherort:\n{item.source_path}")
+        self.lbl_path.setVisible(show_path)
+
+        # Ratings & Evaluations
+        wf = read_xmp_workflow_info(item.source_path)
+        r_parts = []
+        if wf.rating > 0:
+            r_parts.append("★" * wf.rating)
+        if wf.is_rejected:
+            r_parts.append("[X]")
+        if wf.workflow_status and wf.workflow_status != "UNCHECKED":
+            r_parts.append(wf.workflow_status)
+        if wf.label:
+            r_parts.append(wf.label)
+
+        if r_parts:
+            self.lbl_ratings.setText(f"⭐ {' '.join(r_parts)}")
+            self.lbl_ratings.setStyleSheet("color: #fef08a; background-color: #854d0e; border: 1px solid #ca8a04; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold;")
+        else:
+            self.lbl_ratings.setText("⭐ 0★")
+            self.lbl_ratings.setStyleSheet("color: #94a3b8; background-color: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px; font-size: 11px;")
+        self.lbl_ratings.setVisible(show_ratings)
 
         # Selection checkbox
         self.chk_selected.blockSignals(True)
@@ -220,18 +290,21 @@ class MediaSingleView(QWidget):
         # Metadata labels
         cam = item.metadata.camera_name or item.metadata.camera_model or "Kamera: Unbekannt"
         self.lbl_meta_cam.setText(f"📷 {cam}")
+        self.lbl_meta_cam.setVisible(show_cam and bool(cam))
 
         exp = item.metadata.formatted_exposure
         self.lbl_meta_exp.setText(f"⚙️ {exp}" if exp else "")
-        self.lbl_meta_exp.setVisible(bool(exp))
+        self.lbl_meta_exp.setVisible(show_exp and bool(exp))
 
         date_str = item.metadata.date_taken.strftime("%d.%m.%Y %H:%M:%S") if item.metadata.date_taken else "-"
         self.lbl_meta_date.setText(f"📅 {date_str}")
+        self.lbl_meta_date.setVisible(show_date and bool(date_str))
 
         size_str = format_size(item.total_size)
         dims = item.metadata.formatted_dimensions
         dim_part = f" • {dims}" if dims else ""
         self.lbl_meta_size.setText(f"💾 {size_str} ({item.display_type}){dim_part}")
+        self.lbl_meta_size.setVisible(show_size)
 
         self.lbl_meta_status.setText(f"Status: {item.status}")
 

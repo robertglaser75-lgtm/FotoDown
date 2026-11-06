@@ -43,6 +43,7 @@ from .workers.drive_watcher import DriveWatcherThread
 from .dialogs.history_dialog import HistoryDialog
 from .dialogs.help_dialog import HelpDialog
 from .dialogs.quick_preview_dialog import QuickPreviewDialog
+from .dialogs.settings_dialog import SettingsDialog
 
 
 class MainWindow(QMainWindow):
@@ -102,7 +103,7 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(0)
 
         # 1. Header Banner
-        self.header_banner = HeaderBanner()
+        self.header_banner = HeaderBanner(config=self.config)
         main_layout.addWidget(self.header_banner)
 
         # 2. Hotplug Card Notification Banner
@@ -207,7 +208,7 @@ class MainWindow(QMainWindow):
         self.view_stack.addWidget(self.gallery_view)
 
         # View 3: Single Item View
-        self.single_view = MediaSingleView()
+        self.single_view = MediaSingleView(config=self.config)
         self.view_stack.addWidget(self.single_view)
 
         # View 4: Target Directory Simulation Tree View
@@ -253,6 +254,8 @@ class MainWindow(QMainWindow):
         self.header_banner.tab_changed.connect(self._on_main_tab_changed)
         self.header_banner.open_history.connect(self._open_history_dialog)
         self.header_banner.open_help.connect(self._open_help_dialog)
+        self.header_banner.open_settings.connect(self._open_settings_dialog)
+        self.header_banner.single_view_config_changed.connect(self._on_single_view_config_changed)
 
         # Notification banner signals
         self.card_notification.scan_requested.connect(self._on_card_scan_requested)
@@ -686,6 +689,21 @@ class MainWindow(QMainWindow):
     def _open_help_dialog(self):
         dlg = HelpDialog(self)
         dlg.exec()
+
+    def _open_settings_dialog(self, tab_idx: int = 0):
+        dlg = SettingsDialog(self.config, parent=self, initial_tab=tab_idx)
+        dlg.settings_saved.connect(self._on_settings_dialog_saved)
+        dlg.exec()
+
+    def _on_settings_dialog_saved(self):
+        self.header_banner.update_from_config(self.config)
+        self.general_settings.load_config(self.config)
+        self.single_view.apply_config(self.config)
+        self.culling_tab.apply_config()
+
+    def _on_single_view_config_changed(self):
+        self.single_view.apply_config(self.config)
+        self.culling_tab.apply_config()
 
     def closeEvent(self, event):
         self._cancel_task()

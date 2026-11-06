@@ -30,6 +30,10 @@ Lauffähig unter **Windows** und **Linux**.
     - Schnelle Filterung nach Workflow-Stand (z.B. nur noch „Zu bearbeiten“ anzeigen).
     - Filter nach Dateityp (RAW / JPEG), Bewertung (Sterne, Pick, Reject, Farblabels), Kamera, Objektiv, ISO-Bereich und Volltextsuche.
   - **Konfigurierbares Reject-Handling:** Aussortierte Bilder wahlweise in `_Abgelehnt/` verschieben, löschen oder nur kennzeichnen.
+- ⚙️ **Zentrales Konfigurationsmenü & Zahnrad-Symbol rechts oben:**
+  - Schnellzugriff per Zahnrad-Button `[ ⚙️ ]` in der oberen Leiste mit Dropdown-Menü.
+  - Vollständiger Einstellungsdialog (`SettingsDialog`) mit Reitern für *Einzelansicht*, *Import & Organisation*, *NAS & Familienalbum*, *Externe Editoren* und *IPTC*.
+  - **Granular anpassbare Einzelansicht:** Frei konfigurierbar, welche Informationen eingeblendet werden (Name des Bildes, Dateiendung, Sterne & Bewertungen, Speicherort/Pfad, Kamera & Objektiv, Belichtung, Aufnahmedatum, Dateigröße).
 - 🔍 **Integrierte Einzelansicht & Schärfebeurteilung:**
   - Neuer Ansichtsmodus *„🔍 Einzelansicht“* im Hauptarbeitsbereich.
   - Großformatige, gestochen scharfe Bildbetrachtung direkt im Anwendungsfenster (bis 2560px).

@@ -3,6 +3,30 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.18.0] - 2026-11-06
+
+### Hinzugefügt
+- **Zentrales Konfigurationsmenü & Zahnrad-Symbol ([`gui_qt/widgets/header_banner.py`](gui_qt/widgets/header_banner.py), [`gui_qt/dialogs/settings_dialog.py`](gui_qt/dialogs/settings_dialog.py)):**
+  - **Zahnrad-Button rechts oben:** Neuer Button `[ ⚙️ ]` in der oberen Kopfzeile mit Vektor-Zahnrad-Icon ([`gui_qt/styles/icons.py`](gui_qt/styles/icons.py)) und Dropdown-Konfigurationsmenü.
+  - **Schnellzugriffs-Menü:** Direktes Umschalten sichtbarer Einzelansicht-Optionen per 1-Klick-Checkboxen im Menü sowie Direktsprünge zu Einstellungsbereichen.
+  - **Umfassender Einstellungsdialog (`SettingsDialog`):** Strukturierte Konfiguration in 5 übersichtlichen Tabs:
+    - 👁️ **Einzelansicht:** Konfiguration aller sichtbaren Datei- und Metadaten-Felder mit interaktivem Live-Vorschaubereich.
+    - 📥 **Import & Organisation:** RAW/JPG-Kopplung, Sidecars, Duplikatsprüfung, Prüfsummen.
+    - 🏠 **NAS & Familienalbum:** Zielpfade und Struktur mit Ordnerauswahl.
+    - 🎨 **Externe Editoren:** Darktable & Topaz Pfade, Aussortieren-Aktion.
+    - ✍️ **IPTC & Copyright:** Urheberrecht-Einbettung beim Import.
+- **Konfigurierbare Einzelansicht ([`gui_qt/views/single_view.py`](gui_qt/views/single_view.py), [`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`core/config.py`](core/config.py)):**
+  - Granulare Anzeige-Optionen für die Großbildanzeige in Tab 1 und Tab 2:
+    - **Name des Bildes:** Dateiname ein- oder ausblenden.
+    - **Dateiendung:** Format (.JPG, .ORF, .CR3...) anzeigen oder ausblenden.
+    - **Sterne und sonstige Bewertungen:** Sterne (1–5★), Behalten [P], Abgelehnt [X] und Workflow-Status (SOOC, Zu bearbeiten, Bearbeitet).
+    - **Speicherort:** Ordnerpfad auf der Festplatte / SD-Karte / NAS.
+    - **Kamera & Objektiv:** Kameramodell und verwendetes Objektiv.
+    - **Belichtungsdaten:** Blende, Verschlusszeit, ISO, Brennweite.
+    - **Aufnahmedatum & Uhrzeit.**
+    - **Dateigröße & Dimensionen (Megapixel).**
+  - Echtzeit-Aktualisierung: Änderungen im Menü oder Dialog werden sofort ohne Neustart auf das aktuell angezeigte Foto angewendet.
+
 ## [0.17.0] - 2026-11-06
 
 ### Hinzugefügt

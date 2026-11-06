@@ -3,13 +3,16 @@
 from pathlib import Path
 from typing import List, Optional
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QComboBox, QFrame, QHBoxLayout, QLabel,
+    QComboBox, QFrame, QHBoxLayout, QLabel, QMenu,
     QMessageBox, QPushButton, QSizePolicy, QWidget
 )
 
+from core.config import AppConfig
 from core.drive_detector import detect_drives, DriveInfo, eject_drive
 from core.version import __version__
+from gui_qt.styles.icons import get_gear_icon
 
 
 class HeaderBanner(QFrame):
@@ -17,14 +20,19 @@ class HeaderBanner(QFrame):
     drive_ejected = Signal(str)   # Emits ejected drive path
     open_history = Signal()
     open_help = Signal()
+    open_settings = Signal(int)   # Emits target tab index (0=Einzelansicht, 1=Import, 2=NAS, 3=Editoren, etc.)
+    single_view_config_changed = Signal()
     tab_changed = Signal(int)     # Emits 0 for Import, 1 for Culling
 
-    def __init__(self, parent=None):
+    def __init__(self, config: Optional[AppConfig] = None, parent=None):
         super().__init__(parent)
+        self.config = config
         self.setObjectName("headerBanner")
         self.setMaximumHeight(42)
         self._drives: List[DriveInfo] = []
         self._setup_ui()
+        if self.config:
+            self.update_from_config(self.config)
         self.refresh_drives()
 
     def _setup_ui(self):
@@ -125,6 +133,90 @@ class HeaderBanner(QFrame):
         self.btn_help.setObjectName("secondaryBtn")
         self.btn_help.clicked.connect(self.open_help.emit)
         layout.addWidget(self.btn_help, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        # Settings Button with Gear Icon & Configuration Dropdown Menu
+        self.btn_settings = QPushButton("⚙️")
+        self.btn_settings.setObjectName("secondaryBtn")
+        self.btn_settings.setIcon(get_gear_icon("#cbd5e1", 16))
+        self.btn_settings.setToolTip("Konfigurationsmenü & Einstellungen öffnen")
+
+        self.settings_menu = QMenu(self)
+        self.settings_menu.setObjectName("settingsMenu")
+
+        act_all = self.settings_menu.addAction("⚙️ Alle Einstellungen öffnen...")
+        act_all.triggered.connect(lambda: self.open_settings.emit(0))
+
+        self.settings_menu.addSeparator()
+
+        lbl_sec = self.settings_menu.addAction("── 👁️ Einzelansicht: Anzeigen ──")
+        lbl_sec.setEnabled(False)
+
+        self.act_sv_filename = self.settings_menu.addAction("Name des Bildes (Dateiname)")
+        self.act_sv_filename.setCheckable(True)
+        self.act_sv_filename.toggled.connect(lambda chk: self._on_menu_sv_toggled("single_view_show_filename", chk))
+
+        self.act_sv_extension = self.settings_menu.addAction("Dateiendung (.JPG, .ORF...)")
+        self.act_sv_extension.setCheckable(True)
+        self.act_sv_extension.toggled.connect(lambda chk: self._on_menu_sv_toggled("single_view_show_extension", chk))
+
+        self.act_sv_ratings = self.settings_menu.addAction("Sterne & Bewertungen (★, [P], [X])")
+        self.act_sv_ratings.setCheckable(True)
+        self.act_sv_ratings.toggled.connect(lambda chk: self._on_menu_sv_toggled("single_view_show_ratings", chk))
+
+        self.act_sv_path = self.settings_menu.addAction("Speicherort (Ordnerpfad)")
+        self.act_sv_path.setCheckable(True)
+        self.act_sv_path.toggled.connect(lambda chk: self._on_menu_sv_toggled("single_view_show_path", chk))
+
+        self.act_sv_cam = self.settings_menu.addAction("Kamera & Objektiv")
+        self.act_sv_cam.setCheckable(True)
+        self.act_sv_cam.toggled.connect(lambda chk: self._on_menu_sv_toggled("single_view_show_camera_lens", chk))
+
+        self.act_sv_exp = self.settings_menu.addAction("Belichtungsdaten & ISO")
+        self.act_sv_exp.setCheckable(True)
+        self.act_sv_exp.toggled.connect(lambda chk: self._on_menu_sv_toggled("single_view_show_exposure", chk))
+
+        self.act_sv_date = self.settings_menu.addAction("Aufnahmedatum & Uhrzeit")
+        self.act_sv_date.setCheckable(True)
+        self.act_sv_date.toggled.connect(lambda chk: self._on_menu_sv_toggled("single_view_show_date", chk))
+
+        self.act_sv_size = self.settings_menu.addAction("Dateigröße & Dimensionen")
+        self.act_sv_size.setCheckable(True)
+        self.act_sv_size.toggled.connect(lambda chk: self._on_menu_sv_toggled("single_view_show_filesize", chk))
+
+        self.settings_menu.addSeparator()
+
+        act_nas = self.settings_menu.addAction("🏠 NAS & Familienalbum...")
+        act_nas.triggered.connect(lambda: self.open_settings.emit(2))
+
+        act_ext = self.settings_menu.addAction("🎨 Externe Editoren (Darktable/Topaz)...")
+        act_ext.triggered.connect(lambda: self.open_settings.emit(3))
+
+        self.btn_settings.setMenu(self.settings_menu)
+        layout.addWidget(self.btn_settings, 0, Qt.AlignmentFlag.AlignVCenter)
+
+    def update_from_config(self, config: AppConfig):
+        """Synchronizes menu checkable actions with the current AppConfig."""
+        self.config = config
+        actions = [
+            (self.act_sv_filename, config.single_view_show_filename),
+            (self.act_sv_extension, config.single_view_show_extension),
+            (self.act_sv_ratings, config.single_view_show_ratings),
+            (self.act_sv_path, config.single_view_show_path),
+            (self.act_sv_cam, config.single_view_show_camera_lens),
+            (self.act_sv_exp, config.single_view_show_exposure),
+            (self.act_sv_date, config.single_view_show_date),
+            (self.act_sv_size, config.single_view_show_filesize),
+        ]
+        for act, val in actions:
+            act.blockSignals(True)
+            act.setChecked(val)
+            act.blockSignals(False)
+
+    def _on_menu_sv_toggled(self, attr_name: str, checked: bool):
+        if self.config:
+            setattr(self.config, attr_name, checked)
+            self.config.save()
+            self.single_view_config_changed.emit()
 
     def switch_tab(self, tab_idx: int):
         self.btn_tab_import.setChecked(tab_idx == 0)

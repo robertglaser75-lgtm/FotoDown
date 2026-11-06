@@ -4,6 +4,8 @@ Guarantees 100% reliable, font-independent rendering on all platforms (Windows, 
 without missing glyphs, tofu boxes, or platform emoji differences.
 """
 
+import math
+
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap
 
@@ -198,4 +200,50 @@ def get_filter_icon(color: str = "#38bdf8", size: int = 16) -> QIcon:
     p.drawPath(path)
     p.end()
     return QIcon(pix)
+
+
+def get_gear_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+    """Renders a crisp vector gear/cog settings icon."""
+    pix = QPixmap(size, size)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setBrush(QBrush(QColor(color)))
+
+    cx, cy = size / 2.0, size / 2.0
+    r_outer = size * 0.44
+    r_teeth_in = size * 0.32
+    r_hole = size * 0.16
+
+    path = QPainterPath()
+    num_teeth = 6
+    teeth_width_deg = 24.0
+    for i in range(num_teeth):
+        mid_angle = i * (360.0 / num_teeth)
+        a1 = (mid_angle - teeth_width_deg / 2) * math.pi / 180.0
+        a2 = (mid_angle + teeth_width_deg / 2) * math.pi / 180.0
+        p1 = QPointF(cx + r_teeth_in * math.cos(a1), cy + r_teeth_in * math.sin(a1))
+        p2 = QPointF(cx + r_outer * math.cos(a1), cy + r_outer * math.sin(a1))
+        p3 = QPointF(cx + r_outer * math.cos(a2), cy + r_outer * math.sin(a2))
+        p4 = QPointF(cx + r_teeth_in * math.cos(a2), cy + r_teeth_in * math.sin(a2))
+        if i == 0:
+            path.moveTo(p1)
+        else:
+            path.lineTo(p1)
+        path.lineTo(p2)
+        path.lineTo(p3)
+        path.lineTo(p4)
+
+    path.closeSubpath()
+
+    hole_path = QPainterPath()
+    hole_path.addEllipse(QPointF(cx, cy), r_hole, r_hole)
+    gear_path = path.subtracted(hole_path)
+
+    p.drawPath(gear_path)
+    p.end()
+    return QIcon(pix)
+
 

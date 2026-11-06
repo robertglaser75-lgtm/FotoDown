@@ -512,3 +512,41 @@ QSlider::handle:horizontal:hover {
     border: 1px solid #334155;
     border-radius: 6px;
 }
+
+/* Context & Settings Dropdown Menus */
+QMenu {
+    background-color: #0f172a;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 6px 4px;
+}
+
+QMenu::item {
+    padding: 6px 24px 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+QMenu::item:selected {
+    background-color: #0284c7;
+    color: #ffffff;
+}
+
+QMenu::item:disabled {
+    color: #64748b;
+    background-color: transparent;
+}
+
+QMenu::separator {
+    height: 1px;
+    background-color: #334155;
+    margin: 4px 6px;
+}
+
+QMenu::indicator {
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+}
+
