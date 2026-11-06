@@ -41,7 +41,7 @@ class MediaMetadata:
     @property
     def is_raw(self) -> bool:
         return self.extension.lower() in {
-            ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2",
+            ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".ori", ".rw2",
             ".pef", ".raf", ".srw", ".3fr", ".erf", ".kdc", ".mrw", ".nrw", ".raw"
         }
 

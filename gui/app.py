@@ -1291,7 +1291,7 @@ class FotoDownApp:
         ext = item.source_path.suffix.lower()
         if item.metadata.is_video:
             return self.placeholders["VIDEO"]
-        elif item.metadata.is_raw or ext in [".arw", ".cr2", ".cr3", ".nef", ".orf", ".rw2", ".dng", ".pef", ".raf"]:
+        elif item.metadata.is_raw or ext in [".arw", ".cr2", ".cr3", ".nef", ".orf", ".ori", ".rw2", ".dng", ".pef", ".raf"]:
             return self.placeholders["RAW"]
         else:
             return self.placeholders["IMG"]
@@ -1315,8 +1315,8 @@ class FotoDownApp:
             except Exception:
                 pass
 
-        # 2. Camera RAW files (ARW, CR2, CR3, NEF, ORF, RW2, DNG, PEF, RAF)
-        if item.metadata.is_raw or ext in [".arw", ".cr2", ".cr3", ".nef", ".orf", ".rw2", ".dng", ".pef", ".raf"]:
+        # 2. Camera RAW files (ARW, CR2, CR3, NEF, ORF, ORI, RW2, DNG, PEF, RAF)
+        if item.metadata.is_raw or ext in [".arw", ".cr2", ".cr3", ".nef", ".orf", ".ori", ".rw2", ".dng", ".pef", ".raf"]:
             try:
                 pil_raw = extract_raw_embedded_jpeg(item.source_path)
                 if pil_raw:

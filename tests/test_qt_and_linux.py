@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.15.3")
+        self.assertEqual(__version__, "0.15.4")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -939,6 +939,91 @@ class TestCullingAndExternalTools(unittest.TestCase):
             self.assertEqual(total, 5)
             self.assertEqual(raw, 2)
             self.assertEqual(jpg, 2)
+
+    def test_olympus_ori_support_and_high_res_triplet(self):
+        from gui_qt.models.culling_model import scan_culling_folder, count_folder_images
+        from core.exif_reader import MediaMetadata, extract_metadata
+        from core.thumbnail import RAW_EXTENSIONS
+        import io, struct
+        from PIL import Image
+
+        self.assertIn(".ori", RAW_EXTENSIONS)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = Path(tmpdir)
+            # Create Olympus High Res Shot triplet: .ORF (composite) + .ORI (baseline frame) + .JPG
+            orf_file = p / "P1010001.ORF"
+            ori_file = p / "P1010001.ORI"
+            jpg_file = p / "P1010001.JPG"
+
+            orf_file.write_bytes(b"IIRO_DUMMY_ORF")
+            ori_file.write_bytes(b"IIRO_DUMMY_ORI")
+
+            im = Image.new("RGB", (300, 200), "blue")
+            im.save(str(jpg_file), "JPEG")
+
+            # Check image counting
+            total, raw, jpg = count_folder_images(p)
+            self.assertEqual(total, 3)
+            self.assertEqual(raw, 2)
+            self.assertEqual(jpg, 1)
+
+            # Scan culling folder: both RAW files must be preserved!
+            items = scan_culling_folder(p)
+            self.assertEqual(len(items), 2)
+
+            raw_paths = {it.raw_path.name for it in items if it.raw_path}
+            self.assertIn("P1010001.ORF", raw_paths)
+            self.assertIn("P1010001.ORI", raw_paths)
+
+            # Both pair with the companion JPG
+            for it in items:
+                self.assertTrue(it.is_pair)
+                self.assertEqual(it.companion_path.name, "P1010001.JPG")
+
+            # Check metadata classification
+            meta = extract_metadata(ori_file)
+            self.assertTrue(meta.is_raw)
+            self.assertEqual(meta.media_type, "RAW")
+
+    def test_olympus_ori_preview_extraction(self):
+        from core.thumbnail import extract_raw_embedded_jpeg, load_preview_image, generate_thumbnail
+        import io, struct
+        from PIL import Image
+
+        # Create valid embedded JPEG
+        buf = io.BytesIO()
+        test_img = Image.new("RGB", (640, 480), color=(255, 100, 50))
+        test_img.save(buf, format="JPEG")
+        jpeg_bytes = buf.getvalue()
+
+        # Construct Olympus IIRO raw container
+        header = b"IIRO" + struct.pack("<I", 8)
+        num_entries = 2
+        entry1 = struct.pack("<HHI I", 0x0111, 4, 1, 38)
+        entry2 = struct.pack("<HHI I", 0x0117, 4, 1, len(jpeg_bytes))
+        ifd = struct.pack("<H", num_entries) + entry1 + entry2 + struct.pack("<I", 0)
+        full_ori_data = header + ifd + jpeg_bytes
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ori_path = Path(tmpdir) / "TEST_OLYMPUS.ORI"
+            ori_path.write_bytes(full_ori_data)
+
+            # 1. Direct raw preview extraction
+            extracted = extract_raw_embedded_jpeg(ori_path)
+            self.assertIsNotNone(extracted)
+            self.assertEqual(extracted.size, (640, 480))
+
+            # 2. High-res preview loader
+            preview = load_preview_image(ori_path)
+            self.assertIsNotNone(preview)
+            self.assertEqual(preview.size, (640, 480))
+
+            # 3. Resized thumbnail generator
+            thumb = generate_thumbnail(ori_path, max_size=(160, 160))
+            self.assertIsNotNone(thumb)
+            self.assertLessEqual(thumb.width, 160)
+            self.assertLessEqual(thumb.height, 160)
 
     def test_culling_tree_widget(self):
         from gui_qt.views.culling_tree import CullingDirectoryTreeWidget

@@ -3,7 +3,16 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
-## [0.15.3] - 2026-11-06
+## [0.15.4] - 2026-11-06
+
+### Behoben
+- **Volle Unterstützung für Olympus / OM System ORI-Dateien ([`core/thumbnail.py`](core/thumbnail.py), [`gui_qt/models/culling_model.py`](gui_qt/models/culling_model.py), [`core/config.py`](core/config.py)):**
+  - **Erkennung im Ordner-Scan & Culling-Modell:** `.ori`-Dateien (die hochauflösenden Einzelaufnahmen aus Olympus High-Res-Shot-Serien) werden nun verlässlich erkannt und als vollwertige RAW-Bilder in die Bildauswahl aufgenommen.
+  - **Olympus TIFF-Container Header-Unterstützung:** Der native TIFF-Parser in `core/thumbnail.py` erkennt nun zusätzlich zu den Standard-TIFF-Signaturen auch Olympus-eigene Signaturen (`IIRO`, `IIRS`, `MMOR`).
+  - **Embedded-Preview-Extraktion:** Eingebettete Vollauflösungs- und Vorschau-JPEGs werden aus `.ori`-Dateien blitzschnell direkt aus dem Container bzw. per LibRaw-Stream extrahiert.
+  - **Parallele Erhaltung bei High-Res-Serien:** Bei Vorhandensein von zusammengesetzten High-Res-RAWs (`.ORF`) und Einzelframe-RAWs (`.ORI`) mit identischem Basisnamen (z. B. `P1010001.ORF` und `P1010001.ORI`) werden beide Dateien sauber nebeneinander als eigenständige Culling-Objekte dargestellt und können individuell bewertet, angezeigt und an Darktable übergeben werden.
+  - **Metadaten & RAW-Klassifizierung ([`core/exif_reader.py`](core/exif_reader.py)):** `.ori`-Dateien werden korrekt als `RAW` eingestuft.
+  - **Hilfe & Dokumentation ([`gui_qt/dialogs/help_dialog.py`](gui_qt/dialogs/help_dialog.py)):** `.ori` als unterstütztes Olympus-Kamera-RAW-Format gelistet.
 
 ### Behoben
 - **Kein unbenutzbarer Leerraum beim Einklappen ([`gui_qt/views/culling_left_dock.py`](gui_qt/views/culling_left_dock.py)):**

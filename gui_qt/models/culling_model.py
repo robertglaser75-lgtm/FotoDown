@@ -124,11 +124,10 @@ def scan_culling_folder(
         return []
 
     image_exts = {
-        ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".heic", ".heif",
-        ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2", ".pef", ".raf", ".srw"
-    }
+        ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".heic", ".heif", ".webp"
+    } | RAW_EXTENSIONS
 
-    raw_candidates: Dict[str, Path] = {}
+    raw_entries: List[Path] = []
     jpg_candidates: Dict[str, Path] = {}
     other_candidates: List[Path] = []
 
@@ -146,13 +145,14 @@ def scan_culling_folder(
         if ext in image_exts:
             stem = entry.stem.lower()
             if ext in RAW_EXTENSIONS:
-                raw_candidates[stem] = entry
+                raw_entries.append(entry)
             elif ext in {".jpg", ".jpeg"}:
                 jpg_candidates[stem] = entry
             else:
                 other_candidates.append(entry)
 
-    total_units = len(raw_candidates) + sum(1 for s in jpg_candidates if s not in raw_candidates) + len(other_candidates)
+    raw_stems = {p.stem.lower() for p in raw_entries}
+    total_units = len(raw_entries) + sum(1 for s in jpg_candidates if s not in raw_stems) + len(other_candidates)
     if total_units == 0:
         return []
 
@@ -160,14 +160,15 @@ def scan_culling_folder(
     processed_stems = set()
     current_count = 0
 
-    # Process pairs first
-    for stem, raw_p in raw_candidates.items():
+    # Process RAW items (pairs and multi-RAW combinations like ORF + ORI)
+    for raw_p in raw_entries:
         if cancel_check and cancel_check():
             return []
         current_count += 1
         if progress_callback:
             progress_callback(current_count, total_units, raw_p.name)
 
+        stem = raw_p.stem.lower()
         processed_stems.add(stem)
         companion_p = jpg_candidates.get(stem)
         

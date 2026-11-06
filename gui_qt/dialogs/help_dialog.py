@@ -66,7 +66,7 @@ class HelpDialog(QDialog):
         <h2>3. Unterstützte Dateiformate</h2>
         <ul>
             <li><b>Standard-Fotos:</b> .jpg, .jpeg, .png, .heic, .heif, .tiff</li>
-            <li><b>Kamera-RAW:</b> Canon (.cr2, .cr3), Nikon (.nef), Sony (.arw), Adobe (.dng), Panasonic (.rw2), Olympus (.orf), Fuji (.raf), Pentax (.pef)</li>
+            <li><b>Kamera-RAW:</b> Canon (.cr2, .cr3), Nikon (.nef), Sony (.arw), Adobe (.dng), Panasonic (.rw2), Olympus (.orf, .ori), Fuji (.raf), Pentax (.pef)</li>
             <li><b>Videos:</b> .mp4, .mov, .mts, .m2ts, .avi, .mkv</li>
         </ul>
 

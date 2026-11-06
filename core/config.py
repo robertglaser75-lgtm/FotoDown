@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 RAW_EXTENSIONS = {
-    ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2",
+    ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".ori", ".rw2",
     ".pef", ".raf", ".srw", ".3fr", ".erf", ".kdc", ".mrw", ".nrw", ".raw"
 }
 
 DEFAULT_IMAGE_EXTENSIONS = [
     ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".heic", ".heif",
-    ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2", ".pef", ".raf"
+    ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".ori", ".rw2", ".pef", ".raf"
 ]
 
 DEFAULT_VIDEO_EXTENSIONS = [

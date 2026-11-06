@@ -28,29 +28,43 @@ def _extract_via_rawpy(raw_path: Path) -> Optional[Image.Image]:
     """Extracts embedded thumbnail or decodes raw sensor data via rawpy (LibRaw)."""
     if not HAS_RAWPY:
         return None
-    try:
-        with rawpy.imread(str(raw_path)) as raw:
-            # 1. Try embedded camera preview / thumbnail
-            try:
-                thumb = raw.extract_thumb()
-                if thumb.format == rawpy.ThumbFormat.JPEG:
-                    with Image.open(io.BytesIO(thumb.data)) as img:
+    for attempt in (1, 2):
+        file_obj = None
+        try:
+            if attempt == 1:
+                target = str(raw_path)
+            else:
+                file_obj = open(raw_path, "rb")
+                target = file_obj
+            with rawpy.imread(target) as raw:
+                # 1. Try embedded camera preview / thumbnail
+                try:
+                    thumb = raw.extract_thumb()
+                    if thumb.format == rawpy.ThumbFormat.JPEG:
+                        with Image.open(io.BytesIO(thumb.data)) as img:
+                            return ImageOps.exif_transpose(img).copy()
+                    elif thumb.format == rawpy.ThumbFormat.BITMAP:
+                        img = Image.fromarray(thumb.data)
                         return ImageOps.exif_transpose(img).copy()
-                elif thumb.format == rawpy.ThumbFormat.BITMAP:
-                    img = Image.fromarray(thumb.data)
-                    return ImageOps.exif_transpose(img).copy()
-            except Exception:
-                pass
+                except Exception:
+                    pass
 
-            # 2. Fast half-size raw demosaicing fallback
-            try:
-                rgb = raw.postprocess(half_size=True, use_camera_wb=True)
-                img = Image.fromarray(rgb)
-                return ImageOps.exif_transpose(img).copy()
-            except Exception:
-                pass
-    except Exception:
-        pass
+                # 2. Fast half-size raw demosaicing fallback
+                try:
+                    rgb = raw.postprocess(half_size=True, use_camera_wb=True)
+                    img = Image.fromarray(rgb)
+                    return ImageOps.exif_transpose(img).copy()
+                except Exception:
+                    pass
+            break
+        except Exception:
+            pass
+        finally:
+            if file_obj:
+                try:
+                    file_obj.close()
+                except Exception:
+                    pass
     return None
 
 
@@ -94,16 +108,16 @@ def _extract_canon_cr3(raw_path: Path) -> Optional[Image.Image]:
 
 
 def _extract_tiff_raw_preview(raw_path: Path) -> Optional[Image.Image]:
-    """Extracts embedded JPEG preview from TIFF-based RAW files (CR2, NEF, ARW, DNG, PEF, ORF)."""
+    """Extracts embedded JPEG preview from TIFF-based RAW files (CR2, NEF, ARW, DNG, PEF, ORF, ORI)."""
     candidates: List[Tuple[int, Image.Image]] = []
     try:
         with open(raw_path, "rb") as f:
             header = f.read(8)
             if len(header) < 8:
                 return None
-            if header.startswith(b"II\x2a\x00"):
+            if header.startswith(b"II\x2a\x00") or header.startswith((b"IIRO", b"IIRS")):
                 endian = "<"
-            elif header.startswith(b"MM\x00\x2a"):
+            elif header.startswith(b"MM\x00\x2a") or header.startswith(b"MMOR"):
                 endian = ">"
             else:
                 return None
@@ -166,7 +180,7 @@ def _extract_tiff_raw_preview(raw_path: Path) -> Optional[Image.Image]:
                         jpeg_offset = val_or_off
                     elif tag == 0x0202:  # JPEGInterchangeFormatLength
                         jpeg_length = val_or_off
-                    elif tag in (0x014a, 0x8769):  # SubIFDs or ExifIFD
+                    elif tag in (0x014a, 0x8769, 0x927c):  # SubIFDs, ExifIFD, or Olympus MakerNotes
                         if count == 1 and val_or_off not in visited:
                             ifd_queue.append(val_or_off)
                         elif count > 1 and 0 < val_or_off < file_size:
@@ -199,7 +213,7 @@ def _extract_tiff_raw_preview(raw_path: Path) -> Optional[Image.Image]:
                 elif strip_offsets and strip_counts and len(strip_offsets) == 1:
                     off = strip_offsets[0]
                     length = strip_counts[0]
-                    if 0 < off < file_size and length > 2000:
+                    if 0 < off < file_size and length > 500:
                         f.seek(off)
                         data = f.read(min(length, 16 * 1024 * 1024))
                         if data.startswith(b"\xff\xd8"):
@@ -272,7 +286,7 @@ def extract_raw_embedded_jpeg(raw_path: Path) -> Optional[Image.Image]:
         if img:
             return img
 
-    if ext in {".cr2", ".nef", ".arw", ".dng", ".orf", ".pef", ".rw2", ".srw"}:
+    if ext in {".cr2", ".nef", ".arw", ".dng", ".orf", ".ori", ".pef", ".rw2", ".srw"}:
         img = _extract_tiff_raw_preview(raw_path)
         if img and img.width * img.height >= 480 * 320:
             return img
