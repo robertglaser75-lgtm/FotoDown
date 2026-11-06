@@ -166,3 +166,4 @@ def get_filmstrip_icon(color: str = "#94a3b8", size: int = 16) -> QIcon:
 
     p.end()
     return QIcon(pix)
+

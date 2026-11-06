@@ -3,6 +3,15 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.15.2] - 2026-11-06
+
+### Verbessert
+- **Linkes Navigations-Dock mit Tabs & Einklappen nach Links ([`gui_qt/views/culling_left_dock.py`](gui_qt/views/culling_left_dock.py), [`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py)):**
+  - **Zusammenklappen nach Links:** Der Verzeichnisbaum wird nicht mehr komplett ausgeblendet, sondern faltet sich nach links zu einer schmalen 36px-Dockleiste zusammen.
+  - **Schnellzugriff in der eingeklappten Leiste:** Die 36px-Leiste bietet direkte Schaltflächen zum Ausklappen (`▶`), für den Verzeichnisbaum (`📁`) und das Quellverzeichnis (`📂`).
+  - **Gemeinsame linke Ordner-Navigation:** Sowohl *„Verzeichnisse“* (Baumstruktur mit Zählern) als auch *„Quellordner“* (Direktwahl mit Scan-Fortschritt) sind als Umschalt-Tabs im linken Dock vereint und klappen gemeinsam nach links zusammen.
+  - **Aufgeräumte Bewertungs-Seitenleiste:** Die mittlere Seitenleiste bleibt exklusiv auf den Culling- und Bewertungs-Workflow (Foto-Details, Bewertung, Darktable/Topaz, Statistik, Shortcuts) fokussiert.
+
 ## [0.15.1] - 2026-11-06
 
 ### Behoben

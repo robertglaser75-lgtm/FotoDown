@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.15.1")
+        self.assertEqual(__version__, "0.15.2")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -993,36 +993,41 @@ class TestCullingAndExternalTools(unittest.TestCase):
 
     def test_culling_tab_ultrawide_layout(self):
         from gui_qt.views.culling_tab import CullingTabView
-        from gui_qt.widgets.collapsible_box import CollapsibleBox
+        from gui_qt.views.culling_left_dock import CullingLeftNavigationDock
         from core.config import AppConfig
 
         cfg = AppConfig()
         tab = CullingTabView(cfg)
         tab.show()
 
-        # Check 3-pane splitter layout (Tree, Sidebar Controls, Canvas Workspace)
+        # Check 3-pane splitter layout (Left Dock, Sidebar Controls, Canvas Workspace)
         self.assertIsNotNone(tab.splitter)
         self.assertEqual(tab.splitter.count(), 3)
-        self.assertIsNotNone(tab.dir_tree)
+        self.assertIsInstance(tab.left_dock, CullingLeftNavigationDock)
 
-        # Check collapsible folder section in sidebar
-        self.assertIsInstance(tab.box_folder, CollapsibleBox)
-        self.assertTrue(tab.box_folder.is_expanded)
-        tab.box_folder.toggle()
-        self.assertFalse(tab.box_folder.is_expanded)
-        tab.box_folder.toggle()
-        self.assertTrue(tab.box_folder.is_expanded)
+        # Check left dock tabs
+        self.assertEqual(tab.left_dock.stack.count(), 2)
+        tab.left_dock.switch_tab(0)
+        self.assertEqual(tab.left_dock.stack.currentIndex(), 0)
+        tab.left_dock.switch_tab(1)
+        self.assertEqual(tab.left_dock.stack.currentIndex(), 1)
 
-        # Check directory tree toggle via panel button
-        self.assertTrue(tab.dir_tree.isVisible())
-        tab.dir_tree.btn_collapse_panel.click()
-        self.assertFalse(tab.dir_tree.isVisible())
-        self.assertIn("einblenden", tab.btn_toggle_tree.text())
+        # Check collapsing left dock to 36px
+        self.assertFalse(tab.left_dock.is_collapsed)
+        tab.left_dock.collapse_panel()
+        self.assertTrue(tab.left_dock.is_collapsed)
+        self.assertEqual(tab.left_dock.width(), 36)
+        self.assertTrue(tab.left_dock.collapsed_strip.isVisible())
+        self.assertFalse(tab.left_dock.expanded_container.isVisible())
+        self.assertIn("ausklappen", tab.btn_toggle_tree.text())
 
-        # Check directory tree toggle via canvas button
-        tab._toggle_dir_tree()
-        self.assertTrue(tab.dir_tree.isVisible())
-        self.assertIn("ausblenden", tab.btn_toggle_tree.text())
+        # Check expanding left dock back out
+        tab.left_dock.expand_panel()
+        self.assertFalse(tab.left_dock.is_collapsed)
+        self.assertGreaterEqual(tab.left_dock.width(), 260)
+        self.assertFalse(tab.left_dock.collapsed_strip.isVisible())
+        self.assertTrue(tab.left_dock.expanded_container.isVisible())
+        self.assertIn("einklappen", tab.btn_toggle_tree.text())
 
         # Check filmstrip toggle
         self.assertTrue(tab.filmstrip.isVisible())
