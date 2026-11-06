@@ -79,6 +79,41 @@ class CullingItem:
         return files
 
 
+def count_folder_images(folder: Path) -> Tuple[int, int, int]:
+    """Counts images in folder non-recursively: (total_images, raw_count, jpeg_count)."""
+    if not folder or not folder.exists() or not folder.is_dir():
+        return (0, 0, 0)
+
+    total = 0
+    raw_count = 0
+    jpeg_count = 0
+    other_exts = {".png", ".tif", ".tiff", ".heic", ".heif", ".webp"}
+
+    try:
+        with os.scandir(folder) as it:
+            for entry in it:
+                if entry.name.startswith("."):
+                    continue
+                try:
+                    if not entry.is_file():
+                        continue
+                except OSError:
+                    continue
+                ext = os.path.splitext(entry.name)[1].lower()
+                if ext in RAW_EXTENSIONS:
+                    raw_count += 1
+                    total += 1
+                elif ext in {".jpg", ".jpeg"}:
+                    jpeg_count += 1
+                    total += 1
+                elif ext in other_exts:
+                    total += 1
+    except (PermissionError, OSError):
+        return (0, 0, 0)
+
+    return (total, raw_count, jpeg_count)
+
+
 def scan_culling_folder(
     folder_path: Path,
     progress_callback: Optional[Callable[[int, int, str], None]] = None,

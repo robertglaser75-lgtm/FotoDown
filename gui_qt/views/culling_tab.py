@@ -27,6 +27,7 @@ from core.external_tools import launch_darktable, launch_topaz_photo
 from core.thumbnail import generate_thumbnail, load_preview_image
 from core.xmp_sync import sync_pair_xmp
 from gui_qt.models.culling_model import CullingItem, execute_reject_action, scan_culling_folder
+from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
 from gui_qt.workers.culling_worker import CullingScanWorker
 
 
@@ -261,7 +262,16 @@ class CullingTabView(QWidget):
         self.splitter.setChildrenCollapsible(False)
 
         # -------------------------------------------------------------
-        # LEFT SIDEBAR (Controls, Ratings, Folders, Editors, Stats)
+        # PANE 1: DIRECTORY TREE (Verzeichnisbaum mit Zählern)
+        # -------------------------------------------------------------
+        self.dir_tree = CullingDirectoryTreeWidget(self.config, self)
+        self.dir_tree.setMinimumWidth(280)
+        self.dir_tree.setMaximumWidth(480)
+        self.dir_tree.folder_selected.connect(self._on_tree_folder_selected)
+        self.splitter.addWidget(self.dir_tree)
+
+        # -------------------------------------------------------------
+        # PANE 2: CONTROLS SIDEBAR (Ratings, Folders, Editors, Stats)
         # -------------------------------------------------------------
         sidebar_scroll = QScrollArea()
         sidebar_scroll.setWidgetResizable(True)
@@ -583,6 +593,7 @@ class CullingTabView(QWidget):
             "<span style='color:#38bdf8;'>X</span> Ablehnen &nbsp;|&nbsp; "
             "<span style='color:#38bdf8;'>J / R</span> RAW/JPG<br>"
             "<span style='color:#38bdf8;'>F</span> 100% Zoom &nbsp;|&nbsp; "
+            "<span style='color:#38bdf8;'>V</span> Baum &nbsp;|&nbsp; "
             "<span style='color:#38bdf8;'>T</span> Filmstreifen &nbsp;|&nbsp; "
             "<span style='color:#38bdf8;'>Strg+D/T</span> Editoren"
         )
@@ -604,12 +615,23 @@ class CullingTabView(QWidget):
         workspace_layout.setContentsMargins(0, 0, 0, 0)
         workspace_layout.setSpacing(2)
 
-        # Minimal Top Toolbar on the image canvas (Filmstrip Toggle button on the right)
+        # Minimal Top Toolbar on the image canvas (Tree and Filmstrip Toggles)
         top_strip = QFrame()
         top_strip.setStyleSheet("background-color: #070a12; border-bottom: 1px solid #1e293b; padding: 2px 6px;")
         strip_layout = QHBoxLayout(top_strip)
         strip_layout.setContentsMargins(4, 2, 4, 2)
         strip_layout.setSpacing(8)
+
+        self.btn_toggle_tree = QPushButton("📁 Verzeichnisbaum ausblenden [V]")
+        self.btn_toggle_tree.setStyleSheet("""
+            QPushButton {
+                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
+                border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: 500;
+            }
+            QPushButton:hover { background-color: #334155; color: white; }
+        """)
+        self.btn_toggle_tree.clicked.connect(self._toggle_dir_tree)
+        strip_layout.addWidget(self.btn_toggle_tree)
 
         strip_layout.addStretch()
 
@@ -638,10 +660,11 @@ class CullingTabView(QWidget):
 
         self.splitter.addWidget(workspace_container)
 
-        # Splitter sizing: Left sidebar ~340px, Right canvas gets rest
-        self.splitter.setSizes([340, 1600])
+        # Splitter sizing: Directory tree ~280px, Controls ~320px, Right canvas gets rest
+        self.splitter.setSizes([280, 320, 1800])
         self.splitter.setStretchFactor(0, 0)
-        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setStretchFactor(1, 0)
+        self.splitter.setStretchFactor(2, 1)
 
         main_layout.addWidget(self.splitter)
 
@@ -656,6 +679,8 @@ class CullingTabView(QWidget):
         self.lbl_folder_path.setText(str(folder))
         self.config.culling_last_folder = str(folder)
         self.config.save()
+        if hasattr(self, "dir_tree") and self.dir_tree:
+            self.dir_tree.select_folder(folder)
 
         # Display progress frame and disable folder buttons while scanning
         self.btn_choose_folder.setEnabled(False)
@@ -717,6 +742,16 @@ class CullingTabView(QWidget):
     def refresh_current_folder(self):
         if self.current_folder:
             self.load_folder(self.current_folder)
+
+    def _on_tree_folder_selected(self, folder: Path):
+        if self.current_folder and self.current_folder.resolve() == folder.resolve():
+            return
+        self.load_folder(folder)
+
+    def _toggle_dir_tree(self):
+        is_vis = not self.dir_tree.isVisible()
+        self.dir_tree.setVisible(is_vis)
+        self.btn_toggle_tree.setText("📁 Verzeichnisbaum ausblenden [V]" if is_vis else "📁 Verzeichnisbaum einblenden [V]")
 
     def _on_choose_folder_clicked(self):
         start_dir = str(self.current_folder) if self.current_folder else self.config.target_dir
@@ -965,6 +1000,10 @@ class CullingTabView(QWidget):
         # Zoom toggle
         elif key == Qt.Key.Key_F:
             self._toggle_canvas_zoom()
+            return
+        # Directory tree toggle
+        elif key == Qt.Key.Key_V:
+            self._toggle_dir_tree()
             return
         # Filmstrip toggle
         elif key == Qt.Key.Key_T:

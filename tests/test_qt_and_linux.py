@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.14.2")
+        self.assertEqual(__version__, "0.15.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -923,6 +923,68 @@ class TestCullingAndExternalTools(unittest.TestCase):
         self.assertEqual(cur, 1)
         self.assertEqual(total, 1)
 
+    def test_count_folder_images(self):
+        from gui_qt.models.culling_model import count_folder_images
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = Path(tmpdir)
+            (p / "IMG_0001.CR3").write_bytes(b"raw1")
+            (p / "IMG_0002.NEF").write_bytes(b"raw2")
+            (p / "IMG_0001.JPG").write_bytes(b"jpg1")
+            (p / "IMG_0002.JPEG").write_bytes(b"jpg2")
+            (p / "IMG_0003.PNG").write_bytes(b"png1")
+            (p / "readme.txt").write_text("info")
+
+            total, raw, jpg = count_folder_images(p)
+            self.assertEqual(total, 5)
+            self.assertEqual(raw, 2)
+            self.assertEqual(jpg, 2)
+
+    def test_culling_tree_widget(self):
+        from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+        from core.config import AppConfig
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            sub1 = root / "Urlaub_2026"
+            sub1.mkdir()
+            (sub1 / "IMG_01.CR3").write_bytes(b"raw")
+            (sub1 / "IMG_01.JPG").write_bytes(b"jpg")
+
+            cfg = AppConfig(culling_root_folder=str(root))
+            tree_widget = CullingDirectoryTreeWidget(cfg)
+            tree_widget.show()
+
+            self.assertIsNotNone(tree_widget.model)
+            self.assertEqual(tree_widget.model.columnCount(), 4)
+            self.assertGreaterEqual(tree_widget.model.rowCount(), 1)
+
+            # Test folder selection signal
+            emitted_paths = []
+            tree_widget.folder_selected.connect(lambda p: emitted_paths.append(p))
+            tree_widget.select_folder(sub1)
+
+            # Simulate item click on sub1
+            root_item = tree_widget.model.item(0, 0)
+            self.assertIsNotNone(root_item)
+            child_item = root_item.child(0, 0)
+            self.assertIsNotNone(child_item)
+            self.assertIn("Urlaub_2026", child_item.text())
+
+            # Check sub1 image counts in model
+            sub1_total_item = root_item.child(0, 1)
+            sub1_raw_item = root_item.child(0, 2)
+            sub1_jpg_item = root_item.child(0, 3)
+            self.assertEqual(sub1_total_item.text(), "2")
+            self.assertEqual(sub1_raw_item.text(), "1")
+            self.assertEqual(sub1_jpg_item.text(), "1")
+
+            tree_widget._on_item_clicked(tree_widget.model.indexFromItem(child_item))
+            self.assertEqual(len(emitted_paths), 1)
+            self.assertEqual(emitted_paths[0].resolve(), sub1.resolve())
+
+            tree_widget.close()
+
     def test_culling_tab_ultrawide_layout(self):
         from gui_qt.views.culling_tab import CullingTabView
         from core.config import AppConfig
@@ -931,9 +993,19 @@ class TestCullingAndExternalTools(unittest.TestCase):
         tab = CullingTabView(cfg)
         tab.show()
 
-        # Check splitter layout
+        # Check 3-pane splitter layout (Tree, Sidebar Controls, Canvas Workspace)
         self.assertIsNotNone(tab.splitter)
-        self.assertEqual(tab.splitter.count(), 2)
+        self.assertEqual(tab.splitter.count(), 3)
+        self.assertIsNotNone(tab.dir_tree)
+
+        # Check directory tree toggle
+        self.assertTrue(tab.dir_tree.isVisible())
+        tab._toggle_dir_tree()
+        self.assertFalse(tab.dir_tree.isVisible())
+        self.assertIn("einblenden", tab.btn_toggle_tree.text())
+        tab._toggle_dir_tree()
+        self.assertTrue(tab.dir_tree.isVisible())
+        self.assertIn("ausblenden", tab.btn_toggle_tree.text())
 
         # Check filmstrip toggle
         self.assertTrue(tab.filmstrip.isVisible())

@@ -3,6 +3,27 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.15.0] - 2026-11-06
+
+### Hinzugefügt
+- **Interaktiver Verzeichnisbaum mit Bild-, RAW- und JPEG-Zählern ([`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py)):**
+  - **Hierarchischer Verzeichnisbaum:** Ermöglicht die flexible Navigation durch Ordner und Unterverzeichnisse direkt im Tab *„Sichten & Sortieren“*.
+  - **Präzise Bildzählung je Ordner:** Zeigt für jedes Verzeichnis übersichtlich getrennte Spalten für:
+    - `Bilder`: Gesamtzahl aller erkannten Bilddateien
+    - `RAW`: Anzahl der RAW-Sensordaten (z. B. CR2/CR3, NEF, ARW, DNG, RAF, RW2 etc.) in auffälligem Magenta/Pink
+    - `JPEG`: Anzahl der JPEG-Dateien in Sky-Blue
+  - **Frei wählbarer Einstiegspunkt (Root-Verzeichnis):**
+    - Der Einstiegspunkt kann über die Schaltfläche *„Einstiegspunkt...“* oder das Kontextmenü jederzeit beliebig gewechselt werden (z. B. spezifische Jahres- oder Projektordner).
+    - Die Auswahl bleibt sitzungsübergreifend in der Konfiguration (`culling_root_folder`) gespeichert.
+  - **High-Performance Lazy Loading:** Unterordner werden bedarfsgerecht und ohne Ladezeiten expandiert – selbst bei riesigen Archiven oder Netzlaufwerken bleibt FotoDown sofort reaktionsfähig.
+  - **Kontextmenü & Schnellzugriff:**
+    - Per Rechtsklick: Ordner als neuen Einstiegspunkt setzen, im System-Dateimanager öffnen oder Zähler aktualisieren.
+    - Schaltflächen zum Aktualisieren (`🔄`) sowie Ein- und Ausklappen (`➕` / `➖`).
+  - **Nahtlose 3-Spalten-Workstation für Ultrawide-Monitore:**
+    - Pane 1: Verzeichnisbaum (Breite anpassbar, ein-/ausblendbar mit <kbd>V</kbd>)
+    - Pane 2: Steuerung, Bewertungen, Darktable/Topaz Export und Statistiken
+    - Pane 3: Bildbetrachter mit maximaler vertikaler Monitorhöhe und einklappbarem Filmstreifen (<kbd>T</kbd>)
+
 ## [0.14.2] - 2026-11-05
 
 ### Verbessert

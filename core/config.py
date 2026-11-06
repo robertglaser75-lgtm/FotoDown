@@ -115,6 +115,7 @@ class AppConfig:
     iptc_copyright: str = "© {YYYY} {creator}. Alle Rechte vorbehalten."
     iptc_keywords: str = ""
     # Sichten & Culling (Phase 2 Workflow)
+    culling_root_folder: str = ""
     culling_last_folder: str = ""
     reject_action: str = "move_folder"  # "move_folder", "trash", "flag_only"
     reject_folder_name: str = "_Abgelehnt"

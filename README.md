@@ -10,6 +10,11 @@ Lauffähig unter **Windows** und **Linux**.
 
 - 👁️ **2. Hauptfunktion: Sichten & Sortieren (Culling & Editor-Export):**
   - **Zwei-Phasen-Workflow:** Bequemes Umschalten zwischen *„📥 1. Importieren“* und *„👁️ 2. Sichten & Sortieren“*.
+  - **Interaktiver Verzeichnisbaum mit Bildzählern:**
+    - Eigener Navigationsbaum mit flexibel wählbarem Einstiegspunkt (Root-Ordner).
+    - Zeigt für jedes Verzeichnis übersichtlich getrennt: Gesamtzahl an Bildern (`Bilder`), Anzahl an Sensordaten (`RAW`) und Kompaktdateien (`JPEG`).
+    - Schnelles Umschalten zwischen Aufnahme-Sessions und Ordnern per Klick oder Tastenkürzel (`V` zum Ein-/Ausblenden).
+  - **Ultrawide-optimierte 3-Spalten-Workstation:** Maximale Bildhöhe für Fotos auf 21:9 und 32:9 Monitoren durch vertikale Bedienelemente links und einklappbaren Filmstreifen (`T`).
   - **Schneller Bildbetrachter:** Blitzschnelles Durchsehen mit Tastaturnavigation (`◀` / `▶` bzw. `A` / `D`), stufenlosem Zoom und 100%-Schärfelupe (`F`).
   - **RAW+JPEG Koppelung:** Anzeige als ein Paar mit sofortiger Umschaltung zwischen JPEG-Kameraansicht und RAW-Vorschau (`J` / `R`).
   - **XMP-Sterne- & Farbbewertung:** Vergabe von 1–5 Sternen (`1`–`5`), Pick (`P`) und Reject (`X`), die sofort in `.xmp`-Sidecars synchronisiert werden (voll kompatibel mit Darktable und Lightroom).
