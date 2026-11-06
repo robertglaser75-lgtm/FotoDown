@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.15.2")
+        self.assertEqual(__version__, "0.15.3")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1005,29 +1005,23 @@ class TestCullingAndExternalTools(unittest.TestCase):
         self.assertEqual(tab.splitter.count(), 3)
         self.assertIsInstance(tab.left_dock, CullingLeftNavigationDock)
 
-        # Check left dock tabs
-        self.assertEqual(tab.left_dock.stack.count(), 2)
-        tab.left_dock.switch_tab(0)
-        self.assertEqual(tab.left_dock.stack.currentIndex(), 0)
-        tab.left_dock.switch_tab(1)
-        self.assertEqual(tab.left_dock.stack.currentIndex(), 1)
-
         # Check collapsing left dock to 36px
         self.assertFalse(tab.left_dock.is_collapsed)
+        initial_canvas_w = tab.splitter.sizes()[2]
         tab.left_dock.collapse_panel()
         self.assertTrue(tab.left_dock.is_collapsed)
         self.assertEqual(tab.left_dock.width(), 36)
         self.assertTrue(tab.left_dock.collapsed_strip.isVisible())
-        self.assertFalse(tab.left_dock.expanded_container.isVisible())
-        self.assertIn("ausklappen", tab.btn_toggle_tree.text())
+        self.assertFalse(tab.left_dock.tree_view.isVisible())
+        # Canvas should have received the extra width without gap
+        self.assertGreater(tab.splitter.sizes()[2], initial_canvas_w)
 
         # Check expanding left dock back out
         tab.left_dock.expand_panel()
         self.assertFalse(tab.left_dock.is_collapsed)
         self.assertGreaterEqual(tab.left_dock.width(), 260)
         self.assertFalse(tab.left_dock.collapsed_strip.isVisible())
-        self.assertTrue(tab.left_dock.expanded_container.isVisible())
-        self.assertIn("einklappen", tab.btn_toggle_tree.text())
+        self.assertTrue(tab.left_dock.tree_view.isVisible())
 
         # Check filmstrip toggle
         self.assertTrue(tab.filmstrip.isVisible())

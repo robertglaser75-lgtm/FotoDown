@@ -268,18 +268,15 @@ class CullingTabView(QWidget):
         self.splitter.setChildrenCollapsible(False)
 
         # -------------------------------------------------------------
-        # PANE 1: LEFT NAVIGATION DOCK (Verzeichnisse & Quellordner)
+        # PANE 1: LEFT NAVIGATION DOCK (Verzeichnisse)
         # -------------------------------------------------------------
         self.left_dock = CullingLeftNavigationDock(self.config, self)
         self.left_dock.folder_selected.connect(self._on_tree_folder_selected)
-        self.left_dock.folder_view.refresh_requested.connect(self.refresh_current_folder)
-        self.left_dock.folder_view.cancel_scan_requested.connect(self._cancel_scan)
-        self.left_dock.toggled.connect(self._on_left_dock_toggled)
         self.splitter.addWidget(self.left_dock)
         self.dir_tree = self.left_dock.tree_view
 
         # -------------------------------------------------------------
-        # PANE 2: CONTROLS SIDEBAR (Ratings, Folders, Editors, Stats)
+        # PANE 2: CONTROLS SIDEBAR (Ratings, Editors, Stats)
         # -------------------------------------------------------------
         sidebar_scroll = QScrollArea()
         sidebar_scroll.setWidgetResizable(True)
@@ -376,7 +373,7 @@ class CullingTabView(QWidget):
         self.progress_frame.setVisible(False)
         layout_folder.addWidget(self.progress_frame)
 
-        self.btn_choose_folder = self.left_dock.folder_view.btn_choose_folder
+        self.btn_choose_folder = self.dir_tree.btn_change_root
         self.box_folder = card_folder
         sidebar_layout.addWidget(card_folder)
 
@@ -614,25 +611,12 @@ class CullingTabView(QWidget):
         workspace_layout.setContentsMargins(0, 0, 0, 0)
         workspace_layout.setSpacing(2)
 
-        # Minimal Top Toolbar on the image canvas (Tree and Filmstrip Toggles)
+        # Minimal Top Toolbar on the image canvas (Filmstrip Toggle)
         top_strip = QFrame()
         top_strip.setStyleSheet("background-color: #070a12; border-bottom: 1px solid #1e293b; padding: 2px 6px;")
         strip_layout = QHBoxLayout(top_strip)
         strip_layout.setContentsMargins(4, 2, 4, 2)
         strip_layout.setSpacing(8)
-
-        self.btn_toggle_tree = QPushButton("Verzeichnisbaum nach links einklappen [V]")
-        self.btn_toggle_tree.setIcon(get_collapse_panel_icon("#38bdf8", 14))
-        self.btn_toggle_tree.setIconSize(QSize(14, 14))
-        self.btn_toggle_tree.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
-                border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: 500;
-            }
-            QPushButton:hover { background-color: #334155; color: white; }
-        """)
-        self.btn_toggle_tree.clicked.connect(self._toggle_dir_tree)
-        strip_layout.addWidget(self.btn_toggle_tree)
 
         strip_layout.addStretch()
 
@@ -684,7 +668,6 @@ class CullingTabView(QWidget):
         self.config.save()
         if hasattr(self, "left_dock") and self.left_dock:
             self.left_dock.select_folder(folder)
-            self.left_dock.show_scan_progress(True)
         elif hasattr(self, "dir_tree") and self.dir_tree:
             self.dir_tree.select_folder(folder)
 
@@ -710,15 +693,11 @@ class CullingTabView(QWidget):
         self.scan_progress_bar.setValue(pct)
         self.lbl_scan_status.setText(f"Lese Fotos ein: {cur} von {total} ({pct}%) • {filename}")
         self.lbl_stats.setText(f"Scan läuft: {cur}/{total} ({pct}%)")
-        if hasattr(self, "left_dock") and self.left_dock:
-            self.left_dock.set_scan_progress(cur, total, filename)
 
     def _on_scan_finished(self, items: List[CullingItem]):
         self.progress_frame.setVisible(False)
         self.btn_choose_folder.setEnabled(True)
         self.btn_refresh.setEnabled(True)
-        if hasattr(self, "left_dock") and self.left_dock:
-            self.left_dock.show_scan_progress(False)
 
         self.items = items
         self.filtered_items = list(self.items)
@@ -737,8 +716,6 @@ class CullingTabView(QWidget):
         self.progress_frame.setVisible(False)
         self.btn_choose_folder.setEnabled(True)
         self.btn_refresh.setEnabled(True)
-        if hasattr(self, "left_dock") and self.left_dock:
-            self.left_dock.show_scan_progress(False)
         QMessageBox.critical(self, "Fehler beim Einlesen", f"Fehler beim Scannen des Ordners:\n{err_msg}")
         self.lbl_active_name.setText("Fehler beim Laden")
         self.lbl_stats.setText("Fehler beim Laden")
@@ -750,8 +727,6 @@ class CullingTabView(QWidget):
         self.progress_frame.setVisible(False)
         self.btn_choose_folder.setEnabled(True)
         self.btn_refresh.setEnabled(True)
-        if hasattr(self, "left_dock") and self.left_dock:
-            self.left_dock.show_scan_progress(False)
 
     def refresh_current_folder(self):
         if self.current_folder:
@@ -765,14 +740,6 @@ class CullingTabView(QWidget):
     def _toggle_dir_tree(self):
         if hasattr(self, "left_dock") and self.left_dock:
             self.left_dock.toggle_collapse()
-
-    def _on_left_dock_toggled(self, is_expanded: bool):
-        if is_expanded:
-            self.btn_toggle_tree.setText("Verzeichnisbaum nach links einklappen [V]")
-            self.btn_toggle_tree.setIcon(get_collapse_panel_icon("#38bdf8", 14))
-        else:
-            self.btn_toggle_tree.setText("Verzeichnisbaum ausklappen [V]")
-            self.btn_toggle_tree.setIcon(get_expand_panel_icon("#38bdf8", 14))
 
     def _on_choose_folder_clicked(self):
         start_dir = str(self.current_folder) if self.current_folder else self.config.target_dir

@@ -3,6 +3,18 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.15.3] - 2026-11-06
+
+### Behoben
+- **Kein unbenutzbarer Leerraum beim Einklappen ([`gui_qt/views/culling_left_dock.py`](gui_qt/views/culling_left_dock.py)):**
+  - Beim Einklappen des linken Docks auf 36px wird der gesamte gewonnene Platz direkt und millimetergenau an den Bildbetrachter (`Canvas`) übergeben.
+  - Die mittlere Seitenleiste behält exakt ihre optimale Breite, wodurch kein toter/grauer Zwischenraum mehr entsteht und der Splitter nicht mehr manuell nachgezogen werden muss.
+
+### Verbessert
+- **Fokussierter Workflow & Bereinigung ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/views/culling_left_dock.py`](gui_qt/views/culling_left_dock.py)):**
+  - **Quellordner-Auswahl entfernt:** Die redundante Quellordner-Auswahl wurde entfernt; die Ordnerauswahl erfolgt nun zentral und einheitlich über den Verzeichnisbaum.
+  - **Aufgeräumte Bild-Kopfzeile:** Die Schaltfläche zum Ein-/Ausklappen in der Bildansicht wurde entfernt, um dem Foto maximale Höhe und Ruhe einzuräumen. Das Einklappen erfolgt direkt am Verzeichnisbaum (`[ ◀ ]`), an der 36px-Dockleiste (`[ ▶ ]` / `[ 📁 ]`) oder per Shortcut <kbd>V</kbd>.
+
 ## [0.15.2] - 2026-11-06
 
 ### Verbessert
