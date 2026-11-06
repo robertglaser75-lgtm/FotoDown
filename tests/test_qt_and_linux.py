@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.18.0")
+        self.assertEqual(__version__, "0.18.1")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1631,6 +1631,38 @@ class TestSettingsAndSingleViewConfig(unittest.TestCase):
         cfg.single_view_show_path = False
         tab.apply_config()
         self.assertFalse(tab.lbl_canvas_path.isVisible())
+
+        tab.close()
+
+    def test_culling_loading_animation_blinking(self):
+        from gui_qt.views.culling_tab import CullingTabView
+        from core.config import AppConfig
+        from PySide6.QtCore import QPropertyAnimation
+
+        cfg = AppConfig()
+        tab = CullingTabView(cfg)
+        tab.show()
+
+        # Start animation
+        tab._start_loading_animation()
+        self.assertEqual(tab.lbl_active_name.text(), "Lade Fotos...")
+        self.assertTrue(hasattr(tab, "_loading_anim"))
+        self.assertEqual(tab._loading_anim.state(), QPropertyAnimation.State.Running)
+        self.assertGreaterEqual(tab._loading_anim.duration(), 1000)
+
+        # Canvas show_loading
+        tab.canvas.show_loading("Lade Fotos...")
+        self.assertEqual(tab.canvas.lbl_image.text(), "Lade Fotos...")
+        self.assertTrue(hasattr(tab.canvas, "_canvas_loading_anim"))
+        self.assertEqual(tab.canvas._canvas_loading_anim.state(), QPropertyAnimation.State.Running)
+
+        # Stop animation
+        tab._stop_loading_animation()
+        self.assertEqual(tab._loading_anim.state(), QPropertyAnimation.State.Stopped)
+        self.assertEqual(tab._loading_effect.opacity(), 1.0)
+
+        tab.canvas.hide_loading()
+        self.assertEqual(tab.canvas._canvas_loading_anim.state(), QPropertyAnimation.State.Stopped)
 
         tab.close()
 

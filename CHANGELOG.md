@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.18.1] - 2026-11-07
+
+### Verbessert
+- **Pulsierende Lade-Animation bei „Lade Fotos...“ ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py)):**
+  - Sanftes, langsames Blinken/Atmen (`QPropertyAnimation` mit `InOutSine`-Kurve, 1400ms Zyklus) des Schriftzugs *„Lade Fotos...“* in der Seitenleiste sowie mittig auf der Bildarbeitsfläche während des Ordnereinlesens.
+  - Verhindert den Eindruck eines hängenden Programms bei großen Verzeichnissen mit hunderten RAW- und Bilddateien.
+  - Sauberes Beenden der Animation und Wiederherstellung voller Deckkraft, sobald der Scan abgeschlossen oder abgebrochen wird.
+
 ## [0.18.0] - 2026-11-06
 
 ### Hinzugefügt

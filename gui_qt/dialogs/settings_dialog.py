@@ -565,3 +565,4 @@ class SettingsDialog(QDialog):
     def _on_save_clicked(self):
         self.save_to_config()
         self.accept()
+
