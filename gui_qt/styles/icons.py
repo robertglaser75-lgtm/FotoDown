@@ -167,3 +167,35 @@ def get_filmstrip_icon(color: str = "#94a3b8", size: int = 16) -> QIcon:
     p.end()
     return QIcon(pix)
 
+
+def get_filter_icon(color: str = "#38bdf8", size: int = 16) -> QIcon:
+    """Renders a crisp vector funnel / filter icon."""
+    pix = QPixmap(size, size)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    pen = QPen(QColor(color), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    p.setPen(pen)
+
+    top_y = size * 0.22
+    neck_top_y = size * 0.54
+    neck_bot_y = size * 0.85
+    left_x = size * 0.18
+    right_x = size * 0.82
+    mid_left_x = size * 0.40
+    mid_right_x = size * 0.60
+
+    path = QPainterPath()
+    path.moveTo(left_x, top_y)
+    path.lineTo(right_x, top_y)
+    path.lineTo(mid_right_x, neck_top_y)
+    path.lineTo(mid_right_x, neck_bot_y)
+    path.lineTo(mid_left_x, neck_bot_y)
+    path.lineTo(mid_left_x, neck_top_y)
+    path.closeSubpath()
+
+    p.drawPath(path)
+    p.end()
+    return QIcon(pix)
+

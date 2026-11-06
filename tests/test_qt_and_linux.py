@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.15.4")
+        self.assertEqual(__version__, "0.16.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1097,7 +1097,7 @@ class TestCullingAndExternalTools(unittest.TestCase):
         self.assertTrue(tab.left_dock.is_collapsed)
         self.assertEqual(tab.left_dock.width(), 36)
         self.assertTrue(tab.left_dock.collapsed_strip.isVisible())
-        self.assertFalse(tab.left_dock.tree_view.isVisible())
+        self.assertFalse(tab.left_dock.tab_widget.isVisible())
         # Canvas should have received the extra width without gap
         self.assertGreater(tab.splitter.sizes()[2], initial_canvas_w)
 
@@ -1106,7 +1106,12 @@ class TestCullingAndExternalTools(unittest.TestCase):
         self.assertFalse(tab.left_dock.is_collapsed)
         self.assertGreaterEqual(tab.left_dock.width(), 260)
         self.assertFalse(tab.left_dock.collapsed_strip.isVisible())
-        self.assertTrue(tab.left_dock.tree_view.isVisible())
+        self.assertTrue(tab.left_dock.tab_widget.isVisible())
+
+        # Check tabs in Left Dock (Verzeichnisse & Filter)
+        self.assertEqual(tab.left_dock.tab_widget.count(), 2)
+        self.assertEqual(tab.left_dock.tab_widget.tabText(0), "Verzeichnisse")
+        self.assertEqual(tab.left_dock.tab_widget.tabText(1), "Filter")
 
         # Check filmstrip toggle
         self.assertTrue(tab.filmstrip.isVisible())
@@ -1116,6 +1121,191 @@ class TestCullingAndExternalTools(unittest.TestCase):
         tab._toggle_filmstrip()
         self.assertTrue(tab.filmstrip.isVisible())
         self.assertIn("ausblenden", tab.btn_toggle_filmstrip.text())
+
+        tab.close()
+
+
+class TestCullingFilter(unittest.TestCase):
+    def setUp(self):
+        from gui_qt.models.culling_model import CullingItem
+        from core.exif_reader import MediaMetadata
+
+        self.item_raw_only = CullingItem(
+            primary_path=Path("IMG_001.CR3"),
+            companion_path=None,
+            metadata=MediaMetadata(
+                file_path=Path("IMG_001.CR3"),
+                orig_name="IMG_001",
+                extension=".cr3",
+                file_size=20000000,
+                date_taken=datetime(2026, 5, 1, 10, 0),
+                date_source="EXIF",
+                camera_make="Canon",
+                camera_model="EOS R6",
+                camera_name="Canon EOS R6",
+                iso=200,
+                lens_model="RF 24-70mm F2.8L"
+            ),
+            rating=5,
+            is_picked=True
+        )
+        self.item_pair = CullingItem(
+            primary_path=Path("P101.ORF"),
+            companion_path=Path("P101.JPG"),
+            metadata=MediaMetadata(
+                file_path=Path("P101.JPG"),
+                orig_name="P101",
+                extension=".jpg",
+                file_size=8000000,
+                date_taken=datetime(2026, 5, 2, 11, 0),
+                date_source="EXIF",
+                camera_make="OM Digital Solutions",
+                camera_model="OM-1",
+                camera_name="OM System OM-1",
+                iso=800,
+                lens_model="M.12-40mm F2.8"
+            ),
+            rating=3,
+            is_picked=False
+        )
+        self.item_jpg_only = CullingItem(
+            primary_path=Path("DSC_500.JPG"),
+            companion_path=None,
+            metadata=MediaMetadata(
+                file_path=Path("DSC_500.JPG"),
+                orig_name="DSC_500",
+                extension=".jpg",
+                file_size=5000000,
+                date_taken=datetime(2026, 5, 3, 12, 0),
+                date_source="EXIF",
+                camera_make="Sony",
+                camera_model="ILCE-7M4",
+                camera_name="Sony ILCE-7M4",
+                iso=3200,
+                lens_model="FE 35mm F1.4 GM"
+            ),
+            rating=0,
+            is_rejected=True
+        )
+        self.items = [self.item_raw_only, self.item_pair, self.item_jpg_only]
+
+    def test_filter_by_type(self):
+        from gui_qt.views.culling_filter import CullingFilterCriteria
+
+        # All formats
+        crit_all = CullingFilterCriteria(file_type="ALL")
+        self.assertEqual(len([it for it in self.items if crit_all.matches(it)]), 3)
+
+        # Any RAW
+        crit_raw_any = CullingFilterCriteria(file_type="RAW_ANY")
+        res_raw = [it for it in self.items if crit_raw_any.matches(it)]
+        self.assertEqual(len(res_raw), 2)
+        self.assertIn(self.item_raw_only, res_raw)
+        self.assertIn(self.item_pair, res_raw)
+
+        # Any JPEG
+        crit_jpg_any = CullingFilterCriteria(file_type="JPEG_ANY")
+        res_jpg = [it for it in self.items if crit_jpg_any.matches(it)]
+        self.assertEqual(len(res_jpg), 2)
+        self.assertIn(self.item_pair, res_jpg)
+        self.assertIn(self.item_jpg_only, res_jpg)
+
+        # Pairs only
+        crit_pair = CullingFilterCriteria(file_type="PAIR_ONLY")
+        res_pair = [it for it in self.items if crit_pair.matches(it)]
+        self.assertEqual(res_pair, [self.item_pair])
+
+        # Standalone RAW only
+        crit_raw_only = CullingFilterCriteria(file_type="RAW_ONLY")
+        self.assertEqual([it for it in self.items if crit_raw_only.matches(it)], [self.item_raw_only])
+
+        # Standalone JPEG only
+        crit_jpg_only = CullingFilterCriteria(file_type="JPEG_ONLY")
+        self.assertEqual([it for it in self.items if crit_jpg_only.matches(it)], [self.item_jpg_only])
+
+    def test_filter_by_rating_and_status(self):
+        from gui_qt.views.culling_filter import CullingFilterCriteria
+
+        # Min 4 stars
+        crit_4 = CullingFilterCriteria(rating_mode="MIN_4")
+        self.assertEqual([it for it in self.items if crit_4.matches(it)], [self.item_raw_only])
+
+        # Status: Picked
+        crit_pick = CullingFilterCriteria(status="PICKED")
+        self.assertEqual([it for it in self.items if crit_pick.matches(it)], [self.item_raw_only])
+
+        # Status: Rejected
+        crit_rej = CullingFilterCriteria(status="REJECTED")
+        self.assertEqual([it for it in self.items if crit_rej.matches(it)], [self.item_jpg_only])
+
+        # Status: Not rejected
+        crit_not_rej = CullingFilterCriteria(status="NOT_REJECTED")
+        res = [it for it in self.items if crit_not_rej.matches(it)]
+        self.assertEqual(len(res), 2)
+        self.assertNotIn(self.item_jpg_only, res)
+
+    def test_filter_by_camera_and_exif(self):
+        from gui_qt.views.culling_filter import CullingFilterCriteria
+
+        crit_canon = CullingFilterCriteria(camera="Canon EOS R6")
+        self.assertEqual([it for it in self.items if crit_canon.matches(it)], [self.item_raw_only])
+
+        crit_om = CullingFilterCriteria(camera="OM System OM-1")
+        self.assertEqual([it for it in self.items if crit_om.matches(it)], [self.item_pair])
+
+        crit_iso_low = CullingFilterCriteria(iso_range="LOW")  # <= 400
+        self.assertEqual([it for it in self.items if crit_iso_low.matches(it)], [self.item_raw_only])
+
+        crit_search = CullingFilterCriteria(search_text="35mm")
+        self.assertEqual([it for it in self.items if crit_search.matches(it)], [self.item_jpg_only])
+
+    def test_culling_filter_widget_ui_and_tab_integration(self):
+        from gui_qt.views.culling_filter import CullingFilterWidget, CullingFilterCriteria
+        from gui_qt.views.culling_tab import CullingTabView
+        from core.config import AppConfig
+
+        widget = CullingFilterWidget()
+        widget.show()
+
+        # Update folder items populates cameras and lenses
+        widget.update_folder_items(self.items)
+        self.assertGreaterEqual(widget.cmb_camera.count(), 4)  # "Alle Kameras" + 3 cameras
+        self.assertGreaterEqual(widget.cmb_lens.count(), 4)    # "Alle Objektive" + 3 lenses
+
+        # Change filter and check signal
+        emitted = []
+        widget.filter_changed.connect(lambda crit: emitted.append(crit))
+        widget.cmb_file_type.setCurrentIndex(1)  # RAW_ANY
+        self.assertGreater(len(emitted), 0)
+        self.assertEqual(emitted[-1].file_type, "RAW_ANY")
+        self.assertTrue(emitted[-1].is_active())
+
+        # Reset filters
+        widget.reset_filters()
+        self.assertEqual(widget.cmb_file_type.currentIndex(), 0)
+        self.assertFalse(widget.get_criteria().is_active())
+
+        widget.close()
+
+        # Test integration in CullingTabView
+        cfg = AppConfig()
+        tab = CullingTabView(cfg)
+        tab.show()
+        tab._on_scan_finished(self.items)
+        self.assertEqual(len(tab.items), 3)
+        self.assertEqual(len(tab.filtered_items), 3)
+
+        # Trigger filter in tab: Only RAW
+        crit_raw = CullingFilterCriteria(file_type="RAW_ONLY")
+        tab._on_filter_changed(crit_raw)
+        self.assertEqual(len(tab.filtered_items), 1)
+        self.assertEqual(tab.filtered_items[0], self.item_raw_only)
+        self.assertIn("Filter aktiv", tab.lbl_active_name.text())
+
+        # Reset filter: back to 3
+        crit_reset = CullingFilterCriteria()
+        tab._on_filter_changed(crit_reset)
+        self.assertEqual(len(tab.filtered_items), 3)
 
         tab.close()
 

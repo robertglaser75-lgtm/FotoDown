@@ -31,6 +31,7 @@ from gui_qt.styles.icons import (
     get_collapse_panel_icon, get_expand_panel_icon, get_filmstrip_icon,
     get_folder_icon, get_refresh_icon
 )
+from gui_qt.views.culling_filter import CullingFilterCriteria
 from gui_qt.views.culling_left_dock import CullingLeftNavigationDock
 from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
 from gui_qt.widgets.collapsible_box import CollapsibleBox
@@ -251,6 +252,7 @@ class CullingTabView(QWidget):
         self.config = config
         self.items: List[CullingItem] = []
         self.filtered_items: List[CullingItem] = []
+        self._current_filter: Optional[CullingFilterCriteria] = None
         self.current_idx: int = -1
         self.current_folder: Optional[Path] = None
         self._scan_worker: Optional[CullingScanWorker] = None
@@ -268,10 +270,11 @@ class CullingTabView(QWidget):
         self.splitter.setChildrenCollapsible(False)
 
         # -------------------------------------------------------------
-        # PANE 1: LEFT NAVIGATION DOCK (Verzeichnisse)
+        # PANE 1: LEFT NAVIGATION DOCK (Verzeichnisse & Filter)
         # -------------------------------------------------------------
         self.left_dock = CullingLeftNavigationDock(self.config, self)
         self.left_dock.folder_selected.connect(self._on_tree_folder_selected)
+        self.left_dock.filter_changed.connect(self._on_filter_changed)
         self.splitter.addWidget(self.left_dock)
         self.dir_tree = self.left_dock.tree_view
 
@@ -700,17 +703,41 @@ class CullingTabView(QWidget):
         self.btn_refresh.setEnabled(True)
 
         self.items = items
-        self.filtered_items = list(self.items)
+        self.left_dock.update_folder_items(items)
+        self._apply_filter(keep_current=False)
 
-        self._update_stats_label()
-        if self.items:
-            self.filmstrip.set_items(self.items, 0)
-            self.set_current_index(0)
+    def _on_filter_changed(self, criteria: CullingFilterCriteria):
+        self._current_filter = criteria
+        self._apply_filter(keep_current=True)
+
+    def _apply_filter(self, keep_current: bool = True):
+        current_item = (
+            self.filtered_items[self.current_idx]
+            if (0 <= self.current_idx < len(self.filtered_items))
+            else None
+        )
+
+        if self._current_filter and self._current_filter.is_active():
+            self.filtered_items = [it for it in self.items if self._current_filter.matches(it)]
         else:
+            self.filtered_items = list(self.items)
+
+        self.left_dock.update_match_stats(len(self.filtered_items), len(self.items))
+        self._update_stats_label()
+
+        if self.filtered_items:
+            new_idx = 0
+            if keep_current and current_item and current_item in self.filtered_items:
+                new_idx = self.filtered_items.index(current_item)
+            self.filmstrip.set_items(self.filtered_items, new_idx)
+            self.set_current_index(new_idx)
+        else:
+            self.current_idx = -1
             self.filmstrip.set_items([], -1)
             self.canvas.set_pixmap(None)
-            self.lbl_active_name.setText("Keine Fotos im Ordner gefunden")
+            self.lbl_active_name.setText("Keine Fotos entsprechen dem Filter")
             self.lbl_pair_badge.setVisible(False)
+            self.btn_toggle_raw_jpg.setVisible(False)
 
     def _on_scan_error(self, err_msg: str):
         self.progress_frame.setVisible(False)
@@ -748,18 +775,21 @@ class CullingTabView(QWidget):
             self.load_folder(Path(folder))
 
     def set_current_index(self, idx: int):
-        if not self.items or not (0 <= idx < len(self.items)):
+        if not self.filtered_items or not (0 <= idx < len(self.filtered_items)):
+            self.current_idx = -1
+            self.canvas.set_pixmap(None)
             return
         self.current_idx = idx
         self.filmstrip.set_current_index(idx)
         self._render_current_item()
 
     def _render_current_item(self):
-        if not self.items or not (0 <= self.current_idx < len(self.items)):
+        if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):
             return
 
-        it = self.items[self.current_idx]
-        self.lbl_active_name.setText(f"{it.primary_path.name} ({self.current_idx + 1} von {len(self.items)})")
+        it = self.filtered_items[self.current_idx]
+        filter_tag = " [Filter aktiv]" if (self._current_filter and self._current_filter.is_active()) else ""
+        self.lbl_active_name.setText(f"{it.primary_path.name} ({self.current_idx + 1} von {len(self.filtered_items)}){filter_tag}")
 
         if it.is_pair:
             self.lbl_pair_badge.setText(f"RAW+JPG ({it.active_view_mode})")
@@ -797,9 +827,9 @@ class CullingTabView(QWidget):
             self.canvas.set_pixmap(None)
 
     def set_current_rating(self, stars: int):
-        if not self.items or not (0 <= self.current_idx < len(self.items)):
+        if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):
             return
-        it = self.items[self.current_idx]
+        it = self.filtered_items[self.current_idx]
         it.rating = stars
         if stars > 0:
             it.is_rejected = False
@@ -809,9 +839,9 @@ class CullingTabView(QWidget):
         self._update_stats_label()
 
     def _toggle_pick(self):
-        if not self.items or not (0 <= self.current_idx < len(self.items)):
+        if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):
             return
-        it = self.items[self.current_idx]
+        it = self.filtered_items[self.current_idx]
         it.is_picked = not it.is_picked
         if it.is_picked:
             it.is_rejected = False
@@ -823,9 +853,9 @@ class CullingTabView(QWidget):
         self._update_stats_label()
 
     def _toggle_reject(self):
-        if not self.items or not (0 <= self.current_idx < len(self.items)):
+        if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):
             return
-        it = self.items[self.current_idx]
+        it = self.filtered_items[self.current_idx]
         it.is_rejected = not it.is_rejected
         if it.is_rejected:
             it.is_picked = False
@@ -836,9 +866,9 @@ class CullingTabView(QWidget):
         self._update_stats_label()
 
     def _toggle_raw_jpg_view(self):
-        if not self.items or not (0 <= self.current_idx < len(self.items)):
+        if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):
             return
-        it = self.items[self.current_idx]
+        it = self.filtered_items[self.current_idx]
         if not it.is_pair:
             return
 
@@ -856,11 +886,11 @@ class CullingTabView(QWidget):
         self.btn_zoom.setText("🔍 Einpassen [F]" if mode == "actual" else "🔍 100% Zoom [F]")
 
     def _prev_item(self):
-        if self.current_idx > 0:
+        if self.filtered_items and self.current_idx > 0:
             self.set_current_index(self.current_idx - 1)
 
     def _next_item(self):
-        if self.current_idx < len(self.items) - 1:
+        if self.filtered_items and self.current_idx < len(self.filtered_items) - 1:
             self.set_current_index(self.current_idx + 1)
 
     def _on_filmstrip_item_clicked(self, idx: int):
@@ -868,14 +898,15 @@ class CullingTabView(QWidget):
 
     def _launch_darktable(self):
         """Passes RAW files of current selection (or all 3★+ picked) to Darktable."""
-        if not self.items:
+        pool = self.filtered_items if self.filtered_items else self.items
+        if not pool:
             QMessageBox.information(self, "Keine Fotos", "Es sind keine Fotos zum Übergeben geladen.")
             return
 
         # Prefer 3+ star items or current item if none picked
-        targets = [it for it in self.items if it.rating >= 3 and not it.is_rejected]
-        if not targets and 0 <= self.current_idx < len(self.items):
-            targets = [self.items[self.current_idx]]
+        targets = [it for it in pool if it.rating >= 3 and not it.is_rejected]
+        if not targets and 0 <= self.current_idx < len(self.filtered_items):
+            targets = [self.filtered_items[self.current_idx]]
 
         raw_files = []
         for it in targets:
@@ -894,13 +925,14 @@ class CullingTabView(QWidget):
 
     def _launch_topaz(self):
         """Passes JPEG files of current selection (or all 3★+ picked) to Topaz Photo."""
-        if not self.items:
+        pool = self.filtered_items if self.filtered_items else self.items
+        if not pool:
             QMessageBox.information(self, "Keine Fotos", "Es sind keine Fotos zum Übergeben geladen.")
             return
 
-        targets = [it for it in self.items if it.rating >= 3 and not it.is_rejected]
-        if not targets and 0 <= self.current_idx < len(self.items):
-            targets = [self.items[self.current_idx]]
+        targets = [it for it in pool if it.rating >= 3 and not it.is_rejected]
+        if not targets and 0 <= self.current_idx < len(self.filtered_items):
+            targets = [self.filtered_items[self.current_idx]]
 
         jpg_files = []
         for it in targets:
@@ -941,10 +973,14 @@ class CullingTabView(QWidget):
 
     def _update_stats_label(self):
         total = len(self.items)
+        filtered_cnt = len(self.filtered_items)
         rated = sum(1 for it in self.items if it.rating > 0)
         rejected = sum(1 for it in self.items if it.is_rejected)
         picked = sum(1 for it in self.items if it.is_picked or it.rating >= 3)
-        self.lbl_stats.setText(f"Gesamt: {total} | Bewertet: {rated} | ★★★+ Behalten: {picked} | [X] Abgelehnt: {rejected}")
+        if self._current_filter and self._current_filter.is_active():
+            self.lbl_stats.setText(f"Filter: {filtered_cnt} von {total} Fotos | Bewertet: {rated} | ★★★+ Behalten: {picked} | [X] Abgelehnt: {rejected}")
+        else:
+            self.lbl_stats.setText(f"Gesamt: {total} Fotos | Bewertet: {rated} | ★★★+ Behalten: {picked} | [X] Abgelehnt: {rejected}")
 
     def _toggle_filmstrip(self):
         is_vis = not self.filmstrip.isVisible()

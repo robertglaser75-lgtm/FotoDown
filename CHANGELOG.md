@@ -3,6 +3,27 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.16.0] - 2026-11-06
+
+### Hinzugefügt
+- **Neuer Tab „Filter“ im linken Navigations-Dock ([`gui_qt/views/culling_filter.py`](gui_qt/views/culling_filter.py), [`gui_qt/views/culling_left_dock.py`](gui_qt/views/culling_left_dock.py)):**
+  - **Umschaltbare Tabs im linken Dock:** Das linke Dock vereint nun *„Verzeichnisse“* (Ordnerbaum) und den neuen *„Filter“*-Tab als saubere Reiter, die gemeinsam nach links in die 36px-Leiste eingeklappt werden können.
+  - **Schnellzugriff in der 36px-Dockleiste:** Direktes Ausklappen und Aktivieren des Filters per `[ 🔍 ]` oder des Baums per `[ 📁 ]`.
+  - **Filterung nach Dateityp (RAW / JPEG):** Einschränkung auf *Alle Formate*, *Nur RAW (inkl. RAW+JPG)*, *Nur JPEG*, *Nur RAW+JPEG Paare*, *Reine RAWs* oder *Reine JPEGs*.
+  - **Filterung nach Bewertung & Status (Tags):**
+    - Sterne: *Mindestens 1 bis 5 Sterne* oder *Ohne Bewertung (0★)*.
+    - Status: *Nur Behalten [P]*, *Nur Abgelehnt [X]* oder *Nicht abgelehnt*.
+    - Farblabels: *Rot, Gelb, Grün, Blau, Lila* oder *Ohne Farblabel*.
+  - **Filterung nach Kamera (Camera):** Dynamisches Dropdown, das automatisch mit allen im aktuellen Ordner erkannten Kamera-Modellen und deren Bildanzahl gefüllt wird.
+  - **Erweiterte EXIF-Filter & Volltextsuche (vorbereitet & aktiv):**
+    - Textsuche nach Dateinamen, Kamera- oder Objektiv-Bezeichnung.
+    - Dropdown für erkannte Objektive (Lenses).
+    - ISO-Bereichsfilter (Niedrig ≤400, Mittel 400-1600, Hoch 1600-6400, Sehr hoch >6400).
+  - **Echtzeit-Synchronisierung ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py)):**
+    - Filmstreifen, Canvas-Bildanzeige und Vor/Zurück-Blättern passen sich sofort an die gefilterte Auswahl an.
+    - Statusanzeige zeigt gefilterte Treffer: z. B. *„Filter: 42 von 120 Fotos (78 ausgeblendet)“*.
+    - Schaltfläche *„✕ Zurücksetzen“* stellt jederzeit alle Bilder wieder her.
+
 ## [0.15.4] - 2026-11-06
 
 ### Behoben
