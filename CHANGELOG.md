@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.18.2] - 2026-11-07
+
+### Verbessert
+- **Bereinigung redundanter Hinweis-Symbole ([`gui_qt/widgets/header_banner.py`](gui_qt/widgets/header_banner.py), [`gui_qt/views/single_view.py`](gui_qt/views/single_view.py), [`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py)):**
+  - **Zahnrad-Button rechts oben:** Doppeltes Zahnradsymbol entfernt; die Schaltfläche zeigt nun ausschließlich das saubere Vektor-Zahnradicon ohne redundanten Text `"⚙️"`.
+  - **Bewertungsanzeige:** Überflüssiges Präfix-Symbol `⭐` vor den eigentlichen Sternen entfernt. Bewertungen werden direkt als Sterne (`★★★`, `0★` bzw. mit Pick/Reject/Workflow-Status) dargestellt.
+  - **Belichtungsanzeige:** Unnötiges `⚙️`-Symbol vor den Belichtungswerten (Blende, Verschlusszeit, ISO) entfernt.
+
 ## [0.18.1] - 2026-11-07
 
 ### Verbessert

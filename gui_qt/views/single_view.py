@@ -275,10 +275,10 @@ class MediaSingleView(QWidget):
             r_parts.append(wf.label)
 
         if r_parts:
-            self.lbl_ratings.setText(f"⭐ {' '.join(r_parts)}")
+            self.lbl_ratings.setText(' '.join(r_parts))
             self.lbl_ratings.setStyleSheet("color: #fef08a; background-color: #854d0e; border: 1px solid #ca8a04; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold;")
         else:
-            self.lbl_ratings.setText("⭐ 0★")
+            self.lbl_ratings.setText("0★")
             self.lbl_ratings.setStyleSheet("color: #94a3b8; background-color: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px; font-size: 11px;")
         self.lbl_ratings.setVisible(show_ratings)
 
@@ -293,7 +293,7 @@ class MediaSingleView(QWidget):
         self.lbl_meta_cam.setVisible(show_cam and bool(cam))
 
         exp = item.metadata.formatted_exposure
-        self.lbl_meta_exp.setText(f"⚙️ {exp}" if exp else "")
+        self.lbl_meta_exp.setText(exp if exp else "")
         self.lbl_meta_exp.setVisible(show_exp and bool(exp))
 
         date_str = item.metadata.date_taken.strftime("%d.%m.%Y %H:%M:%S") if item.metadata.date_taken else "-"

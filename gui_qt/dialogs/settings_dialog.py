@@ -247,11 +247,11 @@ class SettingsDialog(QDialog):
         if self.chk_sv_path.isChecked():
             chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>📁 D:\\Fotos\\2026\\04_Familie</span>")
         if self.chk_sv_ratings.isChecked():
-            chips.append("<span style='background:#b45309; color:#fef3c7; padding:2px 6px; border-radius:3px; font-weight:bold;'>⭐⭐⭐⭐ [P] 📸 SOOC ok</span>")
+            chips.append("<span style='background:#b45309; color:#fef3c7; padding:2px 6px; border-radius:3px; font-weight:bold;'>★★★★ [P] 📸 SOOC ok</span>")
         if self.chk_sv_cam_lens.isChecked():
             chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>📷 OM-1 • 12-40mm F2.8</span>")
         if self.chk_sv_exposure.isChecked():
-            chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>⚙️ ƒ/2.8 | 1/500s | ISO 200</span>")
+            chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>ƒ/2.8 | 1/500s | ISO 200</span>")
         if self.chk_sv_date.isChecked():
             chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>📅 15.04.2026 14:32</span>")
         if self.chk_sv_filesize.isChecked():

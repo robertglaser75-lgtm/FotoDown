@@ -955,7 +955,8 @@ class CullingTabView(QWidget):
         r_str = "★" * it.rating if it.rating > 0 else "0★"
         rej_str = " [X]" if it.is_rejected else ""
         _, _, wf_sym = it.workflow_status_info
-        self.lbl_canvas_rating.setText(f"⭐ {r_str}{rej_str} {wf_sym}")
+        wf_display = f" {wf_sym}" if wf_sym != "⚪" else ""
+        self.lbl_canvas_rating.setText(f"{r_str}{rej_str}{wf_display}".strip())
         self.lbl_canvas_rating.setVisible(show_ratings)
 
         cam_lens = []
@@ -968,7 +969,7 @@ class CullingTabView(QWidget):
             if show_cam and lens:
                 cam_lens.append(lens)
             if show_exp and exp:
-                cam_lens.append(f"⚙️ {exp}")
+                cam_lens.append(exp)
         self.lbl_canvas_meta.setText(" • ".join(cam_lens))
         self.lbl_canvas_meta.setVisible(bool(cam_lens))
 

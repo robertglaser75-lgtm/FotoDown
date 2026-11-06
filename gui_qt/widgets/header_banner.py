@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from typing import List, Optional
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QComboBox, QFrame, QHBoxLayout, QLabel, QMenu,
@@ -135,15 +135,18 @@ class HeaderBanner(QFrame):
         layout.addWidget(self.btn_help, 0, Qt.AlignmentFlag.AlignVCenter)
 
         # Settings Button with Gear Icon & Configuration Dropdown Menu
-        self.btn_settings = QPushButton("⚙️")
+        self.btn_settings = QPushButton()
         self.btn_settings.setObjectName("secondaryBtn")
         self.btn_settings.setIcon(get_gear_icon("#cbd5e1", 16))
+        self.btn_settings.setIconSize(QSize(16, 16))
+        self.btn_settings.setFixedSize(32, 26)
         self.btn_settings.setToolTip("Konfigurationsmenü & Einstellungen öffnen")
 
         self.settings_menu = QMenu(self)
         self.settings_menu.setObjectName("settingsMenu")
 
-        act_all = self.settings_menu.addAction("⚙️ Alle Einstellungen öffnen...")
+        act_all = self.settings_menu.addAction("Alle Einstellungen öffnen...")
+        act_all.setIcon(get_gear_icon("#38bdf8", 14))
         act_all.triggered.connect(lambda: self.open_settings.emit(0))
 
         self.settings_menu.addSeparator()
