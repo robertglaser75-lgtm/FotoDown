@@ -160,12 +160,14 @@ class FilmstripBar(QScrollArea):
     def update_card(self, idx: int, item: CullingItem):
         if 0 <= idx < len(self._item_cards):
             card = self._item_cards[idx]
-            # Update rating text & reject status
+            # Update rating text, reject status & workflow icon
             lbl_info: QLabel = card.findChild(QLabel, "lbl_card_info")
             if lbl_info:
                 stars = "★" * item.rating if item.rating > 0 else ""
                 rej_tag = " [X]" if item.is_rejected else ""
-                lbl_info.setText(f"{stars}{rej_tag}")
+                _, _, wf_sym = item.workflow_status_info
+                wf_display = f" {wf_sym}" if wf_sym != "⚪" else ""
+                lbl_info.setText(f"{stars}{rej_tag}{wf_display}")
                 if item.is_rejected:
                     lbl_info.setStyleSheet("color: #ef4444; font-size: 10px; font-weight: bold;")
                 elif item.rating > 0:
@@ -213,7 +215,9 @@ class FilmstripBar(QScrollArea):
 
         stars = "★" * it.rating if it.rating > 0 else ""
         rej_tag = " [X]" if it.is_rejected else ""
-        lbl_info = QLabel(f"{stars}{rej_tag}")
+        _, _, wf_sym = it.workflow_status_info
+        wf_display = f" {wf_sym}" if wf_sym != "⚪" else ""
+        lbl_info = QLabel(f"{stars}{rej_tag}{wf_display}")
         lbl_info.setObjectName("lbl_card_info")
         lbl_info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if it.is_rejected:
@@ -506,6 +510,47 @@ class CullingTabView(QWidget):
 
         sidebar_layout.addWidget(card_rating)
 
+        # 3b. Card: Workflow & Editing Status
+        card_wf = QFrame()
+        card_wf.setStyleSheet(card_style)
+        layout_wf = QVBoxLayout(card_wf)
+        layout_wf.setContentsMargins(6, 6, 6, 6)
+        layout_wf.setSpacing(6)
+
+        wf_head = QHBoxLayout()
+        lbl_sec_wf = QLabel("📋 WORKFLOW-STAND")
+        lbl_sec_wf.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        wf_head.addWidget(lbl_sec_wf, stretch=1)
+
+        self.lbl_wf_badge = QLabel("⚪ Ungeprüft")
+        self.lbl_wf_badge.setStyleSheet("background-color: #334155; color: #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;")
+        wf_head.addWidget(self.lbl_wf_badge)
+        layout_wf.addLayout(wf_head)
+
+        wf_btn_layout = QHBoxLayout()
+        wf_btn_layout.setSpacing(4)
+
+        self.btn_wf_sooc = QPushButton("📸 SOOC [Q]")
+        self.btn_wf_sooc.setToolTip("Qualität passt direkt aus Kamera (Taste Q)")
+        self.btn_wf_sooc.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;")
+        self.btn_wf_sooc.clicked.connect(lambda: self.set_workflow_status("SOOC_OK"))
+        wf_btn_layout.addWidget(self.btn_wf_sooc)
+
+        self.btn_wf_to_edit = QPushButton("🎨 Bearb. [B]")
+        self.btn_wf_to_edit.setToolTip("Soll noch nachbearbeitet werden (Taste B)")
+        self.btn_wf_to_edit.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;")
+        self.btn_wf_to_edit.clicked.connect(lambda: self.set_workflow_status("TO_EDIT"))
+        wf_btn_layout.addWidget(self.btn_wf_to_edit)
+
+        self.btn_wf_done = QPushButton("✔ Fertig [E]")
+        self.btn_wf_done.setToolTip("Bearbeitung abgeschlossen / Exportiert (Taste E)")
+        self.btn_wf_done.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;")
+        self.btn_wf_done.clicked.connect(lambda: self.set_workflow_status("EDITED"))
+        wf_btn_layout.addWidget(self.btn_wf_done)
+
+        layout_wf.addLayout(wf_btn_layout)
+        sidebar_layout.addWidget(card_wf)
+
         # 4. Card: External Editors & Reject Processing
         card_external = QFrame()
         card_external.setStyleSheet(card_style)
@@ -588,6 +633,9 @@ class CullingTabView(QWidget):
             "<span style='color:#38bdf8;'>A / D</span> Blättern &nbsp;|&nbsp; "
             "<span style='color:#38bdf8;'>1 - 5</span> Sterne &nbsp;|&nbsp; "
             "<span style='color:#38bdf8;'>0</span> Reset<br>"
+            "<span style='color:#38bdf8;'>Q</span> SOOC &nbsp;|&nbsp; "
+            "<span style='color:#38bdf8;'>B</span> Bearbeiten &nbsp;|&nbsp; "
+            "<span style='color:#38bdf8;'>E</span> Fertig<br>"
             "<span style='color:#38bdf8;'>P</span> Behalten &nbsp;|&nbsp; "
             "<span style='color:#38bdf8;'>X</span> Ablehnen &nbsp;|&nbsp; "
             "<span style='color:#38bdf8;'>J / R</span> RAW/JPG<br>"
@@ -685,7 +733,7 @@ class CullingTabView(QWidget):
         self.lbl_active_name.setText("Lade Fotos...")
         self.lbl_stats.setText("Lese Ordner ein...")
 
-        self._scan_worker = CullingScanWorker(folder, parent=self)
+        self._scan_worker = CullingScanWorker(folder, family_album_dir=self.config.family_album_dir, parent=self)
         self._scan_worker.progress.connect(self._on_scan_progress)
         self._scan_worker.scan_finished.connect(self._on_scan_finished)
         self._scan_worker.error.connect(self._on_scan_error)
@@ -807,6 +855,38 @@ class CullingTabView(QWidget):
             else:
                 btn.setStyleSheet("background-color: #1e293b; color: #fbbf24; border: 1px solid #334155; border-radius: 4px; font-weight: bold;")
 
+        # Workflow Status Badge & Buttons
+        status_label, status_color, status_symbol = it.workflow_status_info
+        if it.family_album_exported:
+            self.lbl_wf_badge.setText(f"{status_symbol} Album-Export")
+            self.lbl_wf_badge.setStyleSheet("background-color: #065f46; color: #a7f3d0; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;")
+            self.lbl_wf_badge.setToolTip(f"Exportiert im Familienalbum:\n{it.family_album_path}")
+        elif it.has_darktable_edit:
+            self.lbl_wf_badge.setText(f"{status_symbol} {status_label} (Darktable)")
+            self.lbl_wf_badge.setStyleSheet(f"background-color: {status_color}; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;")
+            self.lbl_wf_badge.setToolTip("In Darktable bearbeitet (Darktable-History in XMP erkannt)")
+        else:
+            self.lbl_wf_badge.setText(f"{status_symbol} {status_label}")
+            self.lbl_wf_badge.setStyleSheet(f"background-color: {status_color}; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;")
+            self.lbl_wf_badge.setToolTip(f"Workflow-Status: {status_label}")
+
+        wf = it.workflow_status
+        self.btn_wf_sooc.setStyleSheet(
+            "background-color: #0284c7; color: white; border: 1px solid #38bdf8; border-radius: 4px; padding: 5px; font-weight: bold; font-size: 11px;"
+            if wf == "SOOC_OK" else
+            "background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;"
+        )
+        self.btn_wf_to_edit.setStyleSheet(
+            "background-color: #d97706; color: white; border: 1px solid #f59e0b; border-radius: 4px; padding: 5px; font-weight: bold; font-size: 11px;"
+            if wf == "TO_EDIT" else
+            "background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;"
+        )
+        self.btn_wf_done.setStyleSheet(
+            "background-color: #059669; color: white; border: 1px solid #10b981; border-radius: 4px; padding: 5px; font-weight: bold; font-size: 11px;"
+            if wf == "EDITED" else
+            "background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;"
+        )
+
         # Pick / Reject buttons state
         if it.is_rejected:
             self.btn_reject.setStyleSheet("background-color: #dc2626; color: white; border: 1px solid #ef4444; border-radius: 4px; font-weight: bold;")
@@ -833,7 +913,7 @@ class CullingTabView(QWidget):
         it.rating = stars
         if stars > 0:
             it.is_rejected = False
-        sync_pair_xmp(it.primary_path, it.companion_path, rating=it.rating, label=it.color_label, is_rejected=it.is_rejected)
+        sync_pair_xmp(it.primary_path, it.companion_path, rating=it.rating, label=it.color_label, is_rejected=it.is_rejected, workflow_status=it.workflow_status)
         self.filmstrip.update_card(self.current_idx, it)
         self._render_current_item()
         self._update_stats_label()
@@ -847,7 +927,7 @@ class CullingTabView(QWidget):
             it.is_rejected = False
             if it.rating == 0:
                 it.rating = 3
-        sync_pair_xmp(it.primary_path, it.companion_path, rating=it.rating, label=it.color_label, is_rejected=it.is_rejected)
+        sync_pair_xmp(it.primary_path, it.companion_path, rating=it.rating, label=it.color_label, is_rejected=it.is_rejected, workflow_status=it.workflow_status)
         self.filmstrip.update_card(self.current_idx, it)
         self._render_current_item()
         self._update_stats_label()
@@ -860,10 +940,35 @@ class CullingTabView(QWidget):
         if it.is_rejected:
             it.is_picked = False
             it.rating = 0
-        sync_pair_xmp(it.primary_path, it.companion_path, rating=it.rating, label=it.color_label, is_rejected=it.is_rejected)
+        sync_pair_xmp(it.primary_path, it.companion_path, rating=it.rating, label=it.color_label, is_rejected=it.is_rejected, workflow_status=it.workflow_status)
         self.filmstrip.update_card(self.current_idx, it)
         self._render_current_item()
         self._update_stats_label()
+
+    def set_workflow_status(self, status: str):
+        if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):
+            return
+        it = self.filtered_items[self.current_idx]
+        # Toggle off back to UNCHECKED if clicking the same active status
+        if it.workflow_status == status:
+            it.workflow_status = "UNCHECKED"
+        else:
+            it.workflow_status = status
+
+        sync_pair_xmp(
+            it.primary_path,
+            it.companion_path,
+            rating=it.rating,
+            label=it.color_label,
+            is_rejected=it.is_rejected,
+            workflow_status=it.workflow_status
+        )
+        self.filmstrip.update_card(self.current_idx, it)
+        self._render_current_item()
+        self._update_stats_label()
+
+        if self._current_filter and self._current_filter.workflow_status != "ALL":
+            self._apply_filter(keep_current=True)
 
     def _toggle_raw_jpg_view(self):
         if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):
@@ -977,10 +1082,15 @@ class CullingTabView(QWidget):
         rated = sum(1 for it in self.items if it.rating > 0)
         rejected = sum(1 for it in self.items if it.is_rejected)
         picked = sum(1 for it in self.items if it.is_picked or it.rating >= 3)
+        sooc_cnt = sum(1 for it in self.items if it.workflow_status == "SOOC_OK")
+        to_edit_cnt = sum(1 for it in self.items if it.workflow_status == "TO_EDIT")
+        edited_cnt = sum(1 for it in self.items if it.workflow_status == "EDITED")
+
+        wf_stat = f"📸 SOOC: {sooc_cnt} | 🎨 Bearb.: {to_edit_cnt} | ✔ Fertig: {edited_cnt}"
         if self._current_filter and self._current_filter.is_active():
-            self.lbl_stats.setText(f"Filter: {filtered_cnt} von {total} Fotos | Bewertet: {rated} | ★★★+ Behalten: {picked} | [X] Abgelehnt: {rejected}")
+            self.lbl_stats.setText(f"Filter: {filtered_cnt} von {total} Fotos | {wf_stat} | ★★★+: {picked} | [X]: {rejected}")
         else:
-            self.lbl_stats.setText(f"Gesamt: {total} Fotos | Bewertet: {rated} | ★★★+ Behalten: {picked} | [X] Abgelehnt: {rejected}")
+            self.lbl_stats.setText(f"Gesamt: {total} Fotos | {wf_stat} | ★★★+: {picked} | [X]: {rejected}")
 
     def _toggle_filmstrip(self):
         is_vis = not self.filmstrip.isVisible()
@@ -1010,6 +1120,16 @@ class CullingTabView(QWidget):
         elif key in (Qt.Key.Key_0, Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3, Qt.Key.Key_4, Qt.Key.Key_5):
             val = key - Qt.Key.Key_0
             self.set_current_rating(val)
+            return
+        # Workflow Status
+        elif key == Qt.Key.Key_Q:
+            self.set_workflow_status("SOOC_OK")
+            return
+        elif key == Qt.Key.Key_B:
+            self.set_workflow_status("TO_EDIT")
+            return
+        elif key == Qt.Key.Key_E:
+            self.set_workflow_status("EDITED")
             return
         # Pick & Reject
         elif key == Qt.Key.Key_P:

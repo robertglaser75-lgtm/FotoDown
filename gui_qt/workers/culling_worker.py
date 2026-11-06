@@ -12,9 +12,10 @@ class CullingScanWorker(QThread):
     scan_finished = Signal(list)           # List[CullingItem]
     error = Signal(str)
 
-    def __init__(self, folder_path: Path, parent=None):
+    def __init__(self, folder_path: Path, family_album_dir: Optional[str] = None, parent=None):
         super().__init__(parent)
         self.folder_path = folder_path
+        self.family_album_dir = family_album_dir
         self._is_cancelled = False
 
     def cancel(self):
@@ -33,7 +34,8 @@ class CullingScanWorker(QThread):
             items = scan_culling_folder(
                 self.folder_path,
                 progress_callback=on_progress,
-                cancel_check=lambda: self._is_cancelled
+                cancel_check=lambda: self._is_cancelled,
+                family_album_dir=self.family_album_dir
             )
 
             if not self._is_cancelled:

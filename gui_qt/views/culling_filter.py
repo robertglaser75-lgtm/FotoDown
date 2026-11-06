@@ -30,6 +30,7 @@ class CullingFilterCriteria:
     rating_mode: str = "ALL"       # "ALL", "MIN_1", "MIN_2", "MIN_3", "MIN_4", "EXACT_5", "UNRATED"
     status: str = "ALL"            # "ALL", "PICKED", "REJECTED", "NOT_REJECTED"
     color_label: str = "ALL"       # "ALL", "Red", "Yellow", "Green", "Blue", "Purple", "NONE"
+    workflow_status: str = "ALL"   # "ALL", "UNCHECKED", "SOOC_OK", "TO_EDIT", "IN_PROGRESS", "EDITED"
     camera: str = "ALL"            # "ALL" or specific camera string
     lens: str = "ALL"              # "ALL" or specific lens string
     iso_range: str = "ALL"         # "ALL", "LOW", "MID", "HIGH", "VERY_HIGH"
@@ -42,6 +43,7 @@ class CullingFilterCriteria:
             or self.rating_mode != "ALL"
             or self.status != "ALL"
             or self.color_label != "ALL"
+            or self.workflow_status != "ALL"
             or self.camera != "ALL"
             or self.lens != "ALL"
             or self.iso_range != "ALL"
@@ -99,7 +101,20 @@ class CullingFilterCriteria:
             elif self.color_label != "NONE" and item.color_label != self.color_label:
                 return False
 
-        # 5. Camera
+        # 5. Workflow Status (Qualität passt / Zu bearbeiten / Bearbeitet)
+        if self.workflow_status != "ALL":
+            if self.workflow_status == "UNCHECKED" and item.workflow_status != "UNCHECKED":
+                return False
+            elif self.workflow_status == "SOOC_OK" and item.workflow_status != "SOOC_OK":
+                return False
+            elif self.workflow_status == "TO_EDIT" and item.workflow_status != "TO_EDIT":
+                return False
+            elif self.workflow_status == "IN_PROGRESS" and item.workflow_status != "IN_PROGRESS":
+                return False
+            elif self.workflow_status == "EDITED" and item.workflow_status != "EDITED":
+                return False
+
+        # 6. Camera
         if self.camera != "ALL":
             cam = item.metadata.camera_name if item.metadata else ""
             if cam != self.camera:
@@ -323,7 +338,33 @@ class CullingFilterWidget(QWidget):
         content_layout.addWidget(card_tags)
 
         # -------------------------------------------------------------
-        # 3. KAMERA (Camera)
+        # 3. WORKFLOW-STAND (Qualität passt / Zu bearbeiten / Bearbeitet)
+        # -------------------------------------------------------------
+        card_wf = QFrame()
+        card_wf.setStyleSheet(card_style)
+        lt_wf = QVBoxLayout(card_wf)
+        lt_wf.setContentsMargins(6, 6, 6, 6)
+        lt_wf.setSpacing(4)
+
+        lbl_wf = QLabel("📋 Workflow-Stand")
+        lbl_wf.setStyleSheet(label_head_style)
+        lt_wf.addWidget(lbl_wf)
+
+        self.cmb_workflow_status = QComboBox()
+        self.cmb_workflow_status.setStyleSheet(combo_style)
+        self.cmb_workflow_status.addItem("Alle Workflow-Stände", "ALL")
+        self.cmb_workflow_status.addItem("⚪ Ungeprüft", "UNCHECKED")
+        self.cmb_workflow_status.addItem("📸 Qualität passt (SOOC)", "SOOC_OK")
+        self.cmb_workflow_status.addItem("🎨 Zu bearbeiten (Darktable / Topaz)", "TO_EDIT")
+        self.cmb_workflow_status.addItem("⚙️ In Bearbeitung", "IN_PROGRESS")
+        self.cmb_workflow_status.addItem("✔ Bearbeitung fertig", "EDITED")
+        self.cmb_workflow_status.currentIndexChanged.connect(self._emit_change)
+        lt_wf.addWidget(self.cmb_workflow_status)
+
+        content_layout.addWidget(card_wf)
+
+        # -------------------------------------------------------------
+        # 4. KAMERA (Camera)
         # -------------------------------------------------------------
         card_cam = QFrame()
         card_cam.setStyleSheet(card_style)
@@ -447,6 +488,7 @@ class CullingFilterWidget(QWidget):
             rating_mode=self.cmb_rating.currentData() or "ALL",
             status=self.cmb_status.currentData() or "ALL",
             color_label=self.cmb_color.currentData() or "ALL",
+            workflow_status=self.cmb_workflow_status.currentData() or "ALL",
             camera=self.cmb_camera.currentData() or "ALL",
             lens=self.cmb_lens.currentData() or "ALL",
             iso_range=self.cmb_iso.currentData() or "ALL",
@@ -460,6 +502,7 @@ class CullingFilterWidget(QWidget):
         self.cmb_rating.setCurrentIndex(0)
         self.cmb_status.setCurrentIndex(0)
         self.cmb_color.setCurrentIndex(0)
+        self.cmb_workflow_status.setCurrentIndex(0)
         self.cmb_camera.setCurrentIndex(0)
         self.cmb_lens.setCurrentIndex(0)
         self.cmb_iso.setCurrentIndex(0)

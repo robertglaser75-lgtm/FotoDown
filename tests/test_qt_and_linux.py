@@ -3,6 +3,7 @@
 from datetime import datetime
 import os
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 
@@ -43,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.16.0")
+        self.assertEqual(__version__, "0.17.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1308,6 +1309,182 @@ class TestCullingFilter(unittest.TestCase):
         self.assertEqual(len(tab.filtered_items), 3)
 
         tab.close()
+
+
+class TestWorkflowStatusTracking(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.dir_path = Path(self.test_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def test_xmp_workflow_status_read_write(self):
+        from core.xmp_sync import write_xmp_metadata, read_xmp_workflow_info
+
+        media_file = self.dir_path / "IMG_1234.JPG"
+        media_file.write_text("dummy", encoding="utf-8")
+        sidecar = write_xmp_metadata(media_file, rating=4, label="Blue", is_rejected=False, workflow_status="SOOC_OK")
+        self.assertTrue(sidecar.exists())
+
+        info = read_xmp_workflow_info(media_file)
+        self.assertEqual(info.rating, 4)
+        self.assertEqual(info.label, "Blue")
+        self.assertFalse(info.is_rejected)
+        self.assertEqual(info.workflow_status, "SOOC_OK")
+        self.assertFalse(info.has_darktable_edit)
+
+        # Update to TO_EDIT
+        write_xmp_metadata(media_file, rating=5, label="Green", is_rejected=False, workflow_status="TO_EDIT")
+        info2 = read_xmp_workflow_info(media_file)
+        self.assertEqual(info2.rating, 5)
+        self.assertEqual(info2.workflow_status, "TO_EDIT")
+
+    def test_xmp_darktable_history_detection(self):
+        from core.xmp_sync import read_xmp_workflow_info
+
+        media_file = self.dir_path / "RAW_DT.ORF"
+        xmp_file = self.dir_path / "RAW_DT.ORF.xmp"
+        xmp_content = """<?xml version="1.0" encoding="UTF-8"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about=""
+    xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+    xmlns:darktable="http://darktable.sf.net/"
+   xmp:Rating="3"
+   darktable:history_end="5">
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>
+"""
+        xmp_file.write_text(xmp_content, encoding="utf-8")
+        info = read_xmp_workflow_info(media_file)
+        self.assertEqual(info.rating, 3)
+        self.assertTrue(info.has_darktable_edit)
+        # Default workflow status should be inferred as IN_PROGRESS if darktable history is present and status was not explicit
+        self.assertEqual(info.workflow_status, "IN_PROGRESS")
+
+    def test_check_exported_file_family_album_and_local(self):
+        from gui_qt.models.culling_model import check_exported_file
+
+        raw_file = self.dir_path / "P1010001.ORF"
+        raw_file.write_text("fake_raw", encoding="utf-8")
+
+        # 1. No export initially
+        exp_p = check_exported_file(raw_file)
+        self.assertIsNone(exp_p)
+
+        # 2. Local _edit.jpg
+        local_edit = self.dir_path / "P1010001_edit.jpg"
+        local_edit.write_text("fake_edit", encoding="utf-8")
+        exp_p2 = check_exported_file(raw_file)
+        self.assertEqual(exp_p2, local_edit)
+        local_edit.unlink()
+
+        # 3. Family album structure: album_dir / 2026 / 04 / P1010001*.jpg
+        album_dir = self.dir_path / "FamilyAlbum"
+        month_dir = album_dir / "2026" / "04"
+        month_dir.mkdir(parents=True)
+        album_export = month_dir / "P1010001.jpg"
+        album_export.write_text("fake_album_export", encoding="utf-8")
+
+        exp_p3 = check_exported_file(
+            raw_file,
+            family_album_dir=str(album_dir),
+            date_taken=datetime(2026, 4, 15, 10, 30)
+        )
+        self.assertEqual(exp_p3, album_export)
+
+    def test_filter_criteria_workflow_status(self):
+        from gui_qt.models.culling_model import CullingItem
+        from gui_qt.views.culling_filter import CullingFilterCriteria
+
+        it1 = CullingItem(primary_path=self.dir_path / "A.JPG", workflow_status="SOOC_OK")
+        it2 = CullingItem(primary_path=self.dir_path / "B.JPG", workflow_status="TO_EDIT")
+        it3 = CullingItem(primary_path=self.dir_path / "C.JPG", workflow_status="EDITED")
+        it4 = CullingItem(primary_path=self.dir_path / "D.JPG", workflow_status="UNCHECKED")
+        items = [it1, it2, it3, it4]
+
+        crit_all = CullingFilterCriteria(workflow_status="ALL")
+        self.assertEqual(len([it for it in items if crit_all.matches(it)]), 4)
+
+        crit_sooc = CullingFilterCriteria(workflow_status="SOOC_OK")
+        self.assertEqual([it for it in items if crit_sooc.matches(it)], [it1])
+
+        crit_to_edit = CullingFilterCriteria(workflow_status="TO_EDIT")
+        self.assertEqual([it for it in items if crit_to_edit.matches(it)], [it2])
+
+        crit_edited = CullingFilterCriteria(workflow_status="EDITED")
+        self.assertEqual([it for it in items if crit_edited.matches(it)], [it3])
+
+        crit_uncheck = CullingFilterCriteria(workflow_status="UNCHECKED")
+        self.assertEqual([it for it in items if crit_uncheck.matches(it)], [it4])
+
+    def test_culling_tab_workflow_status_ui_and_shortcuts(self):
+        from gui_qt.models.culling_model import CullingItem
+        from gui_qt.views.culling_tab import CullingTabView
+        from core.config import AppConfig
+        from PySide6.QtGui import QKeyEvent
+        from PySide6.QtCore import QEvent, Qt
+
+        cfg = AppConfig()
+        tab = CullingTabView(cfg)
+        tab.show()
+
+        it = CullingItem(primary_path=self.dir_path / "Test.JPG", workflow_status="UNCHECKED")
+        tab._on_scan_finished([it])
+        self.assertEqual(tab.current_idx, 0)
+        self.assertEqual(it.workflow_status, "UNCHECKED")
+
+        # Set status to SOOC_OK
+        tab.set_workflow_status("SOOC_OK")
+        self.assertEqual(it.workflow_status, "SOOC_OK")
+        self.assertIn("SOOC", tab.lbl_wf_badge.text())
+
+        # Clicking same status toggles back to UNCHECKED
+        tab.set_workflow_status("SOOC_OK")
+        self.assertEqual(it.workflow_status, "UNCHECKED")
+
+        # Shortcut B -> TO_EDIT
+        ev_b = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_B, Qt.KeyboardModifier.NoModifier)
+        tab.keyPressEvent(ev_b)
+        self.assertEqual(it.workflow_status, "TO_EDIT")
+        self.assertIn("Zu bearbeiten", tab.lbl_wf_badge.text())
+
+        # Shortcut E -> EDITED
+        ev_e = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_E, Qt.KeyboardModifier.NoModifier)
+        tab.keyPressEvent(ev_e)
+        self.assertEqual(it.workflow_status, "EDITED")
+        self.assertIn("fertig", tab.lbl_wf_badge.text())
+
+        # Shortcut Q -> SOOC_OK
+        ev_q = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Q, Qt.KeyboardModifier.NoModifier)
+        tab.keyPressEvent(ev_q)
+        self.assertEqual(it.workflow_status, "SOOC_OK")
+
+        tab.close()
+
+    def test_general_settings_nas_and_family_album(self):
+        from gui_qt.widgets.general_settings import GeneralSettingsWidget
+        from core.config import AppConfig
+
+        cfg = AppConfig()
+        cfg.family_album_dir = "//nas/photos/0001_Unsere_Fotos"
+        cfg.nas_archive_dir = "//nas/archive"
+
+        widget = GeneralSettingsWidget()
+        widget.load_config(cfg)
+
+        self.assertEqual(widget.edit_family_album.text(), "//nas/photos/0001_Unsere_Fotos")
+        self.assertEqual(widget.edit_nas_archive.text(), "//nas/archive")
+
+        widget.edit_family_album.setText("//new_nas/0001_Unsere_Fotos")
+        widget.edit_nas_archive.setText("//new_nas/archive")
+
+        cfg_new = AppConfig()
+        widget.sync_to_config(cfg_new)
+        self.assertEqual(cfg_new.family_album_dir, "//new_nas/0001_Unsere_Fotos")
+        self.assertEqual(cfg_new.nas_archive_dir, "//new_nas/archive")
 
 
 if __name__ == "__main__":

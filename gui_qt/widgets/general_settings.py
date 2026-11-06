@@ -2,7 +2,8 @@
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QFrame, QLabel, QLineEdit, QVBoxLayout, QWidget
+    QCheckBox, QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit,
+    QPushButton, QVBoxLayout, QWidget
 )
 
 from core.config import AppConfig
@@ -106,6 +107,61 @@ class GeneralSettingsWidget(QWidget):
         self.combo_reject_action.currentIndexChanged.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.combo_reject_action)
 
+        layout.addSpacing(6)
+
+        # 6. NAS & Family Album Paths
+        lbl_nas = QLabel("🏠 NAS-Archiv & Familienalbum:")
+        lbl_nas.setObjectName("sectionSubTitle")
+        layout.addWidget(lbl_nas)
+
+        # Family Album
+        lbl_fa = QLabel("Familienalbum-Zielpfad (0001_Unsere_Fotos/{YYYY}/{MM}):")
+        lbl_fa.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        layout.addWidget(lbl_fa)
+
+        row_fa = QHBoxLayout()
+        row_fa.setSpacing(6)
+        self.edit_family_album = QLineEdit()
+        self.edit_family_album.setPlaceholderText("Pfad zum Familienalbum (z.B. \\\\192.168.1.20\\...\\0001_Unsere_Fotos)...")
+        self.edit_family_album.textChanged.connect(lambda *args: self.changed.emit())
+        row_fa.addWidget(self.edit_family_album, stretch=1)
+
+        btn_browse_fa = QPushButton("📁 Durchsuchen")
+        btn_browse_fa.setObjectName("secondaryBtn")
+        btn_browse_fa.clicked.connect(self._browse_family_album)
+        row_fa.addWidget(btn_browse_fa)
+        layout.addLayout(row_fa)
+
+        # NAS Archive
+        lbl_na = QLabel("Allgemeines NAS-Archiv:")
+        lbl_na.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        layout.addWidget(lbl_na)
+
+        row_na = QHBoxLayout()
+        row_na.setSpacing(6)
+        self.edit_nas_archive = QLineEdit()
+        self.edit_nas_archive.setPlaceholderText("Pfad zum NAS-Archiv (z.B. \\\\192.168.1.20\\...\\Archiv)...")
+        self.edit_nas_archive.textChanged.connect(lambda *args: self.changed.emit())
+        row_na.addWidget(self.edit_nas_archive, stretch=1)
+
+        btn_browse_na = QPushButton("📁 Durchsuchen")
+        btn_browse_na.setObjectName("secondaryBtn")
+        btn_browse_na.clicked.connect(self._browse_nas_archive)
+        row_na.addWidget(btn_browse_na)
+        layout.addLayout(row_na)
+
+    def _browse_family_album(self):
+        curr = self.edit_family_album.text().strip()
+        folder = QFileDialog.getExistingDirectory(self, "Familienalbum-Ordner wählen", curr)
+        if folder:
+            self.edit_family_album.setText(folder)
+
+    def _browse_nas_archive(self):
+        curr = self.edit_nas_archive.text().strip()
+        folder = QFileDialog.getExistingDirectory(self, "NAS-Archiv-Ordner wählen", curr)
+        if folder:
+            self.edit_nas_archive.setText(folder)
+
     def _on_iptc_toggled(self, checked: bool):
         self.edit_creator.setEnabled(checked)
         self.edit_copyright.setEnabled(checked)
@@ -127,7 +183,7 @@ class GeneralSettingsWidget(QWidget):
             self.combo_org, self.chk_auto_detect, self.chk_pair_raw,
             self.chk_sync_xmp, self.chk_only_new, self.chk_verify,
             self.chk_enable_iptc, self.edit_creator, self.edit_copyright, self.edit_keywords,
-            self.combo_reject_action
+            self.combo_reject_action, self.edit_family_album, self.edit_nas_archive
         ]
         for w in widgets:
             w.blockSignals(True)
@@ -145,6 +201,8 @@ class GeneralSettingsWidget(QWidget):
             self.edit_creator.setEnabled(config.enable_iptc)
             self.edit_copyright.setEnabled(config.enable_iptc)
             self.edit_keywords.setEnabled(config.enable_iptc)
+            self.edit_family_album.setText(config.family_album_dir)
+            self.edit_nas_archive.setText(config.nas_archive_dir)
 
             # Reject action
             idx_act = self.combo_reject_action.findData(config.reject_action)
@@ -168,3 +226,5 @@ class GeneralSettingsWidget(QWidget):
         config.iptc_copyright = self.edit_copyright.text().strip()
         config.iptc_keywords = self.edit_keywords.text().strip()
         config.reject_action = self.combo_reject_action.currentData() or "move_folder"
+        config.family_album_dir = self.edit_family_album.text().strip()
+        config.nas_archive_dir = self.edit_nas_archive.text().strip()

@@ -121,6 +121,10 @@ class AppConfig:
     reject_folder_name: str = "_Abgelehnt"
     darktable_path: str = r"C:\Program Files\darktable\bin\darktable.exe"
     topaz_path: str = r"C:\Program Files\Topaz Labs LLC\Topaz Photo\Topaz Photo.exe"
+    # NAS & Familien-Album Workflow
+    nas_archive_dir: str = ""
+    family_album_dir: str = ""
+    family_album_pattern: str = "0001_Unsere_Fotos/{YYYY}/{MM}"
 
     def apply_profile(self, name: str) -> bool:
         """Applies configuration settings from a profile by name."""

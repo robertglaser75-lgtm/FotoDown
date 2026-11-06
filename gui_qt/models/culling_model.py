@@ -8,7 +8,7 @@ import shutil
 from typing import Callable, Dict, List, Optional, Tuple
 from core.exif_reader import extract_metadata, MediaMetadata
 from core.thumbnail import RAW_EXTENSIONS
-from core.xmp_sync import read_xmp_metadata, sync_pair_xmp
+from core.xmp_sync import read_xmp_metadata, read_xmp_workflow_info, sync_pair_xmp, XMPWorkflowInfo
 
 
 @dataclass
@@ -24,6 +24,25 @@ class CullingItem:
     is_picked: bool = False          # Picked (P)
     selected: bool = False           # UI checkbox / selection
     active_view_mode: str = "AUTO"   # "AUTO" (prefers JPG for display speed), "RAW", "JPG"
+    workflow_status: str = "UNCHECKED" # "UNCHECKED", "SOOC_OK", "TO_EDIT", "IN_PROGRESS", "EDITED"
+    has_darktable_edit: bool = False
+    family_album_exported: bool = False
+    family_album_path: Optional[Path] = None
+
+    @property
+    def workflow_status_info(self) -> Tuple[str, str, str]:
+        """Returns (label_text, badge_bg_color, symbol_icon)."""
+        if self.is_rejected:
+            return ("Abgelehnt", "#dc2626", "✖")
+        if self.workflow_status == "SOOC_OK":
+            return ("Qualität passt (SOOC)", "#059669", "📸")
+        if self.workflow_status == "TO_EDIT":
+            return ("Zu bearbeiten", "#d97706", "🎨")
+        if self.workflow_status == "IN_PROGRESS":
+            return ("In Bearbeitung (Darktable)", "#7c3aed", "⚙️")
+        if self.workflow_status == "EDITED":
+            return ("Bearbeitung fertig", "#0284c7", "✔")
+        return ("Ungeprüft", "#475569", "⚪")
 
     @property
     def display_name(self) -> str:
@@ -114,12 +133,53 @@ def count_folder_images(folder: Path) -> Tuple[int, int, int]:
     return (total, raw_count, jpeg_count)
 
 
+def check_exported_file(
+    primary_path: Path,
+    family_album_dir: Optional[str] = None,
+    date_taken: Optional[datetime] = None
+) -> Optional[Path]:
+    """Checks whether an edited or exported version of this photo exists."""
+    stem = primary_path.stem
+    folder = primary_path.parent
+
+    # 1. Check local Darktable export folders or edit suffixes
+    candidates = [
+        folder / f"{stem}_edit.jpg",
+        folder / f"{stem}_dt.jpg",
+        folder / f"{stem}_export.jpg",
+        folder / "darktable_exported" / f"{stem}.jpg",
+        folder / "darktable_exported" / f"{stem}.jpeg",
+        folder / "export" / f"{stem}.jpg",
+        folder / "export" / f"{stem}.jpeg",
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+
+    # 2. Check in configured Familienalbum folder: 0001_Unsere_Fotos/{YYYY}/{MM}
+    if family_album_dir and date_taken:
+        fa_root = Path(family_album_dir)
+        if fa_root.exists():
+            month_folder = fa_root / f"{date_taken.year:04d}" / f"{date_taken.month:02d}"
+            if month_folder.exists():
+                for comp_ext in (".jpg", ".jpeg", ".JPG", ".JPEG"):
+                    target = month_folder / f"{stem}{comp_ext}"
+                    if target.exists():
+                        return target
+                    target_edit = month_folder / f"{stem}_edit{comp_ext}"
+                    if target_edit.exists():
+                        return target_edit
+
+    return None
+
+
 def scan_culling_folder(
     folder_path: Path,
     progress_callback: Optional[Callable[[int, int, str], None]] = None,
-    cancel_check: Optional[Callable[[], bool]] = None
+    cancel_check: Optional[Callable[[], bool]] = None,
+    family_album_dir: Optional[str] = None
 ) -> List[CullingItem]:
-    """Scans target folder and groups RAW+JPG into unified CullingItems with XMP ratings."""
+    """Scans target folder and groups RAW+JPG into unified CullingItems with XMP ratings & workflow status."""
     if not folder_path or not folder_path.exists() or not folder_path.is_dir():
         return []
 
@@ -172,22 +232,38 @@ def scan_culling_folder(
         processed_stems.add(stem)
         companion_p = jpg_candidates.get(stem)
         
-        # Read XMP rating from raw or jpg
-        rating, label, is_rejected = read_xmp_metadata(raw_p)
-        if rating == 0 and not label and not is_rejected and companion_p:
-            r2, l2, rej2 = read_xmp_metadata(companion_p)
-            if r2 > 0 or l2 or rej2:
-                rating, label, is_rejected = r2, l2, rej2
+        # Read XMP rating and workflow status from raw or jpg
+        wf = read_xmp_workflow_info(raw_p)
+        if wf.rating == 0 and not wf.label and not wf.is_rejected and companion_p:
+            wf2 = read_xmp_workflow_info(companion_p)
+            if wf2.rating > 0 or wf2.label or wf2.is_rejected or wf2.workflow_status != "UNCHECKED":
+                wf = wf2
 
         meta = extract_metadata(companion_p if companion_p else raw_p)
+        dt = meta.date_taken if meta else None
+        exp_p = check_exported_file(raw_p, family_album_dir, dt)
+
+        # Automatic status detection
+        final_status = wf.workflow_status
+        is_exported = False
+        if exp_p:
+            final_status = "EDITED"
+            is_exported = True
+        elif wf.has_darktable_edit and final_status in ("UNCHECKED", "TO_EDIT"):
+            final_status = "IN_PROGRESS"
+
         items.append(CullingItem(
             primary_path=raw_p,
             companion_path=companion_p,
             metadata=meta,
-            rating=rating,
-            color_label=label,
-            is_rejected=is_rejected,
-            is_picked=(rating >= 3 and not is_rejected)
+            rating=wf.rating,
+            color_label=wf.label,
+            is_rejected=wf.is_rejected,
+            is_picked=(wf.rating >= 3 and not wf.is_rejected),
+            workflow_status=final_status,
+            has_darktable_edit=wf.has_darktable_edit,
+            family_album_exported=is_exported,
+            family_album_path=exp_p
         ))
 
     # Process standalone JPEGs
@@ -200,16 +276,29 @@ def scan_culling_folder(
         if progress_callback:
             progress_callback(current_count, total_units, jpg_p.name)
 
-        rating, label, is_rejected = read_xmp_metadata(jpg_p)
+        wf = read_xmp_workflow_info(jpg_p)
         meta = extract_metadata(jpg_p)
+        dt = meta.date_taken if meta else None
+        exp_p = check_exported_file(jpg_p, family_album_dir, dt)
+
+        final_status = wf.workflow_status
+        is_exported = False
+        if exp_p:
+            final_status = "EDITED"
+            is_exported = True
+
         items.append(CullingItem(
             primary_path=jpg_p,
             companion_path=None,
             metadata=meta,
-            rating=rating,
-            color_label=label,
-            is_rejected=is_rejected,
-            is_picked=(rating >= 3 and not is_rejected)
+            rating=wf.rating,
+            color_label=wf.label,
+            is_rejected=wf.is_rejected,
+            is_picked=(wf.rating >= 3 and not wf.is_rejected),
+            workflow_status=final_status,
+            has_darktable_edit=wf.has_darktable_edit,
+            family_album_exported=is_exported,
+            family_album_path=exp_p
         ))
 
     # Process other formats (PNG, TIFF, etc.)
@@ -220,15 +309,17 @@ def scan_culling_folder(
         if progress_callback:
             progress_callback(current_count, total_units, other_p.name)
 
-        rating, label, is_rejected = read_xmp_metadata(other_p)
+        wf = read_xmp_workflow_info(other_p)
         meta = extract_metadata(other_p)
         items.append(CullingItem(
             primary_path=other_p,
             companion_path=None,
             metadata=meta,
-            rating=rating,
-            color_label=label,
-            is_rejected=is_rejected
+            rating=wf.rating,
+            color_label=wf.label,
+            is_rejected=wf.is_rejected,
+            workflow_status=wf.workflow_status,
+            has_darktable_edit=wf.has_darktable_edit
         ))
 
     # Sort by date taken or filename

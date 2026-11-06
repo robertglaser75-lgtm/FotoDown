@@ -21,6 +21,14 @@ Lauffähig unter **Windows** und **Linux**.
   - **Direkte Editor-Übergabe:**
     - 🎨 **Darktable (`Strg+D`):** Übergabe der ausgewählten Aufnahmen **ausschließlich als RAW-Dateien**.
     - ✨ **Topaz Photo (`Strg+T`):** Übergabe der ausgewählten Aufnahmen **ausschließlich als JPEG-Dateien**.
+  - **Workflow-Status & Bearbeitungsverfolgung ([Q], [B], [E]):**
+    - Klare Klassifizierung jedes Fotos: *📸 SOOC ok [Q]* (Kamera-Qualität passt), *🎨 Zu bearbeiten [B]* (Nachbearbeitung nötig) oder *✔ Bearbeitung fertig [E]*.
+    - Automatische Erkennung bestehender Darktable-Bearbeitungen via XMP-Sidecar-Historie (`darktable:history_end`).
+    - Automatische Erkennung bereits ins Familienalbum exportierter Bilder (`0001_Unsere_Fotos/{YYYY}/{MM}`).
+    - Dauerhafte, standardkonforme Speicherung in `.xmp`-Sidecars (`fotodown:WorkflowStatus`).
+  - **Umfassender Filter-Tab im linken Dock:**
+    - Schnelle Filterung nach Workflow-Stand (z.B. nur noch „Zu bearbeiten“ anzeigen).
+    - Filter nach Dateityp (RAW / JPEG), Bewertung (Sterne, Pick, Reject, Farblabels), Kamera, Objektiv, ISO-Bereich und Volltextsuche.
   - **Konfigurierbares Reject-Handling:** Aussortierte Bilder wahlweise in `_Abgelehnt/` verschieben, löschen oder nur kennzeichnen.
 - 🔍 **Integrierte Einzelansicht & Schärfebeurteilung:**
   - Neuer Ansichtsmodus *„🔍 Einzelansicht“* im Hauptarbeitsbereich.

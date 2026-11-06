@@ -3,6 +3,29 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.17.0] - 2026-11-06
+
+### Hinzugefügt
+- **Foto-Workflow & Bearbeitungsstatus in Tab 2 („Sichten & Sortieren“):**
+  - **Neue Workflow-Steuerungskarte in der linken Seitenleiste ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py)):**
+    - Direkte Klassifizierung des Bearbeitungsstandes für jedes Foto bzw. RAW+JPG-Paar:
+      - 📸 **SOOC ok [Q]:** Qualität passt direkt aus der Kamera (keine RAW-Entwicklung nötig).
+      - 🎨 **Zu bearbeiten [B]:** Zur RAW-/KI-Nachbearbeitung in Darktable oder Topaz vorgemerkt.
+      - ✔ **Bearbeitung fertig [E]:** Bild wurde bereits entwickelt, optimiert und exportiert.
+    - Schnelle Einhandbedienung über Tastaturkürzel <kbd>Q</kbd>, <kbd>B</kbd>, <kbd>E</kbd> mit optischer Hervorhebung der aktiven Schaltflächen.
+    - Farblich kodierte Status-Badges im aktiven Bildheader und im Filmstreifen.
+  - **Automatische Darktable-Bearbeitungserkennung ([`core/xmp_sync.py`](core/xmp_sync.py)):**
+    - Auswertung von `darktable:history_end` in `.xmp`-Sidecars: Fotos mit bestehender Bearbeitungshistorie werden automatisch als *„In Bearbeitung (Darktable)“* erkannt.
+  - **Automatische Erkennung von Familienalbum-Exporten ([`gui_qt/models/culling_model.py`](gui_qt/models/culling_model.py)):**
+    - Prüft automatisch, ob für ein Bild bereits ein entwickelter Export im NAS-Familienalbum (`0001_Unsere_Fotos/{YYYY}/{MM}/`) oder als lokale Exportdatei (`_edit.jpg`, `_dt.jpg`, `darktable_exported/`) vorliegt.
+    - Automatisches Setzen des Status auf *„✔ Album-Export“* mit Tooltip zum genauen NAS-Dateipfad.
+  - **XMP-Metadaten-Synchronisierung ([`core/xmp_sync.py`](core/xmp_sync.py)):**
+    - Speichert den Workflow-Status standardkonform im Tag `fotodown:WorkflowStatus` im XMP-Sidecar, sodass der Bearbeitungsstand systemunabhängig und dateibasiert erhalten bleibt.
+  - **Workflow-Filter im Filter-Tab ([`gui_qt/views/culling_filter.py`](gui_qt/views/culling_filter.py)):**
+    - Neuer Filterbereich *„📋 Workflow-Stand“*: Ermöglicht das sofortige Herausfiltern nach *Alle*, *⚪ Ungeprüft*, *📸 Qualität passt (SOOC)*, *🎨 Zu bearbeiten*, *⚙️ In Bearbeitung* oder *✔ Bearbeitet*.
+  - **Konfiguration für NAS & Familienalbum ([`core/config.py`](core/config.py), [`gui_qt/widgets/general_settings.py`](gui_qt/widgets/general_settings.py)):**
+    - Einstellungen für `family_album_dir` und `nas_archive_dir` inklusive Ordner-Durchsuchen-Dialogen in den allgemeinen Einstellungen.
+
 ## [0.16.0] - 2026-11-06
 
 ### Hinzugefügt
