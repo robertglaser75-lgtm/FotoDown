@@ -24,6 +24,7 @@ from .views.gallery_view import MediaGalleryView
 from .views.single_view import MediaSingleView
 from .views.tree_view import MediaTreeView
 from .views.culling_tab import CullingTabView
+from .views.transfer_tab import TransferTabView
 from .widgets.header_banner import HeaderBanner
 from .widgets.collapsible_box import CollapsibleBox
 from .widgets.profile_bar import ProfileBarWidget
@@ -239,6 +240,10 @@ class MainWindow(QMainWindow):
         self.culling_tab_view = CullingTabView(self.config)
         self.main_workflow_stack.addWidget(self.culling_tab_view)
 
+        # Page 2: Transfer & Archive Workflow (Tab 3)
+        self.transfer_tab_view = TransferTabView(self.config)
+        self.main_workflow_stack.addWidget(self.transfer_tab_view)
+
         main_layout.addWidget(self.main_workflow_stack, stretch=1)
 
         # 4. Status Bar
@@ -340,8 +345,19 @@ class MainWindow(QMainWindow):
                     self.culling_tab_view.load_folder(target_to_load)
             self.culling_tab_view.setFocus()
             self.status_bar.showMessage("Sichten & Sortieren aktiv: Tasten [1-5] Sterne, [P] Behalten, [X] Ablehnen, [J/R] RAW/JPG.", 5000)
+        elif tab_idx == 2:
+            self.transfer_tab_view.refresh_defaults()
+            self.status_bar.showMessage("Sichern & Archivieren aktiv: Bilder zum NAS / Speicher übertragen oder archivieren.", 5000)
         else:
             self.status_bar.showMessage("Import-Arbeitsbereich aktiv.", 3000)
+
+    def open_transfer_tab(self, source_path: Optional[Path] = None, dest_path: Optional[Path] = None):
+        """Switches to Transfer tab and optionally loads source and dest folders."""
+        self.header_banner.switch_tab(2)
+        if source_path and source_path.exists():
+            self.transfer_tab_view.pane_source.load_folder(source_path)
+        if dest_path and dest_path.exists():
+            self.transfer_tab_view.pane_dest.load_folder(dest_path)
 
     def open_culling_tab(self, folder_path: Optional[Path] = None):
         """Switches to Culling tab and loads the given folder."""

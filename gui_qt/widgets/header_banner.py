@@ -62,13 +62,10 @@ class HeaderBanner(QFrame):
 
         layout.addSpacing(6)
 
-        # Main Workflow Tabs (1. Importieren | 2. Sichten & Sortieren)
+        # Main Workflow Tabs (1. Importieren | 2. Sichten & Sortieren | 3. Sichern & Archivieren)
         tabs_box = QHBoxLayout()
         tabs_box.setSpacing(2)
-        self.btn_tab_import = QPushButton("📥 1. Importieren")
-        self.btn_tab_import.setCheckable(True)
-        self.btn_tab_import.setChecked(True)
-        self.btn_tab_import.setStyleSheet("""
+        tab_btn_style = """
             QPushButton {
                 background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
                 border-radius: 4px; padding: 4px 10px; font-weight: 600; font-size: 11px;
@@ -76,25 +73,30 @@ class HeaderBanner(QFrame):
             QPushButton:checked {
                 background-color: #0284c7; color: white; border: 1px solid #38bdf8;
             }
-        """)
+        """
+
+        self.btn_tab_import = QPushButton("📥 1. Importieren")
+        self.btn_tab_import.setCheckable(True)
+        self.btn_tab_import.setChecked(True)
+        self.btn_tab_import.setStyleSheet(tab_btn_style)
 
         self.btn_tab_culling = QPushButton("👁️ 2. Sichten & Sortieren")
         self.btn_tab_culling.setCheckable(True)
         self.btn_tab_culling.setChecked(False)
-        self.btn_tab_culling.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
-                border-radius: 4px; padding: 4px 10px; font-weight: 600; font-size: 11px;
-            }
-            QPushButton:checked {
-                background-color: #0284c7; color: white; border: 1px solid #38bdf8;
-            }
-        """)
+        self.btn_tab_culling.setStyleSheet(tab_btn_style)
+
+        self.btn_tab_transfer = QPushButton("💾 3. Sichern & Archivieren")
+        self.btn_tab_transfer.setCheckable(True)
+        self.btn_tab_transfer.setChecked(False)
+        self.btn_tab_transfer.setStyleSheet(tab_btn_style)
 
         self.btn_tab_import.clicked.connect(lambda: self.switch_tab(0))
         self.btn_tab_culling.clicked.connect(lambda: self.switch_tab(1))
+        self.btn_tab_transfer.clicked.connect(lambda: self.switch_tab(2))
+
         tabs_box.addWidget(self.btn_tab_import)
         tabs_box.addWidget(self.btn_tab_culling)
+        tabs_box.addWidget(self.btn_tab_transfer)
         layout.addLayout(tabs_box)
 
         layout.addSpacing(6)
@@ -253,6 +255,7 @@ class HeaderBanner(QFrame):
     def switch_tab(self, tab_idx: int):
         self.btn_tab_import.setChecked(tab_idx == 0)
         self.btn_tab_culling.setChecked(tab_idx == 1)
+        self.btn_tab_transfer.setChecked(tab_idx == 2)
         self.tab_changed.emit(tab_idx)
 
     def set_drives(self, drives: List[DriveInfo]):

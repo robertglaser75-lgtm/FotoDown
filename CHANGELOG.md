@@ -3,6 +3,26 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.20.0] - 2026-11-08
+
+### Hinzugefügt
+- **Neuer Workflow-Schritt „3. Sichern & Archivieren“ (Tab 3) für NAS- & Speicher-Transfer ([`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py), [`gui_qt/workers/transfer_worker.py`](gui_qt/workers/transfer_worker.py)):**
+  - **2-geteilte Benutzeroberfläche (Dual-Pane):**
+    - **Linke Seite (PC / Laptop / Quelle):** Ordnerauswahl mit Schnellzugriff (letzter Culling-Ordner, Import-Ziel, Windows-Bilder), Dateiliste mit Vorschaubildern, anpassbare Filter (RAW, JPG, RAW+JPG, Videos, Bearbeitet mit XMP) und Textsuchfeld.
+    - **Rechte Seite (NAS / Speicher / Archiv / Album):** Zielordnerauswahl mit Schnellzugriff (NAS-Archiv, Familienalbum, Unterordner erstellen), identische Filter- und Darstellungsoptionen.
+    - **Mittlere Aktionsspalte:** Schaltflächen mit Richtungspfeilen für *„▶ Kopieren (Auswahl)“*, *„➔ Verschieben (Auswahl)“*, *„▶▶ Alle kopieren“* und *„➔➔ Alle verschieben“*, Button *„⇄ Seiten tauschen“* sowie Fortschrittsanzeige mit Abbrechen-Funktion.
+  - **Flexible Anzeige- und Markierungs-Tools:**
+    - Umschaltung zwischen detaillierter **Listenansicht** (Tabelle mit Checkbox, Dateiname, Typ, Größe, Änderungsdatum, Status/Rating) und **Vorschau-Kachelansicht** (Grid mit asynchron nachladenden Thumbnails).
+    - Einstellbare Vorschaubild-Größen: *Klein (80px)*, *Mittel (140px)*, *Groß (200px)*.
+    - Markierungswerkzeuge: *☑ Alle auswählen*, *☐ Keine*, *🔄 Invertieren* sowie interaktive Checkboxen und Standard-Mehrfachauswahl mit Live-Zähler (*„X von Y markiert (Z MB)“*).
+  - **Sichere Übertragungs-Engine (`TransferWorker`):**
+    - Kopiert oder verschiebt Mediendateien im Hintergrund ohne Einfrieren der Benutzeroberfläche.
+    - Vollständige automatische Synchronisation von Begleitdateien (*`.xmp`*-Sidecars für RAW/Darktable).
+    - Sicherheitsvalidierung beim Verschieben (Überprüfung der geschriebenen Dateigröße am Ziel vor dem Löschen der Quelldateien).
+  - **Integration in Hauptfenster und Kopfleiste ([`gui_qt/widgets/header_banner.py`](gui_qt/widgets/header_banner.py), [`gui_qt/main_window.py`](gui_qt/main_window.py)):**
+    - Neuer Reiter *„💾 3. Sichern & Archivieren“* in der Kopfleiste.
+    - Nahtlose Verknüpfung im 3-Stufen-Workflow (1. Importieren ➔ 2. Sichten & Sortieren ➔ 3. Sichern & Archivieren).
+
 ## [0.19.3] - 2026-11-08
 
 ### Verbessert

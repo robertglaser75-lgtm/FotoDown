@@ -8,8 +8,21 @@ Lauffähig unter **Windows** und **Linux**.
 
 ## ✨ Funktionen
 
+- 💾 **3. Hauptfunktion: Sichern & Archivieren (NAS- & Speicher-Transfer):**
+  - **Drei-Phasen-Workflow:** Bequemes Umschalten zwischen *„📥 1. Importieren“*, *„👁️ 2. Sichten & Sortieren“* und *„💾 3. Sichern & Archivieren“*.
+  - **2-geteilte Benutzeroberfläche (Dual-Pane):**
+    - **Links (Quelle / PC / Laptop):** Lokales Quellverzeichnis auswählen (mit Schnellzugriff auf Culling-Ordner, Import-Ziel und Bilderordner), Filter für Dateitypen (RAW, JPG, RAW+JPG, Videos, Bearbeitungen mit XMP) und Textsuchfeld.
+    - **Rechts (Ziel / Speicher / NAS / Album):** Zielverzeichnis auf dem NAS oder im Familienarchiv auswählen (inkl. Schnellzugriff auf NAS-Archiv, Familienalbum und Unterordner-Erstellung), identische Filter- und Darstellungsoptionen.
+    - **Mitte (Aktionsspalte):** Richtungspfeil-Aktionen für *„▶ Kopieren (Auswahl)“*, *„➔ Verschieben (Auswahl)“*, *„▶▶ Alle kopieren“*, *„➔➔ Alle verschieben“* und *„⇄ Seiten tauschen“*.
+  - **Flexible Anzeige & Markierungswerkzeuge:**
+    - Umschalten zwischen tabellarischer **Listenansicht** und visueller **Vorschau-Kachelansicht** (Grid mit asynchronen Thumbnails).
+    - Anpassbare Thumbnail-Größen (*Klein 80px*, *Mittel 140px*, *Groß 200px*).
+    - Schnellauswahl mit *☑ Alle*, *☐ Keine*, *🔄 Invertieren* sowie Checkboxen und Mehrfachauswahl mit Byte- und Zählanzeige.
+  - **Begleitdatei-Integrität & Sicherheit:**
+    - Überträgt automatisch alle zugehörigen `.xmp`-Sidecars mit.
+    - Sicheres Verschieben: Quelldateien werden erst nach verifizierter erfolgreicher Übertragung am Ziel gelöscht.
 - 👁️ **2. Hauptfunktion: Sichten & Sortieren (Culling & Editor-Export):**
-  - **Zwei-Phasen-Workflow:** Bequemes Umschalten zwischen *„📥 1. Importieren“* und *„👁️ 2. Sichten & Sortieren“*.
+  - **Drei-Phasen-Workflow:** Bequemes Umschalten zwischen *„📥 1. Importieren“*, *„👁️ 2. Sichten & Sortieren“* und *„💾 3. Sichern & Archivieren“*.
   - **Interaktiver Verzeichnisbaum mit Bildzählern:**
     - Eigener Navigationsbaum mit flexibel wählbarem Einstiegspunkt (Root-Ordner).
     - Zeigt für jedes Verzeichnis übersichtlich getrennt: Gesamtzahl an Bildern (`Bilder`), Anzahl an Sensordaten (`RAW`) und Kompaktdateien (`JPEG`).

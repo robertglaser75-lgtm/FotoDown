@@ -125,6 +125,8 @@ class AppConfig:
     nas_archive_dir: str = ""
     family_album_dir: str = ""
     family_album_pattern: str = "0001_Unsere_Fotos/{YYYY}/{MM}"
+    transfer_source_dir: str = ""
+    transfer_target_dir: str = ""
     # Einzelansicht Anzeige-Optionen
     single_view_show_filename: bool = True
     single_view_show_extension: bool = True

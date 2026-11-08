@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.19.3")
+        self.assertEqual(__version__, "0.20.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1867,6 +1867,154 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
         self.assertEqual(tab.current_idx, 0)
 
         tab.close()
+
+    def test_transfer_worker_copy_and_move(self):
+        import tempfile
+        from pathlib import Path
+        from gui_qt.workers.transfer_worker import TransferWorker
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src_dir = Path(tmpdir) / "source"
+            dst_dir = Path(tmpdir) / "dest"
+            src_dir.mkdir()
+            dst_dir.mkdir()
+
+            # Create test files
+            f1 = src_dir / "test1.jpg"
+            f1.write_text("image-data-1")
+            sc1 = src_dir / "test1.jpg.xmp"
+            sc1.write_text("xmp-sidecar-1")
+
+            f2 = src_dir / "test2.raw"
+            f2.write_text("raw-data-2")
+
+            # 1. Test Copy
+            worker_copy = TransferWorker(
+                files=[f1, f2],
+                destination_dir=dst_dir,
+                operation="copy",
+                sync_sidecars=True
+            )
+            finished_results = []
+            worker_copy.transfer_finished.connect(lambda s, e, b, errs: finished_results.append((s, e, b, errs)))
+            worker_copy.run()
+
+            self.assertEqual(len(finished_results), 1)
+            succ, errs_cnt, b_trans, err_list = finished_results[0]
+            self.assertEqual(succ, 2)
+            self.assertEqual(errs_cnt, 0)
+            self.assertTrue((dst_dir / "test1.jpg").exists())
+            self.assertTrue((dst_dir / "test1.jpg.xmp").exists())
+            self.assertTrue((dst_dir / "test2.raw").exists())
+            # Source files must still exist after copy
+            self.assertTrue(f1.exists())
+            self.assertTrue(sc1.exists())
+
+            # 2. Test Move
+            dst_move = Path(tmpdir) / "dest_move"
+            worker_move = TransferWorker(
+                files=[f1, f2],
+                destination_dir=dst_move,
+                operation="move",
+                sync_sidecars=True
+            )
+            move_results = []
+            worker_move.transfer_finished.connect(lambda s, e, b, errs: move_results.append((s, e, b, errs)))
+            worker_move.run()
+
+            self.assertEqual(len(move_results), 1)
+            succ_m, err_m, b_m, err_list_m = move_results[0]
+            self.assertEqual(succ_m, 2)
+            self.assertEqual(err_m, 0)
+            self.assertTrue((dst_move / "test1.jpg").exists())
+            self.assertTrue((dst_move / "test1.jpg.xmp").exists())
+            self.assertTrue((dst_move / "test2.raw").exists())
+            # Source files must be deleted after move
+            self.assertFalse(f1.exists())
+            self.assertFalse(sc1.exists())
+            self.assertFalse(f2.exists())
+
+    def test_transfer_pane_widget_and_filtering(self):
+        import tempfile
+        from pathlib import Path
+        from core.config import AppConfig
+        from gui_qt.views.transfer_tab import TransferPaneWidget
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_dir = Path(tmpdir)
+            (test_dir / "pic1.jpg").write_text("jpg1")
+            (test_dir / "pic2.orf").write_text("raw2")
+            (test_dir / "pic2.orf.xmp").write_text("xmp2")
+            (test_dir / "movie.mp4").write_text("video")
+            (test_dir / "notes.txt").write_text("text")
+
+            cfg = AppConfig()
+            pane = TransferPaneWidget("Test Quelle", is_source=True, config=cfg)
+            pane.load_folder(test_dir)
+
+            # Only media files should be listed (pic1.jpg, pic2.orf, movie.mp4) - not notes.txt or xmp
+            self.assertEqual(len(pane.all_items), 3)
+
+            # Test search filter
+            pane.edit_search.setText("pic1")
+            self.assertEqual(len(pane.filtered_items), 1)
+            self.assertEqual(pane.filtered_items[0].name, "pic1.jpg")
+            pane.edit_search.clear()
+
+            # Test RAW filter
+            pane.combo_type.setCurrentIndex(1)  # Nur RAW
+            self.assertEqual(len(pane.filtered_items), 1)
+            self.assertEqual(pane.filtered_items[0].name, "pic2.orf")
+
+            # Reset filter
+            pane.combo_type.setCurrentIndex(0)
+            self.assertEqual(len(pane.filtered_items), 3)
+
+            # Test selection tools: select_all, select_none, invert
+            pane.select_all()
+            self.assertEqual(len(pane.get_effective_selected_paths()), 3)
+
+            pane.select_none()
+            self.assertEqual(len(pane.get_effective_selected_paths()), 0)
+
+            pane.invert_selection()
+            self.assertEqual(len(pane.get_effective_selected_paths()), 3)
+
+            # Test view mode switching
+            pane.set_view_mode("grid")
+            self.assertEqual(pane.view_stack.currentIndex(), 1)
+            pane.set_view_mode("list")
+            self.assertEqual(pane.view_stack.currentIndex(), 0)
+
+            pane.close()
+
+    def test_transfer_tab_and_main_window_integration(self):
+        from gui_qt.main_window import MainWindow
+
+        win = MainWindow()
+        win.show()
+
+        # Check that main_workflow_stack has 3 pages: 0 (Import), 1 (Culling), 2 (Transfer)
+        self.assertEqual(win.main_workflow_stack.count(), 3)
+        self.assertEqual(win.header_banner.btn_tab_import.isChecked(), True)
+        self.assertEqual(win.header_banner.btn_tab_culling.isChecked(), False)
+        self.assertEqual(win.header_banner.btn_tab_transfer.isChecked(), False)
+
+        # Switch to tab 2 (Transfer & Archive)
+        win.header_banner.switch_tab(2)
+        self.assertEqual(win.main_workflow_stack.currentIndex(), 2)
+        self.assertTrue(win.header_banner.btn_tab_transfer.isChecked())
+        self.assertFalse(win.header_banner.btn_tab_import.isChecked())
+        self.assertFalse(win.header_banner.btn_tab_culling.isChecked())
+
+        # Test helper method
+        win.open_transfer_tab()
+        self.assertEqual(win.main_workflow_stack.currentIndex(), 2)
+
+        if win._drive_watcher:
+            win._drive_watcher.stop()
+            win._drive_watcher.wait(1000)
+        win.close()
 
 
 if __name__ == "__main__":
