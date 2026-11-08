@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.20.2] - 2026-11-08
+
+### Verbessert
+- **Horizontale Anordnung der Verzeichnisbäume jeweils links neben den Bildern ([`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
+  - **Quellseite (Laptop / Bearbeiten):** Der Verzeichnisbaum (`CullingDirectoryTreeWidget`) befindet sich nun auf der linken Seite des Quellbereichs; rechts daneben liegt die Bildansicht (Liste/Kacheln mit Filtern und Markierungs-Tools).
+  - **Zielseite (NAS / Archiv):** Ebenso befindet sich der Verzeichnisbaum auf der linken Seite des Sicherungsbereichs mit den Zielbildern auf der rechten Seite.
+  - **Horizontaler Teiler:** Beide Seiten nutzen einen stufenlos verschiebbaren horizontalen Splitter inklusive Ein-/Ausblend-Möglichkeit (*„📂 Baum“*).
+
 ## [0.20.1] - 2026-11-08
 
 ### Verbessert

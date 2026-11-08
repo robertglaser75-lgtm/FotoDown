@@ -139,16 +139,16 @@ class TransferPaneWidget(QWidget):
         main_layout.setContentsMargins(2, 2, 2, 2)
         main_layout.setSpacing(4)
 
-        # Vertical Splitter: Top = Verzeichnisbaum (Tree Widget), Bottom = Photo / File Content
-        self.pane_splitter = QSplitter(Qt.Orientation.Vertical)
+        # Horizontal Splitter: Left = Verzeichnisbaum (Tree Widget), Right = Photo / File Content
+        self.pane_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.pane_splitter.setStyleSheet("""
             QSplitter::handle {
                 background-color: #334155;
-                height: 4px;
+                width: 4px;
             }
         """)
 
-        # 1. Directory Tree Widget (Identical to Culling / Tab 2)
+        # 1. Directory Tree Widget on Left side (Identical to Culling / Tab 2)
         tree_title = f"VERZEICHNISSE ({'QUELLE' if self.is_source else 'ZIEL / NAS'})"
         root_key = "transfer_source_dir" if self.is_source else "transfer_target_dir"
         default_root = None
@@ -166,6 +166,7 @@ class TransferPaneWidget(QWidget):
             default_root=default_root,
             show_collapse_btn=True
         )
+        self.tree_widget.setMinimumWidth(180)
         self.tree_widget.folder_selected.connect(self.load_folder)
         self.tree_widget.collapse_panel_requested.connect(self._toggle_tree_visibility)
         self.pane_splitter.addWidget(self.tree_widget)
@@ -189,7 +190,7 @@ class TransferPaneWidget(QWidget):
         f_card_layout.addWidget(self.lbl_folder_header, stretch=1)
 
         self.btn_toggle_tree = QPushButton("📂 Baum")
-        self.btn_toggle_tree.setToolTip("Verzeichnisbaum oben ein- oder ausblenden")
+        self.btn_toggle_tree.setToolTip("Verzeichnisbaum links ein- oder ausblenden")
         self.btn_toggle_tree.setCheckable(True)
         self.btn_toggle_tree.setChecked(True)
         self.btn_toggle_tree.setStyleSheet("""
@@ -353,8 +354,8 @@ class TransferPaneWidget(QWidget):
         content_layout.addWidget(self.view_stack, 1)
         self.pane_splitter.addWidget(content_container)
 
-        # Splitter sizing: ~220px tree at top, ~480px photo content below
-        self.pane_splitter.setSizes([220, 480])
+        # Splitter sizing: Left = ~240px tree on left side, Right = photo content gets remaining space
+        self.pane_splitter.setSizes([240, 500])
         self.pane_splitter.setStretchFactor(0, 0)
         self.pane_splitter.setStretchFactor(1, 1)
 

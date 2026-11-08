@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.20.1")
+        self.assertEqual(__version__, "0.20.2")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1952,9 +1952,10 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             pane = TransferPaneWidget("Test Quelle", is_source=True, config=cfg)
             pane.load_folder(test_dir)
 
-            # Verzeichnisbaum must be present as in Culling (Tab 2)
+            # Verzeichnisbaum must be present on the left side (horizontal splitter) as in Culling (Tab 2)
             self.assertIsNotNone(pane.tree_widget)
             self.assertTrue(hasattr(pane.tree_widget, "folder_selected"))
+            self.assertEqual(pane.pane_splitter.orientation(), Qt.Orientation.Horizontal)
 
             # Only media files should be listed (pic1.jpg, pic2.orf, movie.mp4) - not notes.txt or xmp
             self.assertEqual(len(pane.all_items), 3)
