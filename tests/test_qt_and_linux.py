@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.19.1")
+        self.assertEqual(__version__, "0.19.2")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1657,6 +1657,16 @@ class TestSettingsAndSingleViewConfig(unittest.TestCase):
         # No separate "Lade Fotos..." on active photo label or canvas during scan
         self.assertNotEqual(tab.lbl_active_name.text(), "Lade Fotos...")
         self.assertNotEqual(tab.canvas.lbl_image.text(), "Lade Fotos...")
+
+        # Test blinking animation on the progress bar
+        tab._start_bar_blinking()
+        from PySide6.QtCore import QPropertyAnimation
+        self.assertEqual(tab._bar_blink_anim.state(), QPropertyAnimation.State.Running)
+        self.assertGreaterEqual(tab._bar_blink_anim.duration(), 500)
+
+        tab._stop_bar_blinking()
+        self.assertEqual(tab._bar_blink_anim.state(), QPropertyAnimation.State.Stopped)
+        self.assertEqual(tab._bar_opacity_effect.opacity(), 1.0)
 
         # Scan finishes
         it = CullingItem(primary_path=Path("P101.JPG"))

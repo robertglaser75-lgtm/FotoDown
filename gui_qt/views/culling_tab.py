@@ -804,6 +804,7 @@ class CullingTabView(QWidget):
             self.dir_tree.select_folder(folder)
 
         # Display progress frame and disable folder buttons while scanning
+        self._stop_bar_blinking()
         self.btn_choose_folder.setEnabled(False)
         self.btn_refresh.setEnabled(False)
         self.scan_progress_bar.setValue(0)
@@ -817,6 +818,28 @@ class CullingTabView(QWidget):
         self._scan_worker.error.connect(self._on_scan_error)
         self._scan_worker.start()
 
+    def _start_bar_blinking(self):
+        """Starts a pulsing/blinking animation on the progress bar while photos & preview load."""
+        if not hasattr(self, "_bar_blink_anim"):
+            self._bar_opacity_effect = QGraphicsOpacityEffect(self.scan_progress_bar)
+            self.scan_progress_bar.setGraphicsEffect(self._bar_opacity_effect)
+            self._bar_blink_anim = QPropertyAnimation(self._bar_opacity_effect, b"opacity")
+            self._bar_blink_anim.setDuration(700)
+            self._bar_blink_anim.setStartValue(1.0)
+            self._bar_blink_anim.setKeyValueAt(0.5, 0.25)
+            self._bar_blink_anim.setEndValue(1.0)
+            self._bar_blink_anim.setEasingCurve(QEasingCurve.Type.InOutSine)
+            self._bar_blink_anim.setLoopCount(-1)
+        self._bar_opacity_effect.setOpacity(1.0)
+        self._bar_blink_anim.start()
+
+    def _stop_bar_blinking(self):
+        """Stops the progress bar blinking animation and restores full opacity."""
+        if hasattr(self, "_bar_blink_anim") and self._bar_blink_anim.state() == QPropertyAnimation.State.Running:
+            self._bar_blink_anim.stop()
+        if hasattr(self, "_bar_opacity_effect"):
+            self._bar_opacity_effect.setOpacity(1.0)
+
     def _on_scan_progress(self, cur: int, total: int, filename: str):
         pct = int(cur / total * 100) if total > 0 else 0
         self.scan_progress_bar.setValue(pct)
@@ -824,13 +847,20 @@ class CullingTabView(QWidget):
         self.lbl_stats.setText(f"Scan läuft: {cur}/{total} ({pct}%)")
 
     def _on_scan_finished(self, items: List[CullingItem]):
+        self.items = items
+        self.scan_progress_bar.setValue(100)
+        self.lbl_scan_status.setText("Lade Fotos in Ansicht...")
+        self._start_bar_blinking()
+        from PySide6.QtWidgets import QApplication
+        QApplication.processEvents()
+
+        self.left_dock.update_folder_items(items)
+        self._apply_filter(keep_current=False)
+
+        self._stop_bar_blinking()
         self.progress_frame.setVisible(False)
         self.btn_choose_folder.setEnabled(True)
         self.btn_refresh.setEnabled(True)
-
-        self.items = items
-        self.left_dock.update_folder_items(items)
-        self._apply_filter(keep_current=False)
 
     def _on_filter_changed(self, criteria: CullingFilterCriteria):
         self._current_filter = criteria
@@ -866,6 +896,7 @@ class CullingTabView(QWidget):
             self.btn_toggle_raw_jpg.setVisible(False)
 
     def _on_scan_error(self, err_msg: str):
+        self._stop_bar_blinking()
         self.progress_frame.setVisible(False)
         self.btn_choose_folder.setEnabled(True)
         self.btn_refresh.setEnabled(True)
@@ -874,6 +905,7 @@ class CullingTabView(QWidget):
         self.lbl_stats.setText("Fehler beim Laden")
 
     def _cancel_scan(self):
+        self._stop_bar_blinking()
         if self._scan_worker and self._scan_worker.isRunning():
             self._scan_worker.cancel()
             self._scan_worker.wait(1000)
