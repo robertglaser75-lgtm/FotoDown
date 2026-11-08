@@ -3,6 +3,13 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.19.1] - 2026-11-08
+
+### Verbessert
+- **Bereinigung Lade-Rückmeldung beim Foto-Scan ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py)):**
+  - Separater Schriftzug *„Lade Fotos...“* auf der Bildfläche und in der Seitenleiste entfernt.
+  - Der Fortschrittsbalken mit Statusanzeige *„Lese Fotos ein: X von Y (Z%) • Dateiname“* liefert bereits präzises, kontinuierliches Feedback, sodass keine redundante zusätzliche Ladeanzeige mehr eingeblendet wird.
+
 ## [0.19.0] - 2026-11-07
 
 ### Hinzugefügt

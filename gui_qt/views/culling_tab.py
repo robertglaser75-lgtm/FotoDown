@@ -807,11 +807,8 @@ class CullingTabView(QWidget):
         self.btn_choose_folder.setEnabled(False)
         self.btn_refresh.setEnabled(False)
         self.scan_progress_bar.setValue(0)
-        self.lbl_scan_status.setText("Durchsuche Verzeichnis nach Fotos & RAW-Dateien...")
+        self.lbl_scan_status.setText("Lese Fotos ein...")
         self.progress_frame.setVisible(True)
-
-        self._start_loading_animation()
-        self.canvas.show_loading("Lade Fotos...")
         self.lbl_stats.setText("Lese Ordner ein...")
 
         self._scan_worker = CullingScanWorker(folder, family_album_dir=self.config.family_album_dir, parent=self)
@@ -820,30 +817,6 @@ class CullingTabView(QWidget):
         self._scan_worker.error.connect(self._on_scan_error)
         self._scan_worker.start()
 
-    def _start_loading_animation(self):
-        """Starts a slow, smooth pulsing/blinking animation on 'Lade Fotos...'."""
-        self.lbl_active_name.setText("Lade Fotos...")
-        self.lbl_active_name.setStyleSheet("font-weight: bold; font-size: 12px; color: #38bdf8;")
-        if not hasattr(self, "_loading_anim"):
-            self._loading_effect = QGraphicsOpacityEffect(self.lbl_active_name)
-            self.lbl_active_name.setGraphicsEffect(self._loading_effect)
-            self._loading_anim = QPropertyAnimation(self._loading_effect, b"opacity")
-            self._loading_anim.setDuration(1400)
-            self._loading_anim.setStartValue(1.0)
-            self._loading_anim.setKeyValueAt(0.5, 0.2)
-            self._loading_anim.setEndValue(1.0)
-            self._loading_anim.setEasingCurve(QEasingCurve.Type.InOutSine)
-            self._loading_anim.setLoopCount(-1)
-        self._loading_effect.setOpacity(1.0)
-        self._loading_anim.start()
-
-    def _stop_loading_animation(self):
-        """Stops the pulsing animation and resets opacity."""
-        if hasattr(self, "_loading_anim") and self._loading_anim.state() == QPropertyAnimation.State.Running:
-            self._loading_anim.stop()
-        if hasattr(self, "_loading_effect"):
-            self._loading_effect.setOpacity(1.0)
-
     def _on_scan_progress(self, cur: int, total: int, filename: str):
         pct = int(cur / total * 100) if total > 0 else 0
         self.scan_progress_bar.setValue(pct)
@@ -851,8 +824,6 @@ class CullingTabView(QWidget):
         self.lbl_stats.setText(f"Scan läuft: {cur}/{total} ({pct}%)")
 
     def _on_scan_finished(self, items: List[CullingItem]):
-        self._stop_loading_animation()
-        self.canvas.hide_loading()
         self.progress_frame.setVisible(False)
         self.btn_choose_folder.setEnabled(True)
         self.btn_refresh.setEnabled(True)
@@ -895,8 +866,6 @@ class CullingTabView(QWidget):
             self.btn_toggle_raw_jpg.setVisible(False)
 
     def _on_scan_error(self, err_msg: str):
-        self._stop_loading_animation()
-        self.canvas.hide_loading()
         self.progress_frame.setVisible(False)
         self.btn_choose_folder.setEnabled(True)
         self.btn_refresh.setEnabled(True)
@@ -905,8 +874,6 @@ class CullingTabView(QWidget):
         self.lbl_stats.setText("Fehler beim Laden")
 
     def _cancel_scan(self):
-        self._stop_loading_animation()
-        self.canvas.hide_loading()
         if self._scan_worker and self._scan_worker.isRunning():
             self._scan_worker.cancel()
             self._scan_worker.wait(1000)

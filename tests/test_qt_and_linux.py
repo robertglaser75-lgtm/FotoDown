@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.19.0")
+        self.assertEqual(__version__, "0.19.1")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1634,35 +1634,34 @@ class TestSettingsAndSingleViewConfig(unittest.TestCase):
 
         tab.close()
 
-    def test_culling_loading_animation_blinking(self):
+    def test_culling_scan_progress_feedback_no_separate_loading_text(self):
         from gui_qt.views.culling_tab import CullingTabView
+        from gui_qt.models.culling_model import CullingItem
         from core.config import AppConfig
-        from PySide6.QtCore import QPropertyAnimation
+        from pathlib import Path
 
         cfg = AppConfig()
         tab = CullingTabView(cfg)
         tab.show()
 
-        # Start animation
-        tab._start_loading_animation()
-        self.assertEqual(tab.lbl_active_name.text(), "Lade Fotos...")
-        self.assertTrue(hasattr(tab, "_loading_anim"))
-        self.assertEqual(tab._loading_anim.state(), QPropertyAnimation.State.Running)
-        self.assertGreaterEqual(tab._loading_anim.duration(), 1000)
+        # Progress frame initially hidden
+        self.assertFalse(tab.progress_frame.isVisible())
 
-        # Canvas show_loading
-        tab.canvas.show_loading("Lade Fotos...")
-        self.assertEqual(tab.canvas.lbl_image.text(), "Lade Fotos...")
-        self.assertTrue(hasattr(tab.canvas, "_canvas_loading_anim"))
-        self.assertEqual(tab.canvas._canvas_loading_anim.state(), QPropertyAnimation.State.Running)
+        # Simulate scan progress
+        tab.progress_frame.setVisible(True)
+        tab._on_scan_progress(10, 50, "P101.JPG")
+        self.assertTrue(tab.progress_frame.isVisible())
+        self.assertEqual(tab.scan_progress_bar.value(), 20)
+        self.assertIn("Lese Fotos ein: 10 von 50", tab.lbl_scan_status.text())
 
-        # Stop animation
-        tab._stop_loading_animation()
-        self.assertEqual(tab._loading_anim.state(), QPropertyAnimation.State.Stopped)
-        self.assertEqual(tab._loading_effect.opacity(), 1.0)
+        # No separate "Lade Fotos..." on active photo label or canvas during scan
+        self.assertNotEqual(tab.lbl_active_name.text(), "Lade Fotos...")
+        self.assertNotEqual(tab.canvas.lbl_image.text(), "Lade Fotos...")
 
-        tab.canvas.hide_loading()
-        self.assertEqual(tab.canvas._canvas_loading_anim.state(), QPropertyAnimation.State.Stopped)
+        # Scan finishes
+        it = CullingItem(primary_path=Path("P101.JPG"))
+        tab._on_scan_finished([it])
+        self.assertFalse(tab.progress_frame.isVisible())
 
         tab.close()
 
