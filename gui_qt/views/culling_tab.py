@@ -58,6 +58,7 @@ class CullingCanvasWidget(QScrollArea):
 
         self._pixmap: Optional[QPixmap] = None
         self._zoom_mode: str = "fit"  # "fit" or "actual"
+        self.show_placeholder()
 
     def set_pixmap(self, pixmap: Optional[QPixmap], keep_zoom: bool = False):
         if pixmap is not None:
@@ -66,6 +67,26 @@ class CullingCanvasWidget(QScrollArea):
         if not keep_zoom:
             self._zoom_mode = "fit"
         self.update_display()
+
+    def show_placeholder(
+        self,
+        icon: str = "🖼️",
+        title: str = "Kein Foto ausgewählt",
+        subtitle: str = "Wählen Sie links einen Ordner oder ein Foto aus"
+    ):
+        """Displays a clean, styled placeholder banner on the canvas."""
+        self._pixmap = None
+        self.hide_loading()
+        self.lbl_image.setPixmap(QPixmap())
+        self.lbl_image.setText(
+            f"<div style='text-align: center; padding: 24px;'>"
+            f"<div style='font-size: 38px; line-height: 1.2; margin-bottom: 10px;'>{icon}</div>"
+            f"<div style='color: #94a3b8; font-size: 14px; font-weight: 600;'>{title}</div>"
+            f"<div style='color: #475569; font-size: 11px; margin-top: 5px;'>{subtitle}</div>"
+            f"</div>"
+        )
+        self.lbl_image.setStyleSheet("background: transparent;")
+        self.lbl_image.adjustSize()
 
     def show_loading(self, text: str = "Lade Fotos..."):
         self._pixmap = None
@@ -98,9 +119,7 @@ class CullingCanvasWidget(QScrollArea):
 
     def update_display(self):
         if not self._pixmap or self._pixmap.isNull():
-            self.lbl_image.setPixmap(QPixmap())
-            self.lbl_image.setText("Kein Bild geladen")
-            self.lbl_image.setStyleSheet("color: #64748b; font-size: 14px;")
+            self.show_placeholder()
             return
 
         self.lbl_image.setText("")
@@ -450,14 +469,15 @@ class CullingTabView(QWidget):
         lbl_sec_photo.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
         layout_photo.addWidget(lbl_sec_photo)
 
-        self.lbl_active_name = QLabel("Kein Foto geladen")
-        self.lbl_active_name.setStyleSheet("font-weight: bold; font-size: 12px; color: #f8fafc;")
+        self.lbl_active_name = QLabel("Kein Foto ausgewählt")
+        self.lbl_active_name.setStyleSheet("color: #64748b; font-size: 11px; font-weight: 500;")
         self.lbl_active_name.setWordWrap(True)
         layout_photo.addWidget(self.lbl_active_name)
 
         self.lbl_active_path = QLabel("")
-        self.lbl_active_path.setStyleSheet("color: #94a3b8; font-size: 10px;")
+        self.lbl_active_path.setStyleSheet("color: #64748b; font-size: 10px;")
         self.lbl_active_path.setWordWrap(True)
+        self.lbl_active_path.setVisible(False)
         layout_photo.addWidget(self.lbl_active_path)
 
         # Badges row
@@ -478,25 +498,26 @@ class CullingTabView(QWidget):
             QPushButton:hover { background-color: #0369a1; color: white; }
         """)
         self.btn_toggle_raw_jpg.clicked.connect(self._toggle_raw_jpg_view)
+        self.btn_toggle_raw_jpg.setVisible(False)
         badges_layout.addWidget(self.btn_toggle_raw_jpg)
         badges_layout.addStretch()
         layout_photo.addLayout(badges_layout)
 
         # Navigation row
         nav_layout = QHBoxLayout()
-        nav_layout.setSpacing(6)
+        nav_layout.setSpacing(4)
         _scheme = self.config.navigation_scheme if self.config else DEFAULT_NAVIGATION_SCHEME
         _prev_lbl, _next_lbl = get_nav_labels(_scheme)
         _hint = get_nav_hint(_scheme)
         self.btn_prev = QPushButton(_prev_lbl)
         self.btn_prev.setToolTip(f"Vorheriges Foto ({_hint})")
-        self.btn_prev.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 5px;")
+        self.btn_prev.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 6px; font-size: 10px;")
         self.btn_prev.clicked.connect(self._prev_item)
         nav_layout.addWidget(self.btn_prev)
 
         self.btn_next = QPushButton(_next_lbl)
         self.btn_next.setToolTip(f"Nächstes Foto ({_hint})")
-        self.btn_next.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 5px;")
+        self.btn_next.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 6px; font-size: 10px;")
         self.btn_next.clicked.connect(self._next_item)
         nav_layout.addWidget(self.btn_next)
         layout_photo.addLayout(nav_layout)
@@ -539,12 +560,12 @@ class CullingTabView(QWidget):
             stars_layout.addWidget(btn)
             self.star_buttons.append(btn)
 
-        btn_star_zero = QPushButton("0")
-        btn_star_zero.setFixedSize(26, 26)
-        btn_star_zero.setToolTip("Bewertung entfernen (Taste 0)")
-        btn_star_zero.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; font-size: 10px;")
-        btn_star_zero.clicked.connect(lambda: self.set_current_rating(0))
-        stars_layout.addWidget(btn_star_zero)
+        self.btn_star_zero = QPushButton("0")
+        self.btn_star_zero.setFixedSize(26, 26)
+        self.btn_star_zero.setToolTip("Bewertung entfernen (Taste 0)")
+        self.btn_star_zero.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; font-size: 10px;")
+        self.btn_star_zero.clicked.connect(lambda: self.set_current_rating(0))
+        stars_layout.addWidget(self.btn_star_zero)
         layout_rating.addLayout(stars_layout)
 
         # Pick & Reject row
@@ -676,8 +697,8 @@ class CullingTabView(QWidget):
         lbl_sec_stats.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
         layout_stats.addWidget(lbl_sec_stats)
 
-        self.lbl_stats = QLabel("0 Fotos geladen")
-        self.lbl_stats.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        self.lbl_stats = QLabel("Kein Ordner geöffnet")
+        self.lbl_stats.setStyleSheet("color: #64748b; font-size: 11px;")
         self.lbl_stats.setWordWrap(True)
         layout_stats.addWidget(self.lbl_stats)
 
@@ -734,20 +755,23 @@ class CullingTabView(QWidget):
         strip_layout.setContentsMargins(4, 2, 4, 2)
         strip_layout.setSpacing(8)
 
-        self.lbl_canvas_name = QLabel("")
-        self.lbl_canvas_name.setStyleSheet("color: #38bdf8; font-weight: 600; font-size: 12px;")
+        self.lbl_canvas_name = QLabel("Kein Foto ausgewählt")
+        self.lbl_canvas_name.setStyleSheet("color: #64748b; font-weight: 500; font-size: 11px;")
         strip_layout.addWidget(self.lbl_canvas_name)
 
         self.lbl_canvas_path = QLabel("")
         self.lbl_canvas_path.setStyleSheet("color: #94a3b8; font-size: 11px; background-color: #1e293b; border-radius: 3px; padding: 1px 6px;")
+        self.lbl_canvas_path.setVisible(False)
         strip_layout.addWidget(self.lbl_canvas_path)
 
         self.lbl_canvas_rating = QLabel("")
         self.lbl_canvas_rating.setStyleSheet("color: #fbbf24; font-size: 11px; font-weight: bold;")
+        self.lbl_canvas_rating.setVisible(False)
         strip_layout.addWidget(self.lbl_canvas_rating)
 
         self.lbl_canvas_meta = QLabel("")
         self.lbl_canvas_meta.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        self.lbl_canvas_meta.setVisible(False)
         strip_layout.addWidget(self.lbl_canvas_meta)
 
         strip_layout.addStretch()
@@ -786,6 +810,29 @@ class CullingTabView(QWidget):
         self.splitter.setStretchFactor(2, 1)
 
         main_layout.addWidget(self.splitter)
+        self._set_photo_actions_enabled(False)
+
+    def _set_photo_actions_enabled(self, enabled: bool):
+        """Enables or disables photo-specific controls (culling, zoom, rating, workflow, editors)."""
+        has_items = enabled and bool(self.filtered_items and 0 <= self.current_idx < len(self.filtered_items))
+        self.btn_prev.setEnabled(has_items and self.current_idx > 0)
+        self.btn_next.setEnabled(has_items and self.current_idx < len(self.filtered_items) - 1)
+        self.btn_zoom.setEnabled(has_items)
+        for btn in self.star_buttons:
+            btn.setEnabled(has_items)
+        if hasattr(self, "btn_star_zero"):
+            self.btn_star_zero.setEnabled(has_items)
+        self.btn_pick.setEnabled(has_items)
+        self.btn_reject.setEnabled(has_items)
+        self.btn_wf_sooc.setEnabled(has_items)
+        self.btn_wf_to_edit.setEnabled(has_items)
+        self.btn_wf_done.setEnabled(has_items)
+        if hasattr(self, "btn_darktable"):
+            self.btn_darktable.setEnabled(has_items)
+        if hasattr(self, "btn_topaz"):
+            self.btn_topaz.setEnabled(has_items)
+        if hasattr(self, "btn_apply_reject"):
+            self.btn_apply_reject.setEnabled(has_items)
 
     def load_folder(self, folder: Path):
         """Loads and scans photos from folder into the Culling workflow with progress display."""
@@ -811,6 +858,12 @@ class CullingTabView(QWidget):
         self.lbl_scan_status.setText("Lese Fotos ein...")
         self.progress_frame.setVisible(True)
         self.lbl_stats.setText("Lese Ordner ein...")
+        self.lbl_active_name.setText("Fotos werden eingelesen...")
+        self.lbl_active_name.setStyleSheet("color: #38bdf8; font-size: 11px; font-weight: 500;")
+        self.lbl_active_path.setVisible(False)
+        self.btn_toggle_raw_jpg.setVisible(False)
+        self._set_photo_actions_enabled(False)
+        self.canvas.show_placeholder("📁", "Fotos werden eingelesen...", "Verzeichnis wird durchsucht und Metadaten werden eingelesen")
 
         self._scan_worker = CullingScanWorker(folder, family_album_dir=self.config.family_album_dir, parent=self)
         self._scan_worker.progress.connect(self._on_scan_progress)
@@ -844,12 +897,14 @@ class CullingTabView(QWidget):
         pct = int(cur / total * 100) if total > 0 else 0
         self.scan_progress_bar.setValue(pct)
         self.lbl_scan_status.setText(f"Lese Fotos ein: {cur} von {total} ({pct}%) • {filename}")
-        self.lbl_stats.setText(f"Scan läuft: {cur}/{total} ({pct}%)")
+        self.lbl_stats.setText(f"Lese Fotos ein: {cur}/{total} ({pct}%)")
 
     def _on_scan_finished(self, items: List[CullingItem]):
         self.items = items
         self.scan_progress_bar.setValue(100)
-        self.lbl_scan_status.setText("Lade Fotos in Ansicht...")
+        self.lbl_scan_status.setText(f"Lese Fotos ein: {len(items)} Fotos gefunden – lade Vorschau...")
+        self.lbl_stats.setText(f"{len(items)} Fotos gefunden – lade Vorschau...")
+        self.canvas.show_placeholder("⏳", "Vorschau wird vorbereitet...", "Ansicht und erstes Foto werden geladen")
         self._start_bar_blinking()
         from PySide6.QtWidgets import QApplication
         QApplication.processEvents()
@@ -890,16 +945,25 @@ class CullingTabView(QWidget):
         else:
             self.current_idx = -1
             self.filmstrip.set_items([], -1)
-            self.canvas.set_pixmap(None)
+            self.canvas.show_placeholder("🔍", "Keine Fotos entsprechen dem Filter", "Passen Sie die Filterkriterien im linken Dock an")
             self.lbl_active_name.setText("Keine Fotos entsprechen dem Filter")
+            self.lbl_active_name.setStyleSheet("color: #94a3b8; font-size: 11px; font-weight: 500;")
+            self.lbl_active_path.setVisible(False)
             self.lbl_pair_badge.setVisible(False)
             self.btn_toggle_raw_jpg.setVisible(False)
+            self.lbl_canvas_name.setText("Keine Fotos entsprechen dem Filter")
+            self.lbl_canvas_name.setStyleSheet("color: #64748b; font-weight: 500; font-size: 11px;")
+            self.lbl_canvas_path.setVisible(False)
+            self.lbl_canvas_rating.setVisible(False)
+            self.lbl_canvas_meta.setVisible(False)
+            self._set_photo_actions_enabled(False)
 
     def _on_scan_error(self, err_msg: str):
         self._stop_bar_blinking()
         self.progress_frame.setVisible(False)
         self.btn_choose_folder.setEnabled(True)
         self.btn_refresh.setEnabled(True)
+        self.canvas.show_placeholder("⚠️", "Fehler beim Einlesen", err_msg)
         QMessageBox.critical(self, "Fehler beim Einlesen", f"Fehler beim Scannen des Ordners:\n{err_msg}")
         self.lbl_active_name.setText("Fehler beim Laden")
         self.lbl_stats.setText("Fehler beim Laden")
@@ -954,8 +1018,10 @@ class CullingTabView(QWidget):
 
     def _render_current_item(self):
         if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):
+            self._set_photo_actions_enabled(False)
             return
 
+        self._set_photo_actions_enabled(True)
         it = self.filtered_items[self.current_idx]
 
         # Display preferences from AppConfig
@@ -979,6 +1045,7 @@ class CullingTabView(QWidget):
         filter_tag = " [Filter aktiv]" if (self._current_filter and self._current_filter.is_active()) else ""
         cnt_str = f"({self.current_idx + 1} von {len(self.filtered_items)})"
         self.lbl_active_name.setText(f"{disp_name} {cnt_str}{filter_tag}" if disp_name else f"{cnt_str}{filter_tag}")
+        self.lbl_active_name.setStyleSheet("font-weight: bold; font-size: 12px; color: #f8fafc;")
 
         parent_dir = str(it.primary_path.parent)
         self.lbl_active_path.setText(f"📁 {parent_dir}")
@@ -986,6 +1053,7 @@ class CullingTabView(QWidget):
 
         # Canvas top strip updates
         self.lbl_canvas_name.setText(disp_name)
+        self.lbl_canvas_name.setStyleSheet("color: #38bdf8; font-weight: 600; font-size: 12px;")
         self.lbl_canvas_name.setVisible(bool(disp_name))
 
         self.lbl_canvas_path.setText(f"📁 {parent_dir}")

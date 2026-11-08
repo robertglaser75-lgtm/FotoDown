@@ -3,6 +3,20 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.19.3] - 2026-11-08
+
+### Verbessert
+- **Optimierung der Benutzeroberfläche vor und während des Foto-Ladevorgangs ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/key_navigation.py`](gui_qt/key_navigation.py)):**
+  - **Bildarbeitsfläche (Canvas):** Anstelle eines leeren schwarzen Bereichs wird vor und während des Ladevorgangs ein ansprechender, zentrierter Platzhalter mit passendem Status angezeigt (*„Kein Foto ausgewählt“*, *„Fotos werden eingelesen...“* bzw. *„Vorschau wird vorbereitet...“*).
+  - **Seitenleiste vor dem Laden bereinigt:**
+    - Die Aktions-Schaltflächen (Vorheriges, Nächstes, 100% Zoom, Sterne 1–5, Pick/Reject, Workflow-Status, externe Editoren) sind im Leerzustand sauber deaktiviert.
+    - Vorzeitige Anzeige von *„Ansicht: Auto“* ohne geladene Fotos entfernt.
+    - Leere Textzeilen unter dem Dateinamen ausgeblendet.
+    - Statistikkarte zeigt vor dem Laden *„Kein Ordner geöffnet“* und während des Einlesens präzise den aktuellen Fortschritt anstelle eines statischen *„Scan läuft: 100%“*.
+  - **Button-Beschriftung ohne Textüberlauf:**
+    - Kompakte, lesbare Navigationsbeschriftungen (*„◀ Zurück [←/A]“*, *„Weiter ▶ [→/D]“*) verhindern unschönes Abschneiden des Weiter-Buttons in der Seitenleiste.
+  - **Konsistente Statusmeldungen:** Der Fortschrittsbalken und die Statusmeldungen behalten durchgängig das Schema *„Lese Fotos ein...“* bei.
+
 ## [0.19.2] - 2026-11-08
 
 ### Verbessert

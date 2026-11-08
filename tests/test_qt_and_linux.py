@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.19.2")
+        self.assertEqual(__version__, "0.19.3")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1644,8 +1644,15 @@ class TestSettingsAndSingleViewConfig(unittest.TestCase):
         tab = CullingTabView(cfg)
         tab.show()
 
-        # Progress frame initially hidden
+        # Initial state before any folder or photos are loaded
         self.assertFalse(tab.progress_frame.isVisible())
+        self.assertFalse(tab.btn_prev.isEnabled())
+        self.assertFalse(tab.btn_next.isEnabled())
+        self.assertFalse(tab.btn_zoom.isEnabled())
+        self.assertFalse(tab.btn_toggle_raw_jpg.isVisible())
+        self.assertEqual(tab.lbl_active_name.text(), "Kein Foto ausgewählt")
+        self.assertEqual(tab.lbl_stats.text(), "Kein Ordner geöffnet")
+        self.assertIn("Kein Foto ausgewählt", tab.canvas.lbl_image.text())
 
         # Simulate scan progress
         tab.progress_frame.setVisible(True)
