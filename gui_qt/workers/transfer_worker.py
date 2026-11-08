@@ -139,3 +139,4 @@ class TransferWorker(QThread):
 
         if not self._is_cancelled:
             self.transfer_finished.emit(success_count, error_count, total_transferred_bytes, errors)
+

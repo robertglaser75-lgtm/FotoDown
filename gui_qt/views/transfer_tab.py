@@ -5,7 +5,7 @@ the local working station (PC/Laptop) and network storage (NAS / Family Album).
 
 Features:
 - Dual-pane layout: Left (Source) & Right (Destination).
-- Directory pickers with quick access to Culling folders, Import targets, and NAS archive.
+- Identical hierarchical directory tree selection as in Culling (Tab 2) with photo counts (Total, RAW, JPG).
 - Powerful filtering: File types (RAW, JPG, Videos), XMP edits, ratings, and instant text search.
 - Multi-selection tools: Checkboxes, Single select, Multi-select, Select All, None, Invert.
 - View modes: Detailed list view or visual thumbnail grid with adjustable sizes (Small, Medium, Large).
@@ -31,6 +31,8 @@ from PySide6.QtWidgets import (
 from core.config import AppConfig
 from core.drive_detector import format_size
 from core.xmp_sync import read_xmp_workflow_info
+from gui_qt.styles.icons import get_folder_icon, get_refresh_icon
+from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
 from gui_qt.workers.thumb_worker import ThumbnailSignals, ThumbnailTask
 from gui_qt.workers.transfer_worker import TransferWorker
 
@@ -105,7 +107,7 @@ class TransferItem:
 
 
 class TransferPaneWidget(QWidget):
-    """File browser pane with directory selection, filtering, view modes, and selection tools."""
+    """File browser pane with hierarchical directory tree, filtering, view modes, and selection tools."""
 
     folder_changed = Signal(str)
     selection_changed = Signal()
@@ -134,52 +136,90 @@ class TransferPaneWidget(QWidget):
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(4, 4, 4, 4)
-        main_layout.setSpacing(6)
+        main_layout.setContentsMargins(2, 2, 2, 2)
+        main_layout.setSpacing(4)
 
-        # Header Box with Title and Folder Selector
-        header_card = QFrame()
-        header_card.setObjectName("cardFrame")
-        header_card.setStyleSheet("background-color: #1e293b; border-radius: 6px; padding: 6px;")
-        card_layout = QVBoxLayout(header_card)
-        card_layout.setContentsMargins(6, 6, 6, 6)
-        card_layout.setSpacing(6)
+        # Vertical Splitter: Top = Verzeichnisbaum (Tree Widget), Bottom = Photo / File Content
+        self.pane_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.pane_splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: #334155;
+                height: 4px;
+            }
+        """)
 
-        # Title Label
-        title_box = QHBoxLayout()
+        # 1. Directory Tree Widget (Identical to Culling / Tab 2)
+        tree_title = f"VERZEICHNISSE ({'QUELLE' if self.is_source else 'ZIEL / NAS'})"
+        root_key = "transfer_source_dir" if self.is_source else "transfer_target_dir"
+        default_root = None
+        if not self.is_source:
+            if self.config.nas_archive_dir and Path(self.config.nas_archive_dir).exists():
+                default_root = Path(self.config.nas_archive_dir)
+            elif self.config.family_album_dir and Path(self.config.family_album_dir).exists():
+                default_root = Path(self.config.family_album_dir)
+
+        self.tree_widget = CullingDirectoryTreeWidget(
+            config=self.config,
+            parent=self,
+            title=tree_title,
+            config_root_key=root_key,
+            default_root=default_root,
+            show_collapse_btn=True
+        )
+        self.tree_widget.folder_selected.connect(self.load_folder)
+        self.tree_widget.collapse_panel_requested.connect(self._toggle_tree_visibility)
+        self.pane_splitter.addWidget(self.tree_widget)
+
+        # 2. Bottom Content Container: Active Folder Bar + Filter Toolbar + View Stack
+        content_container = QWidget()
+        content_layout = QVBoxLayout(content_container)
+        content_layout.setContentsMargins(2, 2, 2, 2)
+        content_layout.setSpacing(4)
+
+        # Active Folder Header Card
+        folder_card = QFrame()
+        folder_card.setStyleSheet("background-color: #1e293b; border-radius: 6px; padding: 4px;")
+        f_card_layout = QHBoxLayout(folder_card)
+        f_card_layout.setContentsMargins(6, 4, 6, 4)
+        f_card_layout.setSpacing(6)
+
         icon = "💻" if self.is_source else "💾"
-        self.lbl_title = QLabel(f"<b>{icon} {self.title_text}</b>")
-        self.lbl_title.setStyleSheet("font-size: 13px; color: #38bdf8;")
-        title_box.addWidget(self.lbl_title)
-        title_box.addStretch()
+        self.lbl_folder_header = QLabel(f"<b>{icon} Kein Ordner gewählt</b>")
+        self.lbl_folder_header.setStyleSheet("color: #38bdf8; font-size: 11px;")
+        f_card_layout.addWidget(self.lbl_folder_header, stretch=1)
+
+        self.btn_toggle_tree = QPushButton("📂 Baum")
+        self.btn_toggle_tree.setToolTip("Verzeichnisbaum oben ein- oder ausblenden")
+        self.btn_toggle_tree.setCheckable(True)
+        self.btn_toggle_tree.setChecked(True)
+        self.btn_toggle_tree.setStyleSheet("""
+            QPushButton {
+                background-color: #0f172a; border: 1px solid #334155;
+                border-radius: 4px; padding: 2px 8px; font-size: 10px; color: #94a3b8;
+            }
+            QPushButton:checked {
+                background-color: #0284c7; color: white; border-color: #38bdf8;
+            }
+        """)
+        self.btn_toggle_tree.clicked.connect(self._on_toggle_tree_clicked)
+        f_card_layout.addWidget(self.btn_toggle_tree)
+
+        self.btn_refresh = QPushButton()
+        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 12))
+        self.btn_refresh.setIconSize(QSize(12, 12))
+        self.btn_refresh.setFixedSize(26, 24)
+        self.btn_refresh.setToolTip("Ordnerinhalt neu laden")
+        self.btn_refresh.clicked.connect(self.refresh)
+        f_card_layout.addWidget(self.btn_refresh)
 
         # Quick access menu button
-        self.btn_quick = QPushButton("⚡ Schnellzugriff ▾")
-        self.btn_quick.setStyleSheet("font-size: 11px; padding: 3px 8px;")
+        self.btn_quick = QPushButton("⚡")
+        self.btn_quick.setToolTip("Schnellzugriff auf bekannte Ordner")
+        self.btn_quick.setFixedSize(26, 24)
         self.btn_quick.clicked.connect(self._show_quick_menu)
-        title_box.addWidget(self.btn_quick)
-        card_layout.addLayout(title_box)
+        f_card_layout.addWidget(self.btn_quick)
 
-        # Path input line + browse + refresh
-        path_box = QHBoxLayout()
-        path_box.setSpacing(4)
-        self.edit_path = QLineEdit()
-        self.edit_path.setPlaceholderText("Verzeichnis auswählen...")
-        self.edit_path.returnPressed.connect(self._on_path_entered)
-        path_box.addWidget(self.edit_path, 1)
-
-        self.btn_browse = QPushButton("📁 Durchsuchen...")
-        self.btn_browse.clicked.connect(self._browse_folder)
-        path_box.addWidget(self.btn_browse)
-
-        self.btn_refresh = QPushButton("🔄")
-        self.btn_refresh.setToolTip("Ordnerinhalt neu einlesen")
-        self.btn_refresh.setFixedWidth(32)
-        self.btn_refresh.clicked.connect(self.refresh)
-        path_box.addWidget(self.btn_refresh)
-        card_layout.addLayout(path_box)
-
-        main_layout.addWidget(header_card)
+        content_layout.addWidget(folder_card)
 
         # Filter & View Toolbar
         filter_card = QFrame()
@@ -211,7 +251,7 @@ class TransferPaneWidget(QWidget):
 
         btn_clear_filter = QPushButton("✖")
         btn_clear_filter.setToolTip("Filter zurücksetzen")
-        btn_clear_filter.setFixedWidth(26)
+        btn_clear_filter.setFixedWidth(24)
         btn_clear_filter.clicked.connect(self._clear_filters)
         f_row1.addWidget(btn_clear_filter)
 
@@ -221,7 +261,6 @@ class TransferPaneWidget(QWidget):
         f_row2 = QHBoxLayout()
         f_row2.setSpacing(6)
 
-        # Selection tools
         btn_sel_all = QPushButton("☑ Alle")
         btn_sel_all.setToolTip("Alle sichtbaren Dateien auswählen")
         btn_sel_all.clicked.connect(self.select_all)
@@ -263,7 +302,7 @@ class TransferPaneWidget(QWidget):
         f_row2.addWidget(self.combo_thumb_size)
 
         filter_layout.addLayout(f_row2)
-        main_layout.addWidget(filter_card)
+        content_layout.addWidget(filter_card)
 
         # Stacked Views (List View vs Thumbnail Grid)
         self.view_stack = QStackedWidget()
@@ -311,7 +350,25 @@ class TransferPaneWidget(QWidget):
         self._update_grid_item_size(140)
         self.view_stack.addWidget(self.list_grid)
 
-        main_layout.addWidget(self.view_stack, 1)
+        content_layout.addWidget(self.view_stack, 1)
+        self.pane_splitter.addWidget(content_container)
+
+        # Splitter sizing: ~220px tree at top, ~480px photo content below
+        self.pane_splitter.setSizes([220, 480])
+        self.pane_splitter.setStretchFactor(0, 0)
+        self.pane_splitter.setStretchFactor(1, 1)
+
+        main_layout.addWidget(self.pane_splitter)
+
+    def _toggle_tree_visibility(self):
+        """Toggles tree view visibility via collapse button in tree header."""
+        is_vis = not self.tree_widget.isVisible()
+        self.tree_widget.setVisible(is_vis)
+        self.btn_toggle_tree.setChecked(is_vis)
+
+    def _on_toggle_tree_clicked(self):
+        is_checked = self.btn_toggle_tree.isChecked()
+        self.tree_widget.setVisible(is_checked)
 
     def _show_quick_menu(self):
         """Displays quick folder navigation shortcuts."""
@@ -323,6 +380,7 @@ class TransferPaneWidget(QWidget):
         act_nas = menu.addAction("💾 NAS-Archiv")
         act_family = menu.addAction("👨‍👩‍👧‍👦 Familienalbum")
         menu.addSeparator()
+        act_browse = menu.addAction("📁 Beliebigen Ordner öffnen...")
         act_new_folder = menu.addAction("➕ Neuen Unterordner erstellen...")
 
         action = menu.exec(self.btn_quick.mapToGlobal(self.btn_quick.rect().bottomLeft()))
@@ -334,8 +392,20 @@ class TransferPaneWidget(QWidget):
             self.load_folder(Path(self.config.nas_archive_dir))
         elif action == act_family and self.config.family_album_dir:
             self.load_folder(Path(self.config.family_album_dir))
+        elif action == act_browse:
+            self._browse_folder()
         elif action == act_new_folder and self.current_folder:
             self._create_subfolder()
+
+    def _browse_folder(self):
+        start_dir = str(self.current_folder) if self.current_folder and self.current_folder.exists() else (
+            self.config.target_dir or str(Path.home())
+        )
+        folder = QFileDialog.getExistingDirectory(self, f"{self.title_text}: Ordner wählen", start_dir)
+        if folder:
+            p = Path(folder)
+            self.tree_widget.set_root_folder(p)
+            self.load_folder(p)
 
     def _create_subfolder(self):
         """Creates a new subfolder in the current directory."""
@@ -349,36 +419,26 @@ class TransferPaneWidget(QWidget):
             target = self.current_folder / name.strip()
             try:
                 target.mkdir(parents=True, exist_ok=True)
+                self.tree_widget.refresh()
                 self.load_folder(target)
             except Exception as e:
                 QMessageBox.critical(self, "Fehler", f"Ordner konnte nicht erstellt werden: {e}")
 
-    def _browse_folder(self):
-        start_dir = str(self.current_folder) if self.current_folder and self.current_folder.exists() else (
-            self.config.target_dir or str(Path.home())
-        )
-        folder = QFileDialog.getExistingDirectory(self, f"{self.title_text}: Ordner wählen", start_dir)
-        if folder:
-            self.load_folder(Path(folder))
-
-    def _on_path_entered(self):
-        text = self.edit_path.text().strip()
-        if text:
-            p = Path(text)
-            if p.exists() and p.is_dir():
-                self.load_folder(p)
-            else:
-                QMessageBox.warning(self, "Ordner nicht gefunden", f"Das angegebene Verzeichnis existiert nicht:\n{text}")
-
     def load_folder(self, folder: Path):
         """Scans the directory for media files and refreshes the views."""
         self.current_folder = Path(folder)
-        self.edit_path.setText(str(self.current_folder))
+        icon = "💻" if self.is_source else "💾"
+        self.lbl_folder_header.setText(f"<b>{icon} {self.current_folder.name}</b> <span style='color: #64748b;'>({self.current_folder})</span>")
+        self.lbl_folder_header.setToolTip(str(self.current_folder))
+
+        # Select corresponding node in directory tree
+        self.tree_widget.select_folder(self.current_folder)
+
         self.refresh()
         self.folder_changed.emit(str(self.current_folder))
 
     def refresh(self):
-        """Rescans current folder."""
+        """Rescans current folder and updates views."""
         self.all_items.clear()
         if not self.current_folder or not self.current_folder.exists():
             self.filtered_items.clear()
@@ -557,7 +617,6 @@ class TransferPaneWidget(QWidget):
         pixmap = QPixmap.fromImage(qimage)
         self._thumb_cache[path_str] = pixmap
 
-        # Update matching list item icon if present
         for idx in range(self.list_grid.count()):
             item = self.list_grid.item(idx)
             if item.data(Qt.ItemDataRole.UserRole) == path_str:
@@ -676,7 +735,7 @@ class TransferTabView(QWidget):
 
     def _init_ui(self):
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(8, 8, 8, 8)
+        main_layout.setContentsMargins(6, 6, 6, 6)
         main_layout.setSpacing(6)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -841,7 +900,9 @@ class TransferTabView(QWidget):
         """Loads default directories from configuration if not yet loaded."""
         if not self.pane_source.current_folder:
             src = Path(self.config.culling_last_folder) if (self.config.culling_last_folder and Path(self.config.culling_last_folder).exists()) else (
-                Path(self.config.target_dir) if (self.config.target_dir and Path(self.config.target_dir).exists()) else Path.home() / "Pictures"
+                Path(self.config.culling_root_folder) if (self.config.culling_root_folder and Path(self.config.culling_root_folder).exists()) else (
+                    Path(self.config.target_dir) if (self.config.target_dir and Path(self.config.target_dir).exists()) else Path.home() / "Pictures"
+                )
             )
             if src.exists():
                 self.pane_source.load_folder(src)
@@ -952,6 +1013,8 @@ class TransferTabView(QWidget):
         # Refresh both panes to reflect new state
         self.pane_source.refresh()
         self.pane_dest.refresh()
+        self.pane_source.tree_widget.refresh()
+        self.pane_dest.tree_widget.refresh()
 
         if error_cnt == 0:
             QMessageBox.information(

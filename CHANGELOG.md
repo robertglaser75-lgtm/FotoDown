@@ -3,6 +3,15 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.20.1] - 2026-11-08
+
+### Verbessert
+- **Einheitliche Verzeichnisauswahl im Schritt „3. Sichern & Archivieren“ identisch zu „Sichten & Sortieren“ ([`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py), [`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py)):**
+  - **Hierarchischer Verzeichnisbaum (`CullingDirectoryTreeWidget`):** Sowohl auf der Quellseite (Laptop) als auch auf der Zielseite (NAS/Speicher) ist nun exakt derselbe interaktive Verzeichnisbaum wie im Sichten-Tab integriert.
+  - **Live-Zähler pro Ordner:** Zeigt auch beim Übertragen für jedes Verzeichnis direkt die getrennten Bildzähler (`Bilder`, `RAW`, `JPG`) an.
+  - **Einstellbarer Einstiegspunkt & Navigation:** Freie Wahl des Basisordners via *„Einstiegspunkt...“*, Ausklappen/Einklappen (`+`/`-`), Aktualisieren (`🔄`) und direkte Ordnerauswahl per Mausklick.
+  - **Vertikaler Teiler (Splitter):** Flexibles Verschieben des Teilers zwischen Verzeichnisbaum und Bildansicht sowie 1-Klick-Schaltfläche zum Ein-/Ausblenden des Baums (*„📂 Baum“*) für maximale Bildhöhe.
+
 ## [0.20.0] - 2026-11-08
 
 ### Hinzugefügt

@@ -11,8 +11,9 @@ Lauffähig unter **Windows** und **Linux**.
 - 💾 **3. Hauptfunktion: Sichern & Archivieren (NAS- & Speicher-Transfer):**
   - **Drei-Phasen-Workflow:** Bequemes Umschalten zwischen *„📥 1. Importieren“*, *„👁️ 2. Sichten & Sortieren“* und *„💾 3. Sichern & Archivieren“*.
   - **2-geteilte Benutzeroberfläche (Dual-Pane):**
-    - **Links (Quelle / PC / Laptop):** Lokales Quellverzeichnis auswählen (mit Schnellzugriff auf Culling-Ordner, Import-Ziel und Bilderordner), Filter für Dateitypen (RAW, JPG, RAW+JPG, Videos, Bearbeitungen mit XMP) und Textsuchfeld.
-    - **Rechts (Ziel / Speicher / NAS / Album):** Zielverzeichnis auf dem NAS oder im Familienarchiv auswählen (inkl. Schnellzugriff auf NAS-Archiv, Familienalbum und Unterordner-Erstellung), identische Filter- und Darstellungsoptionen.
+    - **Identische Verzeichnisauswahl wie im Sichten-Tab:** Sowohl Quelle als auch Ziel verfügen über denselben interaktiven Verzeichnisbaum (`CullingDirectoryTreeWidget`) mit Anzeige von Gesamtzahl an Bildern (`Bilder`), Sensordaten (`RAW`) und Kompaktdateien (`JPEG`), Einstiegspunkt-Wahl und Klappfunktionen.
+    - **Links (Quelle / PC / Laptop):** Quellordner im Verzeichnisbaum wählen, Filter für Dateitypen (RAW, JPG, RAW+JPG, Videos, Bearbeitungen mit XMP) und Textsuchfeld.
+    - **Rechts (Ziel / Speicher / NAS / Album):** Zielordner im Verzeichnisbaum wählen (z.B. NAS-Archiv, Familienalbum oder Unterordner erstellen), identische Filter- und Darstellungsoptionen.
     - **Mitte (Aktionsspalte):** Richtungspfeil-Aktionen für *„▶ Kopieren (Auswahl)“*, *„➔ Verschieben (Auswahl)“*, *„▶▶ Alle kopieren“*, *„➔➔ Alle verschieben“* und *„⇄ Seiten tauschen“*.
   - **Flexible Anzeige & Markierungswerkzeuge:**
     - Umschalten zwischen tabellarischer **Listenansicht** und visueller **Vorschau-Kachelansicht** (Grid mit asynchronen Thumbnails).

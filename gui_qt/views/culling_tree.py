@@ -38,9 +38,21 @@ class CullingDirectoryTreeWidget(QWidget):
     root_changed = Signal(Path)
     collapse_panel_requested = Signal()
 
-    def __init__(self, config: AppConfig, parent=None):
+    def __init__(
+        self,
+        config: AppConfig,
+        parent=None,
+        title: str = "VERZEICHNISSE",
+        config_root_key: Optional[str] = "culling_root_folder",
+        default_root: Optional[Path] = None,
+        show_collapse_btn: bool = True
+    ):
         super().__init__(parent)
         self.config = config
+        self.title_text = title
+        self.config_root_key = config_root_key
+        self.default_root = default_root
+        self.show_collapse_btn = show_collapse_btn
         self.root_path: Optional[Path] = None
         self._init_ui()
         self._init_default_root()
@@ -65,7 +77,7 @@ class CullingDirectoryTreeWidget(QWidget):
         h_layout.setSpacing(6)
 
         title_row = QHBoxLayout()
-        lbl_title = QLabel("VERZEICHNISSE")
+        lbl_title = QLabel(self.title_text)
         lbl_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
         title_row.addWidget(lbl_title, stretch=1)
 
@@ -126,6 +138,7 @@ class CullingDirectoryTreeWidget(QWidget):
             }
             QPushButton:hover { background-color: #334155; }
         """)
+        self.btn_collapse_panel.setVisible(self.show_collapse_btn)
         self.btn_collapse_panel.clicked.connect(self.collapse_panel_requested.emit)
         title_row.addWidget(self.btn_collapse_panel)
 
@@ -222,7 +235,16 @@ class CullingDirectoryTreeWidget(QWidget):
     def _init_default_root(self):
         """Resolves initial entry point from config or common photo directories."""
         chosen = None
-        if self.config.culling_root_folder:
+        if self.default_root and self.default_root.exists() and self.default_root.is_dir():
+            chosen = self.default_root
+        elif self.config_root_key and hasattr(self.config, self.config_root_key):
+            val = getattr(self.config, self.config_root_key)
+            if val:
+                p = Path(val)
+                if p.exists() and p.is_dir():
+                    chosen = p
+
+        if not chosen and self.config.culling_root_folder:
             p = Path(self.config.culling_root_folder)
             if p.exists() and p.is_dir():
                 chosen = p
@@ -250,11 +272,12 @@ class CullingDirectoryTreeWidget(QWidget):
             return
 
         self.root_path = path
-        self.config.culling_root_folder = str(path)
-        try:
-            self.config.save()
-        except Exception:
-            pass
+        if self.config_root_key and hasattr(self.config, self.config_root_key):
+            setattr(self.config, self.config_root_key, str(path))
+            try:
+                self.config.save()
+            except Exception:
+                pass
 
         # Update label
         display_text = path.name if path.name else str(path)
@@ -427,7 +450,7 @@ class CullingDirectoryTreeWidget(QWidget):
 
         def search_node(item: QStandardItem) -> Optional[QStandardItem]:
             val = item.data(Qt.ItemDataRole.UserRole)
-            if val and Path(val).resolve() == Path(target_str):
+            if val and Path(val).resolve() == folder.resolve():
                 return item
             # Ensure children are loaded
             idx = self.model.indexFromItem(item)
