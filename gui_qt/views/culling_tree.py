@@ -54,6 +54,7 @@ class CullingDirectoryTreeWidget(QWidget):
         self.default_root = default_root
         self.show_collapse_btn = show_collapse_btn
         self.root_path: Optional[Path] = None
+        self._sort_descending: bool = False
         self._init_ui()
         self._init_default_root()
 
@@ -80,6 +81,19 @@ class CullingDirectoryTreeWidget(QWidget):
         lbl_title = QLabel(self.title_text)
         lbl_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
         title_row.addWidget(lbl_title, stretch=1)
+
+        self.btn_sort = QPushButton("↑")
+        self.btn_sort.setFixedSize(26, 24)
+        self.btn_sort.setToolTip("Ordner-Sortierung: Aufsteigend (A–Z) – Klicken für Absteigend")
+        self.btn_sort.setStyleSheet("""
+            QPushButton {
+                background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;
+                border-radius: 3px; font-weight: bold; font-size: 12px;
+            }
+            QPushButton:hover { background-color: #334155; color: #38bdf8; }
+        """)
+        self.btn_sort.clicked.connect(self._toggle_sort_order)
+        title_row.addWidget(self.btn_sort)
 
         self.btn_refresh = QPushButton()
         self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 14))
@@ -287,6 +301,17 @@ class CullingDirectoryTreeWidget(QWidget):
         self.refresh()
         self.root_changed.emit(path)
 
+    def _toggle_sort_order(self):
+        """Toggles ascending/descending directory sorting and rebuilds the tree."""
+        self._sort_descending = not self._sort_descending
+        if self._sort_descending:
+            self.btn_sort.setText("↓")
+            self.btn_sort.setToolTip("Ordner-Sortierung: Absteigend (Z–A) – Klicken für Aufsteigend")
+        else:
+            self.btn_sort.setText("↑")
+            self.btn_sort.setToolTip("Ordner-Sortierung: Aufsteigend (A–Z) – Klicken für Absteigend")
+        self.refresh()
+
     def refresh(self):
         """Re-scans the directory tree from the root path."""
         self.model.removeRows(0, self.model.rowCount())
@@ -374,7 +399,7 @@ class CullingDirectoryTreeWidget(QWidget):
                             subdirs.append(Path(entry.path))
                     except OSError:
                         continue
-            subdirs.sort(key=lambda p: p.name.lower())
+            subdirs.sort(key=lambda p: p.name.lower(), reverse=self._sort_descending)
         except (PermissionError, OSError):
             return
 

@@ -129,6 +129,8 @@ class TransferPaneWidget(QWidget):
         self._checked_paths: Set[str] = set()
         self._thumb_cache: Dict[str, QPixmap] = {}
         self._last_tree_width: int = 230
+        self._last_files_width: int = 500
+        self._show_files: bool = True
 
         self._thumb_signals = ThumbnailSignals()
         self._thumb_signals.thumbnail_ready.connect(self._on_thumbnail_ready)
@@ -139,6 +141,61 @@ class TransferPaneWidget(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(2, 2, 2, 2)
         main_layout.setSpacing(4)
+
+        # Top Active Folder Header Card (Always visible above splitter so Tree & Files toggles remain accessible)
+        folder_card = QFrame()
+        folder_card.setStyleSheet("background-color: #1e293b; border-radius: 6px; padding: 4px;")
+        f_card_layout = QHBoxLayout(folder_card)
+        f_card_layout.setContentsMargins(6, 4, 6, 4)
+        f_card_layout.setSpacing(6)
+
+        icon = "💻" if self.is_source else "💾"
+        self.lbl_folder_header = QLabel(f"<b>{icon} Kein Ordner gewählt</b>")
+        self.lbl_folder_header.setStyleSheet("color: #38bdf8; font-size: 11px;")
+        f_card_layout.addWidget(self.lbl_folder_header, stretch=1)
+
+        toggle_btn_style = """
+            QPushButton {
+                background-color: #0f172a; border: 1px solid #334155;
+                border-radius: 4px; padding: 2px 8px; font-size: 10px; color: #94a3b8;
+            }
+            QPushButton:checked {
+                background-color: #0284c7; color: white; border-color: #38bdf8;
+            }
+        """
+
+        self.btn_toggle_tree = QPushButton("📂 Baum")
+        self.btn_toggle_tree.setToolTip("Verzeichnisbaum links ein- oder ausblenden")
+        self.btn_toggle_tree.setCheckable(True)
+        self.btn_toggle_tree.setChecked(True)
+        self.btn_toggle_tree.setStyleSheet(toggle_btn_style)
+        self.btn_toggle_tree.clicked.connect(self._on_toggle_tree_clicked)
+        f_card_layout.addWidget(self.btn_toggle_tree)
+
+        self.btn_toggle_files = QPushButton("📄 Dateien")
+        self.btn_toggle_files.setToolTip("Anzeige der Dateien in den Ordnern ein- oder ausschalten")
+        self.btn_toggle_files.setCheckable(True)
+        self.btn_toggle_files.setChecked(True)
+        self.btn_toggle_files.setStyleSheet(toggle_btn_style)
+        self.btn_toggle_files.clicked.connect(self._on_toggle_files_clicked)
+        f_card_layout.addWidget(self.btn_toggle_files)
+
+        self.btn_refresh = QPushButton()
+        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 12))
+        self.btn_refresh.setIconSize(QSize(12, 12))
+        self.btn_refresh.setFixedSize(26, 24)
+        self.btn_refresh.setToolTip("Ordnerinhalt neu laden")
+        self.btn_refresh.clicked.connect(self.refresh)
+        f_card_layout.addWidget(self.btn_refresh)
+
+        # Quick access menu button
+        self.btn_quick = QPushButton("⚡")
+        self.btn_quick.setToolTip("Schnellzugriff auf bekannte Ordner")
+        self.btn_quick.setFixedSize(26, 24)
+        self.btn_quick.clicked.connect(self._show_quick_menu)
+        f_card_layout.addWidget(self.btn_quick)
+
+        main_layout.addWidget(folder_card)
 
         # Horizontal Splitter: Left = Verzeichnisbaum (Tree Widget), Right = Photo / File Content
         self.pane_splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -178,85 +235,34 @@ class TransferPaneWidget(QWidget):
         self.tree_widget.collapse_panel_requested.connect(self._toggle_tree_visibility)
         self.pane_splitter.addWidget(self.tree_widget)
 
-        # 2. Content Container: Active Folder Bar + Filter Toolbar + View Stack
-        content_container = QWidget()
-        content_container.setMinimumWidth(180)
-        content_layout = QVBoxLayout(content_container)
+        # 2. Files Container: Filter Toolbar + Sort Controls + View Stack
+        self.files_container = QWidget()
+        self.files_container.setMinimumWidth(180)
+        content_layout = QVBoxLayout(self.files_container)
         content_layout.setContentsMargins(2, 2, 2, 2)
         content_layout.setSpacing(4)
 
-        # Active Folder Header Card
-        folder_card = QFrame()
-        folder_card.setStyleSheet("background-color: #1e293b; border-radius: 6px; padding: 4px;")
-        f_card_layout = QHBoxLayout(folder_card)
-        f_card_layout.setContentsMargins(6, 4, 6, 4)
-        f_card_layout.setSpacing(6)
-
-        icon = "💻" if self.is_source else "💾"
-        self.lbl_folder_header = QLabel(f"<b>{icon} Kein Ordner gewählt</b>")
-        self.lbl_folder_header.setStyleSheet("color: #38bdf8; font-size: 11px;")
-        f_card_layout.addWidget(self.lbl_folder_header, stretch=1)
-
-        self.btn_toggle_tree = QPushButton("📂 Baum")
-        self.btn_toggle_tree.setToolTip("Verzeichnisbaum links ein- oder ausblenden")
-        self.btn_toggle_tree.setCheckable(True)
-        self.btn_toggle_tree.setChecked(True)
-        self.btn_toggle_tree.setStyleSheet("""
-            QPushButton {
-                background-color: #0f172a; border: 1px solid #334155;
-                border-radius: 4px; padding: 2px 8px; font-size: 10px; color: #94a3b8;
-            }
-            QPushButton:checked {
-                background-color: #0284c7; color: white; border-color: #38bdf8;
-            }
-        """)
-        self.btn_toggle_tree.clicked.connect(self._on_toggle_tree_clicked)
-        f_card_layout.addWidget(self.btn_toggle_tree)
-
-        self.btn_refresh = QPushButton()
-        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 12))
-        self.btn_refresh.setIconSize(QSize(12, 12))
-        self.btn_refresh.setFixedSize(26, 24)
-        self.btn_refresh.setToolTip("Ordnerinhalt neu laden")
-        self.btn_refresh.clicked.connect(self.refresh)
-        f_card_layout.addWidget(self.btn_refresh)
-
-        # Quick access menu button
-        self.btn_quick = QPushButton("⚡")
-        self.btn_quick.setToolTip("Schnellzugriff auf bekannte Ordner")
-        self.btn_quick.setFixedSize(26, 24)
-        self.btn_quick.clicked.connect(self._show_quick_menu)
-        f_card_layout.addWidget(self.btn_quick)
-
-        content_layout.addWidget(folder_card)
-
-        # Filter & View Toolbar
+        # Filter, Sort & View Toolbar
         filter_card = QFrame()
         filter_card.setStyleSheet("background-color: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 4px;")
         filter_layout = QVBoxLayout(filter_card)
         filter_layout.setContentsMargins(6, 4, 6, 4)
         filter_layout.setSpacing(4)
 
-        # Row 1: Format & Status Filters + Search
+        # Row 1: Search & Type Filter
         f_row1 = QHBoxLayout()
         f_row1.setSpacing(6)
+
+        self.edit_search = QLineEdit()
+        self.edit_search.setPlaceholderText("🔍 Dateiname filtern...")
+        self.edit_search.textChanged.connect(self.apply_filter)
+        f_row1.addWidget(self.edit_search, 1)
 
         f_row1.addWidget(QLabel("Typ:"))
         self.combo_type = QComboBox()
         self.combo_type.addItems(["Alle Medien", "Nur RAW", "Nur JPG", "RAW + JPG", "Nur Videos", "Mit XMP / Bearbeitung"])
         self.combo_type.currentIndexChanged.connect(self.apply_filter)
         f_row1.addWidget(self.combo_type)
-
-        f_row1.addWidget(QLabel("Status:"))
-        self.combo_status = QComboBox()
-        self.combo_status.addItems(["Alle Status", "Bearbeitet", "SOOC (Unbearb.)", "Bewertet (★+)"])
-        self.combo_status.currentIndexChanged.connect(self.apply_filter)
-        f_row1.addWidget(self.combo_status)
-
-        self.edit_search = QLineEdit()
-        self.edit_search.setPlaceholderText("🔍 Dateiname filtern...")
-        self.edit_search.textChanged.connect(self.apply_filter)
-        f_row1.addWidget(self.edit_search, 1)
 
         btn_clear_filter = QPushButton("✖")
         btn_clear_filter.setToolTip("Filter zurücksetzen")
@@ -266,7 +272,47 @@ class TransferPaneWidget(QWidget):
 
         filter_layout.addLayout(f_row1)
 
-        # Row 2: Selection tools & View Mode switcher
+        # Row 2: Status Filter & Sort Order Controls
+        f_row_sort = QHBoxLayout()
+        f_row_sort.setSpacing(6)
+
+        f_row_sort.addWidget(QLabel("Status:"))
+        self.combo_status = QComboBox()
+        self.combo_status.addItems(["Alle Status", "Bearbeitet", "SOOC (Unbearb.)", "Bewertet (★+)"])
+        self.combo_status.currentIndexChanged.connect(self.apply_filter)
+        f_row_sort.addWidget(self.combo_status)
+
+        f_row_sort.addStretch()
+
+        f_row_sort.addWidget(QLabel("Sortierung:"))
+        self.combo_sort = QComboBox()
+        self.combo_sort.addItem("Name", "name")
+        self.combo_sort.addItem("Datum", "mtime")
+        self.combo_sort.addItem("Größe", "size")
+        self.combo_sort.addItem("Dateityp", "type")
+        self.combo_sort.addItem("Bewertung (★)", "rating")
+        self.combo_sort.currentIndexChanged.connect(self.apply_filter)
+        f_row_sort.addWidget(self.combo_sort)
+
+        self.btn_sort_dir = QPushButton("↑ Auf.")
+        self.btn_sort_dir.setCheckable(True)
+        self.btn_sort_dir.setChecked(False)
+        self.btn_sort_dir.setToolTip("Sortierreihenfolge wechseln (Aufsteigend / Absteigend)")
+        self.btn_sort_dir.setStyleSheet("""
+            QPushButton {
+                background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;
+                border-radius: 4px; padding: 2px 8px; font-size: 10px;
+            }
+            QPushButton:checked {
+                background-color: #0284c7; color: white; border-color: #38bdf8;
+            }
+        """)
+        self.btn_sort_dir.clicked.connect(self._on_sort_dir_toggled)
+        f_row_sort.addWidget(self.btn_sort_dir)
+
+        filter_layout.addLayout(f_row_sort)
+
+        # Row 3: Selection tools & View Mode switcher
         f_row2 = QHBoxLayout()
         f_row2.setSpacing(6)
 
@@ -322,6 +368,7 @@ class TransferPaneWidget(QWidget):
         self.table_view.setHorizontalHeaderLabels(["Markiert", "Dateiname", "Typ", "Größe", "Änderungsdatum", "Status / XMP"])
         self.table_view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table_view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_view.horizontalHeader().sectionClicked.connect(self._on_table_header_clicked)
         self.table_view.setAlternatingRowColors(True)
         self.table_view.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table_view.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
@@ -360,24 +407,25 @@ class TransferPaneWidget(QWidget):
         self.view_stack.addWidget(self.list_grid)
 
         content_layout.addWidget(self.view_stack, 1)
-        self.pane_splitter.addWidget(content_container)
+        self.pane_splitter.addWidget(self.files_container)
 
         # Splitter sizing: Left = ~240px tree on left side, Right = photo content gets remaining space
         self.pane_splitter.setSizes([240, 500])
         self.pane_splitter.setStretchFactor(0, 0)
         self.pane_splitter.setStretchFactor(1, 1)
 
-        main_layout.addWidget(self.pane_splitter)
+        main_layout.addWidget(self.pane_splitter, 1)
 
     def _on_splitter_moved(self, pos: int, index: int):
-        """Stores valid non-zero tree width and keeps toggle button state synced."""
+        """Stores valid non-zero widths and keeps toggle buttons synced."""
         sizes = self.pane_splitter.sizes()
-        if sizes and sizes[0] > 0:
-            self._last_tree_width = sizes[0]
-            if not self.btn_toggle_tree.isChecked():
-                self.btn_toggle_tree.setChecked(True)
-        elif sizes and sizes[0] == 0:
-            self.btn_toggle_tree.setChecked(False)
+        if len(sizes) >= 2:
+            if sizes[0] > 0:
+                self._last_tree_width = sizes[0]
+            if sizes[1] > 0:
+                self._last_files_width = sizes[1]
+            self.btn_toggle_tree.setChecked(sizes[0] > 0 and not self.tree_widget.isHidden())
+            self.btn_toggle_files.setChecked(sizes[1] > 0 and not self.files_container.isHidden())
 
     def _set_tree_visible(self, visible: bool):
         """Shows or hides the directory tree and ensures non-zero splitter sizing on restore."""
@@ -391,8 +439,12 @@ class TransferPaneWidget(QWidget):
             self.tree_widget.setVisible(True)
             self.btn_toggle_tree.setChecked(True)
             restore_w = max(180, self._last_tree_width)
-            total_w = max(restore_w + 220, sum(self.pane_splitter.sizes()), self.width())
-            self.pane_splitter.setSizes([restore_w, max(180, total_w - restore_w)])
+            files_w = max(180, self._last_files_width) if self._show_files else 0
+            total_w = max(restore_w + files_w, sum(self.pane_splitter.sizes()), self.width())
+            if self._show_files:
+                self.pane_splitter.setSizes([restore_w, max(180, total_w - restore_w)])
+            else:
+                self.pane_splitter.setSizes([total_w, 0])
 
     def _toggle_tree_visibility(self):
         """Toggles tree view visibility via collapse button in tree header."""
@@ -402,6 +454,52 @@ class TransferPaneWidget(QWidget):
 
     def _on_toggle_tree_clicked(self):
         self._set_tree_visible(self.btn_toggle_tree.isChecked())
+
+    def _set_files_visible(self, visible: bool):
+        """Shows or hides the file listing/preview area for folders."""
+        self._show_files = bool(visible)
+        self.btn_toggle_files.setChecked(self._show_files)
+        if not self._show_files:
+            sizes = self.pane_splitter.sizes()
+            if len(sizes) >= 2 and sizes[1] > 0:
+                self._last_files_width = sizes[1]
+            self.files_container.setVisible(False)
+        else:
+            self.files_container.setVisible(True)
+            restore_files_w = max(220, self._last_files_width)
+            tree_w = max(160, self._last_tree_width) if not self.tree_widget.isHidden() else 0
+            total_w = max(tree_w + restore_files_w, sum(self.pane_splitter.sizes()), self.width())
+            if not self.tree_widget.isHidden():
+                self.pane_splitter.setSizes([max(140, total_w - restore_files_w), restore_files_w])
+            else:
+                self.pane_splitter.setSizes([0, total_w])
+            self.refresh(force_scan=True)
+
+    def _on_toggle_files_clicked(self):
+        self._set_files_visible(self.btn_toggle_files.isChecked())
+
+    def _on_sort_dir_toggled(self):
+        """Updates sort direction label and re-sorts current items."""
+        is_desc = self.btn_sort_dir.isChecked()
+        self.btn_sort_dir.setText("↓ Ab." if is_desc else "↑ Auf.")
+        self.apply_filter()
+
+    def _on_table_header_clicked(self, column: int):
+        """Allows sorting both list and preview views by clicking table column headers."""
+        col_map = {1: "name", 2: "type", 3: "size", 4: "mtime", 5: "rating"}
+        sort_key = col_map.get(column)
+        if not sort_key:
+            return
+        if self.combo_sort.currentData() == sort_key:
+            self.btn_sort_dir.setChecked(not self.btn_sort_dir.isChecked())
+        else:
+            idx = self.combo_sort.findData(sort_key)
+            if idx >= 0:
+                self.combo_sort.blockSignals(True)
+                self.combo_sort.setCurrentIndex(idx)
+                self.combo_sort.blockSignals(False)
+            self.btn_sort_dir.setChecked(False)
+        self._on_sort_dir_toggled()
 
     def _show_quick_menu(self):
         """Displays quick folder navigation shortcuts."""
@@ -470,12 +568,18 @@ class TransferPaneWidget(QWidget):
         self.refresh()
         self.folder_changed.emit(str(self.current_folder))
 
-    def refresh(self):
-        """Rescans current folder and updates views."""
+    def refresh(self, force_scan: bool = False):
+        """Rescans current folder and updates views (unless file display is turned off)."""
         self.all_items.clear()
         if not self.current_folder or not self.current_folder.exists():
             self.filtered_items.clear()
             self._checked_paths.clear()
+            self._populate_views()
+            self._update_selection_counter()
+            return
+
+        if not self._show_files and not force_scan:
+            self.filtered_items.clear()
             self._populate_views()
             self._update_selection_counter()
             return
@@ -490,12 +594,28 @@ class TransferPaneWidget(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "Lesefehler", f"Konnte Ordner nicht lesen: {e}")
 
-        # Sort naturally by name
-        self.all_items.sort(key=lambda it: it.name.lower())
         self.apply_filter()
 
+    def _sort_items(self, items: List[TransferItem]) -> List[TransferItem]:
+        """Sorts filtered items according to selected sort field and direction."""
+        sort_key = self.combo_sort.currentData() or "name"
+        descending = self.btn_sort_dir.isChecked()
+
+        if sort_key == "mtime":
+            key_fn = lambda it: (it.mtime, it.name.lower())
+        elif sort_key == "size":
+            key_fn = lambda it: (it.size, it.name.lower())
+        elif sort_key == "type":
+            key_fn = lambda it: (it.extension.lower(), it.name.lower())
+        elif sort_key == "rating":
+            key_fn = lambda it: (it.rating, 1 if it.has_xmp else 0, it.name.lower())
+        else:  # "name"
+            key_fn = lambda it: it.name.lower()
+
+        return sorted(items, key=key_fn, reverse=descending)
+
     def apply_filter(self):
-        """Applies format, status, and text search filters."""
+        """Applies format, status, text search filters, and active sort order."""
         query = self.edit_search.text().strip().lower()
         type_idx = self.combo_type.currentIndex()
         status_idx = self.combo_status.currentIndex()
@@ -528,7 +648,7 @@ class TransferPaneWidget(QWidget):
 
             filtered.append(it)
 
-        self.filtered_items = filtered
+        self.filtered_items = self._sort_items(filtered)
         self._populate_views()
         self._update_selection_counter()
 
@@ -752,8 +872,10 @@ class TransferPaneWidget(QWidget):
                     paths.append(Path(p))
         return paths
 
-    def get_all_filtered_paths(self) -> List[Path]:
-        """Returns all paths matching the current filter."""
+    def get_all_filtered_paths(self, scan_if_hidden: bool = True) -> List[Path]:
+        """Returns all paths matching the current filter (optionally scanning on demand when files view is hidden)."""
+        if not self._show_files and scan_if_hidden and not self.all_items and self.current_folder and self.current_folder.exists():
+            self.refresh(force_scan=True)
         return [it.path for it in self.filtered_items if it.path.exists()]
 
 
@@ -965,7 +1087,10 @@ class TransferTabView(QWidget):
 
     def _update_action_states(self):
         has_sel = len(self.pane_source.get_effective_selected_paths()) > 0
-        has_filtered = len(self.pane_source.get_all_filtered_paths()) > 0
+        has_filtered = (
+            len(self.pane_source.get_all_filtered_paths(scan_if_hidden=False)) > 0
+            or (not self.pane_source._show_files and bool(self.pane_source.current_folder and self.pane_source.current_folder.exists()))
+        )
         has_dest = bool(self.pane_dest.current_folder and self.pane_dest.current_folder.exists())
 
         self.btn_copy_sel.setEnabled(has_sel and has_dest)

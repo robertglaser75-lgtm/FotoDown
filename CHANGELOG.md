@@ -3,6 +3,20 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.21.0] - 2026-11-10
+
+### Hinzugefügt
+- **Ein-/Ausschaltbare Dateianzeige und flexible Sortierreihenfolge ([`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py), [`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py)):**
+  - **Dateianzeige in den Ordnern ein-/ausschalten (*„📄 Dateien“*):**
+    - Sowohl auf der Quell- als auch auf der Zielseite (NAS) lässt sich der Dateibereich in der oberen Ordnerleiste per Klick auf *„📄 Dateien“* ein- oder ausblenden.
+    - Beim Ausblenden erweitert sich der Verzeichnisbaum auf die volle Breite der jeweiligen Seite, und unnötiges Scannen großer Ordner (z. B. beim reinen Navigieren durch NAS-Zielordner) wird übersprungen. Beim Wiedereinschalten werden die Dateien sofort geladen; *„Alle kopieren / verschieben“* scannt bei Bedarf automatisch.
+  - **Frei wählbare Sortierreihenfolge für Dateien (Listen- & Vorschauansicht):**
+    - Auswahlfeld *„Sortierung“*: Sortieren nach **Name**, **Datum (Änderung)**, **Größe**, **Dateityp** oder **Bewertung (★)**.
+    - Umschaltbutton **„↑ Auf.“ / „↓ Ab.“** für aufsteigende oder absteigende Reihenfolge – wirkt synchron auf Tabellen- und Kachel-Vorschau.
+    - Klicks auf die Spaltenüberschriften in der Listenansicht aktualisieren Sortierkriterium und -richtung direkt mit.
+  - **Sortierreihenfolge im Verzeichnisbaum (`CullingDirectoryTreeWidget`):**
+    - Neue Schaltfläche **„↑“ / „↓“** im Verzeichnisbaum-Header (sowohl in *2. Sichten & Sortieren* als auch in *3. Sichern & Archivieren*) zum Umschalten der Ordnersortierung zwischen Aufsteigend (A–Z) und Absteigend (Z–A).
+
 ## [0.20.3] - 2026-11-10
 
 ### Behoben

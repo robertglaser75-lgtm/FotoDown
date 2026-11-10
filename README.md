@@ -15,7 +15,9 @@ Lauffähig unter **Windows** und **Linux**.
     - **Links (Quelle / PC / Laptop):** Verzeichnisbaum (`CullingDirectoryTreeWidget`) auf der linken Seite; rechts daneben die Quellbilder mit Filtern für Dateitypen (RAW, JPG, RAW+JPG, Videos, Bearbeitungen mit XMP) und Textsuchfeld.
     - **Rechts (Ziel / Speicher / NAS / Album):** Verzeichnisbaum auf der linken Seite der Sicherungshälfte; rechts daneben die Zielbilder mit identischen Filter- und Darstellungsoptionen.
     - **Mitte (Aktionsspalte):** Richtungspfeil-Aktionen für *„▶ Kopieren (Auswahl)“*, *„➔ Verschieben (Auswahl)“*, *„▶▶ Alle kopieren“*, *„➔➔ Alle verschieben“* und *„⇄ Seiten tauschen“*.
-  - **Flexible Anzeige & Markierungswerkzeuge:**
+  - **Flexible Anzeige, Sortierung & Markierungswerkzeuge:**
+    - Ein- und ausschaltbare **Dateianzeige** (*„📄 Dateien“*) sowie ein-/ausklappbarer Verzeichnisbaum (*„📂 Baum“*) auf beiden Seiten.
+    - Frei wählbare **Sortierreihenfolge** für Dateien (*Name*, *Datum*, *Größe*, *Dateityp*, *Bewertung*) sowie Auf-/Absteigend-Umschaltung – synchron für Listen- und Kachelansicht (inkl. Spaltenklick in der Tabelle) sowie Auf-/Absteigend-Sortierung im Verzeichnisbaum (`↑` / `↓`).
     - Umschalten zwischen tabellarischer **Listenansicht** und visueller **Vorschau-Kachelansicht** (Grid mit asynchronen Thumbnails).
     - Anpassbare Thumbnail-Größen (*Klein 80px*, *Mittel 140px*, *Groß 200px*).
     - Schnellauswahl mit *☑ Alle*, *☐ Keine*, *🔄 Invertieren* sowie Checkboxen und Mehrfachauswahl mit Byte- und Zählanzeige.

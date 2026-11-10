@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.20.3")
+        self.assertEqual(__version__, "0.21.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1942,10 +1942,10 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir = Path(tmpdir)
-            (test_dir / "pic1.jpg").write_text("jpg1")
-            (test_dir / "pic2.orf").write_text("raw2")
+            (test_dir / "pic1.jpg").write_text("jpg1")                 # 4 bytes
+            (test_dir / "pic2.orf").write_text("raw2_longer")          # 11 bytes
             (test_dir / "pic2.orf.xmp").write_text("xmp2")
-            (test_dir / "movie.mp4").write_text("video")
+            (test_dir / "movie.mp4").write_text("video_much_longer")   # 17 bytes
             (test_dir / "notes.txt").write_text("text")
 
             cfg = AppConfig()
@@ -1969,8 +1969,36 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             self.assertTrue(pane.btn_toggle_tree.isChecked())
             self.assertGreater(pane.pane_splitter.sizes()[0], 0)
 
+            # Toggle file display OFF and ON -> must hide/show files_container & preserve tree
+            pane._set_files_visible(False)
+            self.assertFalse(pane.files_container.isVisible())
+            self.assertFalse(pane.btn_toggle_files.isChecked())
+            self.assertFalse(pane._show_files)
+            # Even when hidden, get_all_filtered_paths can resolve files on demand
+            self.assertEqual(len(pane.get_all_filtered_paths(scan_if_hidden=True)), 3)
+
+            pane._set_files_visible(True)
+            self.assertTrue(pane.files_container.isVisible())
+            self.assertTrue(pane.btn_toggle_files.isChecked())
+            self.assertTrue(pane._show_files)
+
             # Only media files should be listed (pic1.jpg, pic2.orf, movie.mp4) - not notes.txt or xmp
             self.assertEqual(len(pane.all_items), 3)
+
+            # Test sorting by name ascending / descending
+            self.assertEqual([it.name for it in pane.filtered_items], ["movie.mp4", "pic1.jpg", "pic2.orf"])
+            pane.btn_sort_dir.setChecked(True)
+            pane._on_sort_dir_toggled()
+            self.assertEqual([it.name for it in pane.filtered_items], ["pic2.orf", "pic1.jpg", "movie.mp4"])
+
+            # Test sorting by size ascending via header click (column 3 = Größe)
+            pane._on_table_header_clicked(3)
+            self.assertEqual(pane.combo_sort.currentData(), "size")
+            self.assertFalse(pane.btn_sort_dir.isChecked())
+            self.assertEqual([it.name for it in pane.filtered_items], ["pic1.jpg", "pic2.orf", "movie.mp4"])
+
+            # Reset sort to Name ascending
+            pane._on_table_header_clicked(1)
 
             # Test search filter
             pane.edit_search.setText("pic1")
@@ -2037,6 +2065,39 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             win._drive_watcher.stop()
             win._drive_watcher.wait(1000)
         win.close()
+        win.deleteLater()
+        _app.processEvents()
+
+    def test_culling_directory_tree_sorting(self):
+        import tempfile
+        from pathlib import Path
+        from core.config import AppConfig
+        from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "2024_Alpha").mkdir()
+            (root / "2025_Beta").mkdir()
+            (root / "2026_Gamma").mkdir()
+
+            cfg = AppConfig()
+            tree = CullingDirectoryTreeWidget(cfg, config_root_key=None, default_root=root)
+
+            root_item = tree.model.item(0, 0)
+            names_asc = [root_item.child(r, 0).text() for r in range(root_item.rowCount())]
+            self.assertEqual(names_asc, ["2024_Alpha", "2025_Beta", "2026_Gamma"])
+            self.assertEqual(tree.btn_sort.text(), "↑")
+
+            # Toggle sort to descending
+            tree._toggle_sort_order()
+            root_item_desc = tree.model.item(0, 0)
+            names_desc = [root_item_desc.child(r, 0).text() for r in range(root_item_desc.rowCount())]
+            self.assertEqual(names_desc, ["2026_Gamma", "2025_Beta", "2024_Alpha"])
+            self.assertEqual(tree.btn_sort.text(), "↓")
+
+            tree.close()
+            tree.deleteLater()
+            _app.processEvents()
 
 
 if __name__ == "__main__":
