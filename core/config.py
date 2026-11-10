@@ -127,6 +127,10 @@ class AppConfig:
     family_album_pattern: str = "0001_Unsere_Fotos/{YYYY}/{MM}"
     transfer_source_dir: str = ""
     transfer_target_dir: str = ""
+    # Verzeichnisbaum Spalten-Optionen
+    tree_show_col_bilder: bool = True
+    tree_show_col_raw: bool = True
+    tree_show_col_jpg: bool = True
     # Einzelansicht Anzeige-Optionen
     single_view_show_filename: bool = True
     single_view_show_extension: bool = True

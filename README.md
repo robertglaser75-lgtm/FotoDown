@@ -10,17 +10,16 @@ Lauffähig unter **Windows** und **Linux**.
 
 - 💾 **3. Hauptfunktion: Sichern & Archivieren (NAS- & Speicher-Transfer):**
   - **Drei-Phasen-Workflow:** Bequemes Umschalten zwischen *„📥 1. Importieren“*, *„👁️ 2. Sichten & Sortieren“* und *„💾 3. Sichern & Archivieren“*.
-  - **2-geteilte Benutzeroberfläche (Dual-Pane):**
-    - **Identische Verzeichnisauswahl wie im Sichten-Tab:** Sowohl Quelle als auch Ziel verfügen über denselben interaktiven Verzeichnisbaum (`CullingDirectoryTreeWidget`) mit Anzeige von Gesamtzahl an Bildern (`Bilder`), Sensordaten (`RAW`) und Kompaktdateien (`JPEG`), Einstiegspunkt-Wahl und Klappfunktionen.
+  - **2-geteilte Benutzeroberfläche (Dual-Pane, Laptop-optimiert):**
+    - **Identische Verzeichnisauswahl wie im Sichten-Tab:** Sowohl Quelle als auch Ziel verfügen über denselben interaktiven Verzeichnisbaum (`CullingDirectoryTreeWidget`) mit optional ein-/ausschaltbaren Bildzähler-Spalten (`Bilder`, `RAW`, `JPG`), Einstiegspunkt-Wahl und Klappfunktionen.
     - **Links (Quelle / PC / Laptop):** Verzeichnisbaum (`CullingDirectoryTreeWidget`) auf der linken Seite; rechts daneben die Quellbilder mit Filtern für Dateitypen (RAW, JPG, RAW+JPG, Videos, Bearbeitungen mit XMP) und Textsuchfeld.
     - **Rechts (Ziel / Speicher / NAS / Album):** Verzeichnisbaum auf der linken Seite der Sicherungshälfte; rechts daneben die Zielbilder mit identischen Filter- und Darstellungsoptionen.
-    - **Mitte (Aktionsspalte):** Richtungspfeil-Aktionen für *„▶ Kopieren (Auswahl)“*, *„➔ Verschieben (Auswahl)“*, *„▶▶ Alle kopieren“*, *„➔➔ Alle verschieben“* und *„⇄ Seiten tauschen“*.
+    - **Mitte (Aktionsspalte):** Kompakte Richtungspfeil-Aktionen mit Vektor-Icons für *„Kopieren“*, *„Verschieben“*, *„Alle kopieren“*, *„Alle versch.“* und *„Tauschen“*.
   - **Flexible Anzeige, Sortierung & Markierungswerkzeuge:**
-    - Ein- und ausschaltbare **Dateianzeige** (*„📄 Dateien“*) sowie ein-/ausklappbarer Verzeichnisbaum (*„📂 Baum“*) auf beiden Seiten.
-    - Frei wählbare **Sortierreihenfolge** für Dateien (*Name*, *Datum*, *Größe*, *Dateityp*, *Bewertung*) sowie Auf-/Absteigend-Umschaltung – synchron für Listen- und Kachelansicht (inkl. Spaltenklick in der Tabelle) sowie Auf-/Absteigend-Sortierung im Verzeichnisbaum (`↑` / `↓`).
-    - Umschalten zwischen tabellarischer **Listenansicht** und visueller **Vorschau-Kachelansicht** (Grid mit asynchronen Thumbnails).
-    - Anpassbare Thumbnail-Größen (*Klein 80px*, *Mittel 140px*, *Groß 200px*).
-    - Schnellauswahl mit *☑ Alle*, *☐ Keine*, *🔄 Invertieren* sowie Checkboxen und Mehrfachauswahl mit Byte- und Zählanzeige.
+    - Ein- und ausschaltbare **Dateianzeige** (*„Dateien“*) sowie ein-/ausklappbarer Verzeichnisbaum (*„Baum“*) auf beiden Seiten.
+    - Frei wählbare **Sortierreihenfolge** für Dateien (*Name*, *Datum*, *Größe*, *Dateityp*, *Bewertung*) sowie Auf-/Absteigend-Umschaltung – synchron für Listen- und Kachelansicht (inkl. Spaltenklick in der Tabelle) sowie Auf-/Absteigend-Sortierung im Verzeichnisbaum.
+    - **Anzeigearten über kompakte Dropdown-Liste konfigurierbar:** Einfacher Wechsel zwischen *Liste* und *Vorschau: Klein (80px) / Mittel (140px) / Groß (200px)* ohne überladene Button-Leisten.
+    - Platzsparende Icon-Werkzeuge für *Alle markieren*, *Keine*, *Invertieren* sowie Checkboxen mit Live-Zähler.
   - **Begleitdatei-Integrität & Sicherheit:**
     - Überträgt automatisch alle zugehörigen `.xmp`-Sidecars mit.
     - Sicheres Verschieben: Quelldateien werden erst nach verifizierter erfolgreicher Übertragung am Ziel gelöscht.

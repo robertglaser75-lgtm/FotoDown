@@ -3,6 +3,17 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.22.0] - 2026-11-10
+
+### Hinzugefügt & Verbessert
+- **Spalten-Konfiguration im Verzeichnisbaum (`Bilder`, `RAW`, `JPG`) ([`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py), [`core/config.py`](core/config.py)):**
+  - Neues Spalten-Menü (Symbolbutton in der Header-Leiste sowie Rechtsklick auf die Tabellenkopfzeile) zum individuellen Ein- und Ausschalten der Spalten **Bilder**, **RAW** und **JPG**.
+  - Die gewählten Spalteneinstellungen (`tree_show_col_bilder`, `tree_show_col_raw`, `tree_show_col_jpg`) werden dauerhaft in der Konfiguration gespeichert.
+- **Vektor-Icons statt Emojis & Laptop-optimiertes Kompakt-Layout ([`gui_qt/styles/icons.py`](gui_qt/styles/icons.py), [`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
+  - Einheitliche, gestochen scharfe QPainter-Vektoricons (`get_sort_icon`, `get_columns_icon`, `get_files_icon`, `get_list_icon`, `get_grid_icon`, `get_check_all_icon`, `get_uncheck_all_icon`, `get_invert_icon`, `get_quick_icon`, `get_clear_icon`, `get_arrow_right_icon`, `get_move_icon`, `get_swap_icon`) für alle Buttons.
+  - **Anzeigearten über eine einzige Dropdown-Liste (`combo_view_mode`):** Zusammenfassung von *Liste*, *Vorschau: Klein*, *Vorschau: Mittel* und *Vorschau: Groß* in eine kompakte Auswahlbox statt mehrerer separater Buttons.
+  - Kompakte Icon-Schaltflächen für Markierung (*Alle*, *Keine*, *Invertieren*) sowie schmalere Aktionsspalte (`156px`) und niedrigere Mindestbreiten (`260px` je Seite) für optimale Bedienbarkeit auch auf kleineren Laptopbildschirmen.
+
 ## [0.21.0] - 2026-11-10
 
 ### Hinzugefügt

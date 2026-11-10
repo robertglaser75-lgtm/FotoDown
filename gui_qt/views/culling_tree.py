@@ -24,8 +24,8 @@ from PySide6.QtWidgets import (
 from core.config import AppConfig
 from gui_qt.models.culling_model import count_folder_images
 from gui_qt.styles.icons import (
-    get_collapse_panel_icon, get_folder_icon, get_minus_icon,
-    get_plus_icon, get_refresh_icon
+    get_collapse_panel_icon, get_columns_icon, get_folder_icon,
+    get_minus_icon, get_plus_icon, get_refresh_icon, get_sort_icon
 )
 
 
@@ -78,80 +78,70 @@ class CullingDirectoryTreeWidget(QWidget):
         h_layout.setSpacing(6)
 
         title_row = QHBoxLayout()
+        title_row.setSpacing(2)
         lbl_title = QLabel(self.title_text)
         lbl_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
         title_row.addWidget(lbl_title, stretch=1)
 
-        self.btn_sort = QPushButton("↑")
-        self.btn_sort.setFixedSize(26, 24)
-        self.btn_sort.setToolTip("Ordner-Sortierung: Aufsteigend (A–Z) – Klicken für Absteigend")
-        self.btn_sort.setStyleSheet("""
+        icon_btn_style = """
             QPushButton {
-                background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;
-                border-radius: 3px; font-weight: bold; font-size: 12px;
+                background-color: #1e293b; border: 1px solid #334155;
+                border-radius: 3px;
             }
-            QPushButton:hover { background-color: #334155; color: #38bdf8; }
-        """)
+            QPushButton:hover { background-color: #334155; border-color: #38bdf8; }
+        """
+
+        self.btn_columns = QPushButton()
+        self.btn_columns.setIcon(get_columns_icon("#cbd5e1", 13))
+        self.btn_columns.setIconSize(QSize(13, 13))
+        self.btn_columns.setFixedSize(24, 22)
+        self.btn_columns.setToolTip("Spalten ein-/ausblenden (Bilder, RAW, JPG)")
+        self.btn_columns.setStyleSheet(icon_btn_style)
+        self.btn_columns.clicked.connect(self._show_columns_menu)
+        title_row.addWidget(self.btn_columns)
+
+        self.btn_sort = QPushButton()
+        self.btn_sort.setIcon(get_sort_icon(False, "#cbd5e1", 13))
+        self.btn_sort.setIconSize(QSize(13, 13))
+        self.btn_sort.setFixedSize(24, 22)
+        self.btn_sort.setToolTip("Ordner-Sortierung: Aufsteigend (A–Z) – Klicken für Absteigend")
+        self.btn_sort.setStyleSheet(icon_btn_style)
         self.btn_sort.clicked.connect(self._toggle_sort_order)
         title_row.addWidget(self.btn_sort)
 
         self.btn_refresh = QPushButton()
-        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 14))
-        self.btn_refresh.setIconSize(QSize(14, 14))
-        self.btn_refresh.setFixedSize(26, 24)
+        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 13))
+        self.btn_refresh.setIconSize(QSize(13, 13))
+        self.btn_refresh.setFixedSize(24, 22)
         self.btn_refresh.setToolTip("Verzeichnisbaum aktualisieren")
-        self.btn_refresh.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; border: 1px solid #334155;
-                border-radius: 3px;
-            }
-            QPushButton:hover { background-color: #334155; }
-        """)
+        self.btn_refresh.setStyleSheet(icon_btn_style)
         self.btn_refresh.clicked.connect(self.refresh)
         title_row.addWidget(self.btn_refresh)
 
         self.btn_expand_all = QPushButton()
-        self.btn_expand_all.setIcon(get_plus_icon("#cbd5e1", 14))
-        self.btn_expand_all.setIconSize(QSize(14, 14))
-        self.btn_expand_all.setFixedSize(26, 24)
+        self.btn_expand_all.setIcon(get_plus_icon("#cbd5e1", 13))
+        self.btn_expand_all.setIconSize(QSize(13, 13))
+        self.btn_expand_all.setFixedSize(24, 22)
         self.btn_expand_all.setToolTip("Unterordner ausklappen")
-        self.btn_expand_all.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; border: 1px solid #334155;
-                border-radius: 3px;
-            }
-            QPushButton:hover { background-color: #334155; }
-        """)
+        self.btn_expand_all.setStyleSheet(icon_btn_style)
         self.btn_expand_all.clicked.connect(self._expand_two_levels)
         title_row.addWidget(self.btn_expand_all)
 
         self.btn_collapse_all = QPushButton()
-        self.btn_collapse_all.setIcon(get_minus_icon("#cbd5e1", 14))
-        self.btn_collapse_all.setIconSize(QSize(14, 14))
-        self.btn_collapse_all.setFixedSize(26, 24)
+        self.btn_collapse_all.setIcon(get_minus_icon("#cbd5e1", 13))
+        self.btn_collapse_all.setIconSize(QSize(13, 13))
+        self.btn_collapse_all.setFixedSize(24, 22)
         self.btn_collapse_all.setToolTip("Verzeichnisbaum einklappen (Alle Ordner schließen)")
-        self.btn_collapse_all.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; border: 1px solid #334155;
-                border-radius: 3px;
-            }
-            QPushButton:hover { background-color: #334155; }
-        """)
+        self.btn_collapse_all.setStyleSheet(icon_btn_style)
         self.btn_collapse_all.clicked.connect(self.tree_view.collapseAll if hasattr(self, 'tree_view') else lambda: None)
         title_row.addWidget(self.btn_collapse_all)
 
         self.btn_collapse_panel = QPushButton()
-        self.btn_collapse_panel.setIcon(get_collapse_panel_icon("#cbd5e1", 14))
-        self.btn_collapse_panel.setIconSize(QSize(14, 14))
-        self.btn_collapse_panel.setFixedSize(26, 24)
+        self.btn_collapse_panel.setIcon(get_collapse_panel_icon("#cbd5e1", 13))
+        self.btn_collapse_panel.setIconSize(QSize(13, 13))
+        self.btn_collapse_panel.setFixedSize(24, 22)
         self.btn_collapse_panel.setToolTip("Verzeichnisbaum-Leiste einklappen [V]")
-        self.btn_collapse_panel.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; border: 1px solid #334155;
-                border-radius: 3px;
-            }
-            QPushButton:hover { background-color: #334155; }
-        """)
+        self.btn_collapse_panel.setStyleSheet(icon_btn_style)
         self.btn_collapse_panel.setVisible(self.show_collapse_btn)
         self.btn_collapse_panel.clicked.connect(self.collapse_panel_requested.emit)
         title_row.addWidget(self.btn_collapse_panel)
@@ -211,6 +201,9 @@ class CullingDirectoryTreeWidget(QWidget):
         self.tree_view.setColumnWidth(2, 44)
         self.tree_view.setColumnWidth(3, 44)
         header.setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
+        header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        header.customContextMenuRequested.connect(lambda pos: self._show_columns_menu(header.mapToGlobal(pos)))
+        self._apply_column_visibility()
 
         self.tree_view.setStyleSheet("""
             QTreeView {
@@ -301,14 +294,56 @@ class CullingDirectoryTreeWidget(QWidget):
         self.refresh()
         self.root_changed.emit(path)
 
+    def _apply_column_visibility(self):
+        """Applies persisted column visibility flags for Bilder, RAW, and JPG."""
+        self.tree_view.setColumnHidden(1, not getattr(self.config, "tree_show_col_bilder", True))
+        self.tree_view.setColumnHidden(2, not getattr(self.config, "tree_show_col_raw", True))
+        self.tree_view.setColumnHidden(3, not getattr(self.config, "tree_show_col_jpg", True))
+
+    def set_column_visibility(self, col_idx: int, visible: bool):
+        """Shows or hides a count column (1=Bilder, 2=RAW, 3=JPG) and saves config."""
+        attr_map = {
+            1: "tree_show_col_bilder",
+            2: "tree_show_col_raw",
+            3: "tree_show_col_jpg",
+        }
+        attr = attr_map.get(col_idx)
+        if not attr:
+            return
+        setattr(self.config, attr, bool(visible))
+        self.tree_view.setColumnHidden(col_idx, not visible)
+        try:
+            self.config.save()
+        except Exception:
+            pass
+
+    def _show_columns_menu(self, global_pos=None):
+        """Opens menu to toggle Bilder, RAW, and JPG columns on or off."""
+        menu = QMenu(self)
+        col_defs = [
+            (1, "Spalte „Bilder“ anzeigen", getattr(self.config, "tree_show_col_bilder", True)),
+            (2, "Spalte „RAW“ anzeigen", getattr(self.config, "tree_show_col_raw", True)),
+            (3, "Spalte „JPG“ anzeigen", getattr(self.config, "tree_show_col_jpg", True)),
+        ]
+        actions = {}
+        for col_idx, label, checked in col_defs:
+            act = menu.addAction(label)
+            act.setCheckable(True)
+            act.setChecked(checked)
+            actions[act] = col_idx
+
+        pos = global_pos if global_pos is not None else self.btn_columns.mapToGlobal(self.btn_columns.rect().bottomLeft())
+        chosen = menu.exec(pos)
+        if chosen in actions:
+            self.set_column_visibility(actions[chosen], chosen.isChecked())
+
     def _toggle_sort_order(self):
         """Toggles ascending/descending directory sorting and rebuilds the tree."""
         self._sort_descending = not self._sort_descending
+        self.btn_sort.setIcon(get_sort_icon(self._sort_descending, "#cbd5e1", 13))
         if self._sort_descending:
-            self.btn_sort.setText("↓")
             self.btn_sort.setToolTip("Ordner-Sortierung: Absteigend (Z–A) – Klicken für Aufsteigend")
         else:
-            self.btn_sort.setText("↑")
             self.btn_sort.setToolTip("Ordner-Sortierung: Aufsteigend (A–Z) – Klicken für Absteigend")
         self.refresh()
 

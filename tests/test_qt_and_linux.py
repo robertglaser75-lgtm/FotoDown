@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.21.0")
+        self.assertEqual(__version__, "0.22.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -2025,11 +2025,15 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             pane.invert_selection()
             self.assertEqual(len(pane.get_effective_selected_paths()), 3)
 
-            # Test view mode switching
-            pane.set_view_mode("grid")
+            # Test view mode switching via dropdown list (combo_view_mode)
+            pane.set_view_mode("grid", 80)
             self.assertEqual(pane.view_stack.currentIndex(), 1)
+            self.assertEqual(pane.combo_view_mode.currentData(), "grid:80")
+            pane.combo_view_mode.setCurrentIndex(3)  # Vorschau: Groß (200px)
+            self.assertEqual(pane.list_grid.iconSize().width(), 200)
             pane.set_view_mode("list")
             self.assertEqual(pane.view_stack.currentIndex(), 0)
+            self.assertEqual(pane.combo_view_mode.currentIndex(), 0)
 
             from PySide6.QtCore import QThreadPool
             QThreadPool.globalInstance().waitForDone(2000)
@@ -2086,14 +2090,34 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             root_item = tree.model.item(0, 0)
             names_asc = [root_item.child(r, 0).text() for r in range(root_item.rowCount())]
             self.assertEqual(names_asc, ["2024_Alpha", "2025_Beta", "2026_Gamma"])
-            self.assertEqual(tree.btn_sort.text(), "↑")
+            self.assertFalse(tree._sort_descending)
+            self.assertFalse(tree.btn_sort.icon().isNull())
 
             # Toggle sort to descending
             tree._toggle_sort_order()
             root_item_desc = tree.model.item(0, 0)
             names_desc = [root_item_desc.child(r, 0).text() for r in range(root_item_desc.rowCount())]
             self.assertEqual(names_desc, ["2026_Gamma", "2025_Beta", "2024_Alpha"])
-            self.assertEqual(tree.btn_sort.text(), "↓")
+            self.assertTrue(tree._sort_descending)
+
+            # Test toggling Bilder, RAW, JPG columns on/off
+            self.assertFalse(tree.tree_view.isColumnHidden(1))
+            self.assertFalse(tree.tree_view.isColumnHidden(2))
+            self.assertFalse(tree.tree_view.isColumnHidden(3))
+
+            tree.set_column_visibility(1, False)
+            tree.set_column_visibility(2, False)
+            tree.set_column_visibility(3, False)
+            self.assertTrue(tree.tree_view.isColumnHidden(1))
+            self.assertTrue(tree.tree_view.isColumnHidden(2))
+            self.assertTrue(tree.tree_view.isColumnHidden(3))
+            self.assertFalse(cfg.tree_show_col_bilder)
+            self.assertFalse(cfg.tree_show_col_raw)
+            self.assertFalse(cfg.tree_show_col_jpg)
+
+            tree.set_column_visibility(2, True)
+            self.assertFalse(tree.tree_view.isColumnHidden(2))
+            self.assertTrue(cfg.tree_show_col_raw)
 
             tree.close()
             tree.deleteLater()

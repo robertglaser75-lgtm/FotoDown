@@ -31,7 +31,12 @@ from PySide6.QtWidgets import (
 from core.config import AppConfig
 from core.drive_detector import format_size
 from core.xmp_sync import read_xmp_workflow_info
-from gui_qt.styles.icons import get_folder_icon, get_refresh_icon
+from gui_qt.styles.icons import (
+    get_arrow_right_icon, get_check_all_icon, get_clear_icon, get_files_icon,
+    get_folder_icon, get_grid_icon, get_invert_icon, get_list_icon,
+    get_move_icon, get_quick_icon, get_refresh_icon, get_sort_icon,
+    get_swap_icon, get_uncheck_all_icon
+)
 from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
 from gui_qt.workers.thumb_worker import ThumbnailSignals, ThumbnailTask
 from gui_qt.workers.transfer_worker import TransferWorker
@@ -128,8 +133,8 @@ class TransferPaneWidget(QWidget):
         self.filtered_items: List[TransferItem] = []
         self._checked_paths: Set[str] = set()
         self._thumb_cache: Dict[str, QPixmap] = {}
-        self._last_tree_width: int = 230
-        self._last_files_width: int = 500
+        self._last_tree_width: int = 190
+        self._last_files_width: int = 420
         self._show_files: bool = True
 
         self._thumb_signals = ThumbnailSignals()
@@ -144,27 +149,28 @@ class TransferPaneWidget(QWidget):
 
         # Top Active Folder Header Card (Always visible above splitter so Tree & Files toggles remain accessible)
         folder_card = QFrame()
-        folder_card.setStyleSheet("background-color: #1e293b; border-radius: 6px; padding: 4px;")
+        folder_card.setStyleSheet("background-color: #1e293b; border-radius: 6px; padding: 3px;")
         f_card_layout = QHBoxLayout(folder_card)
-        f_card_layout.setContentsMargins(6, 4, 6, 4)
-        f_card_layout.setSpacing(6)
+        f_card_layout.setContentsMargins(6, 3, 6, 3)
+        f_card_layout.setSpacing(4)
 
-        icon = "💻" if self.is_source else "💾"
-        self.lbl_folder_header = QLabel(f"<b>{icon} Kein Ordner gewählt</b>")
+        self.lbl_folder_header = QLabel("<b>Kein Ordner gewählt</b>")
         self.lbl_folder_header.setStyleSheet("color: #38bdf8; font-size: 11px;")
         f_card_layout.addWidget(self.lbl_folder_header, stretch=1)
 
         toggle_btn_style = """
             QPushButton {
                 background-color: #0f172a; border: 1px solid #334155;
-                border-radius: 4px; padding: 2px 8px; font-size: 10px; color: #94a3b8;
+                border-radius: 4px; padding: 2px 7px; font-size: 10px; color: #94a3b8;
             }
             QPushButton:checked {
                 background-color: #0284c7; color: white; border-color: #38bdf8;
             }
         """
 
-        self.btn_toggle_tree = QPushButton("📂 Baum")
+        self.btn_toggle_tree = QPushButton("Baum")
+        self.btn_toggle_tree.setIcon(get_folder_icon("#cbd5e1", 12))
+        self.btn_toggle_tree.setIconSize(QSize(12, 12))
         self.btn_toggle_tree.setToolTip("Verzeichnisbaum links ein- oder ausblenden")
         self.btn_toggle_tree.setCheckable(True)
         self.btn_toggle_tree.setChecked(True)
@@ -172,7 +178,9 @@ class TransferPaneWidget(QWidget):
         self.btn_toggle_tree.clicked.connect(self._on_toggle_tree_clicked)
         f_card_layout.addWidget(self.btn_toggle_tree)
 
-        self.btn_toggle_files = QPushButton("📄 Dateien")
+        self.btn_toggle_files = QPushButton("Dateien")
+        self.btn_toggle_files.setIcon(get_files_icon("#cbd5e1", 12))
+        self.btn_toggle_files.setIconSize(QSize(12, 12))
         self.btn_toggle_files.setToolTip("Anzeige der Dateien in den Ordnern ein- oder ausschalten")
         self.btn_toggle_files.setCheckable(True)
         self.btn_toggle_files.setChecked(True)
@@ -181,17 +189,19 @@ class TransferPaneWidget(QWidget):
         f_card_layout.addWidget(self.btn_toggle_files)
 
         self.btn_refresh = QPushButton()
-        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 12))
-        self.btn_refresh.setIconSize(QSize(12, 12))
-        self.btn_refresh.setFixedSize(26, 24)
+        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 13))
+        self.btn_refresh.setIconSize(QSize(13, 13))
+        self.btn_refresh.setFixedSize(26, 22)
         self.btn_refresh.setToolTip("Ordnerinhalt neu laden")
         self.btn_refresh.clicked.connect(self.refresh)
         f_card_layout.addWidget(self.btn_refresh)
 
         # Quick access menu button
-        self.btn_quick = QPushButton("⚡")
+        self.btn_quick = QPushButton()
+        self.btn_quick.setIcon(get_quick_icon("#fbbf24", 13))
+        self.btn_quick.setIconSize(QSize(13, 13))
         self.btn_quick.setToolTip("Schnellzugriff auf bekannte Ordner")
-        self.btn_quick.setFixedSize(26, 24)
+        self.btn_quick.setFixedSize(26, 22)
         self.btn_quick.clicked.connect(self._show_quick_menu)
         f_card_layout.addWidget(self.btn_quick)
 
@@ -230,131 +240,136 @@ class TransferPaneWidget(QWidget):
             default_root=default_root,
             show_collapse_btn=True
         )
-        self.tree_widget.setMinimumWidth(140)
+        self.tree_widget.setMinimumWidth(120)
         self.tree_widget.folder_selected.connect(self.load_folder)
         self.tree_widget.collapse_panel_requested.connect(self._toggle_tree_visibility)
         self.pane_splitter.addWidget(self.tree_widget)
 
-        # 2. Files Container: Filter Toolbar + Sort Controls + View Stack
+        # 2. Files Container: Compact 2-Row Filter/Sort/View Toolbar + View Stack
         self.files_container = QWidget()
-        self.files_container.setMinimumWidth(180)
+        self.files_container.setMinimumWidth(160)
         content_layout = QVBoxLayout(self.files_container)
         content_layout.setContentsMargins(2, 2, 2, 2)
         content_layout.setSpacing(4)
 
-        # Filter, Sort & View Toolbar
         filter_card = QFrame()
-        filter_card.setStyleSheet("background-color: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 4px;")
+        filter_card.setStyleSheet("background-color: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 3px;")
         filter_layout = QVBoxLayout(filter_card)
-        filter_layout.setContentsMargins(6, 4, 6, 4)
+        filter_layout.setContentsMargins(5, 4, 5, 4)
         filter_layout.setSpacing(4)
 
-        # Row 1: Search & Type Filter
+        # Row 1: Search, Type Filter, Status Filter, Clear
         f_row1 = QHBoxLayout()
-        f_row1.setSpacing(6)
+        f_row1.setSpacing(4)
 
         self.edit_search = QLineEdit()
-        self.edit_search.setPlaceholderText("🔍 Dateiname filtern...")
+        self.edit_search.setPlaceholderText("Dateiname filtern...")
         self.edit_search.textChanged.connect(self.apply_filter)
         f_row1.addWidget(self.edit_search, 1)
 
-        f_row1.addWidget(QLabel("Typ:"))
         self.combo_type = QComboBox()
-        self.combo_type.addItems(["Alle Medien", "Nur RAW", "Nur JPG", "RAW + JPG", "Nur Videos", "Mit XMP / Bearbeitung"])
+        self.combo_type.setToolTip("Dateiformat filtern")
+        self.combo_type.addItems(["Alle Medien", "Nur RAW", "Nur JPG", "RAW + JPG", "Nur Videos", "Mit XMP"])
         self.combo_type.currentIndexChanged.connect(self.apply_filter)
         f_row1.addWidget(self.combo_type)
 
-        btn_clear_filter = QPushButton("✖")
+        self.combo_status = QComboBox()
+        self.combo_status.setToolTip("Bearbeitungsstatus filtern")
+        self.combo_status.addItems(["Alle Status", "Bearbeitet", "SOOC", "Bewertet ★+"])
+        self.combo_status.currentIndexChanged.connect(self.apply_filter)
+        f_row1.addWidget(self.combo_status)
+
+        btn_clear_filter = QPushButton()
+        btn_clear_filter.setIcon(get_clear_icon("#94a3b8", 12))
+        btn_clear_filter.setIconSize(QSize(12, 12))
         btn_clear_filter.setToolTip("Filter zurücksetzen")
-        btn_clear_filter.setFixedWidth(24)
+        btn_clear_filter.setFixedSize(24, 22)
         btn_clear_filter.clicked.connect(self._clear_filters)
         f_row1.addWidget(btn_clear_filter)
 
         filter_layout.addLayout(f_row1)
 
-        # Row 2: Status Filter & Sort Order Controls
-        f_row_sort = QHBoxLayout()
-        f_row_sort.setSpacing(6)
+        # Row 2: Compact Icon Selection Tools + Counter + Sort + View Mode Dropdown
+        f_row2 = QHBoxLayout()
+        f_row2.setSpacing(4)
 
-        f_row_sort.addWidget(QLabel("Status:"))
-        self.combo_status = QComboBox()
-        self.combo_status.addItems(["Alle Status", "Bearbeitet", "SOOC (Unbearb.)", "Bewertet (★+)"])
-        self.combo_status.currentIndexChanged.connect(self.apply_filter)
-        f_row_sort.addWidget(self.combo_status)
+        compact_tool_style = """
+            QPushButton {
+                background-color: #1e293b; border: 1px solid #334155;
+                border-radius: 3px;
+            }
+            QPushButton:hover { background-color: #334155; border-color: #38bdf8; }
+        """
 
-        f_row_sort.addStretch()
+        btn_sel_all = QPushButton()
+        btn_sel_all.setIcon(get_check_all_icon("#38bdf8", 13))
+        btn_sel_all.setIconSize(QSize(13, 13))
+        btn_sel_all.setFixedSize(26, 22)
+        btn_sel_all.setToolTip("Alle sichtbaren Dateien markieren")
+        btn_sel_all.setStyleSheet(compact_tool_style)
+        btn_sel_all.clicked.connect(self.select_all)
+        f_row2.addWidget(btn_sel_all)
 
-        f_row_sort.addWidget(QLabel("Sortierung:"))
+        btn_sel_none = QPushButton()
+        btn_sel_none.setIcon(get_uncheck_all_icon("#94a3b8", 13))
+        btn_sel_none.setIconSize(QSize(13, 13))
+        btn_sel_none.setFixedSize(26, 22)
+        btn_sel_none.setToolTip("Auswahl aufheben")
+        btn_sel_none.setStyleSheet(compact_tool_style)
+        btn_sel_none.clicked.connect(self.select_none)
+        f_row2.addWidget(btn_sel_none)
+
+        btn_sel_inv = QPushButton()
+        btn_sel_inv.setIcon(get_invert_icon("#cbd5e1", 13))
+        btn_sel_inv.setIconSize(QSize(13, 13))
+        btn_sel_inv.setFixedSize(26, 22)
+        btn_sel_inv.setToolTip("Auswahl umkehren")
+        btn_sel_inv.setStyleSheet(compact_tool_style)
+        btn_sel_inv.clicked.connect(self.invert_selection)
+        f_row2.addWidget(btn_sel_inv)
+
+        self.lbl_sel_count = QLabel("0/0 (0 B)")
+        self.lbl_sel_count.setToolTip("0 von 0 markiert (0 B)")
+        self.lbl_sel_count.setStyleSheet("color: #94a3b8; font-size: 10px;")
+        f_row2.addWidget(self.lbl_sel_count, 1)
+
         self.combo_sort = QComboBox()
+        self.combo_sort.setToolTip("Sortierkriterium wählen")
         self.combo_sort.addItem("Name", "name")
         self.combo_sort.addItem("Datum", "mtime")
         self.combo_sort.addItem("Größe", "size")
         self.combo_sort.addItem("Dateityp", "type")
-        self.combo_sort.addItem("Bewertung (★)", "rating")
+        self.combo_sort.addItem("Bewertung", "rating")
         self.combo_sort.currentIndexChanged.connect(self.apply_filter)
-        f_row_sort.addWidget(self.combo_sort)
+        f_row2.addWidget(self.combo_sort)
 
-        self.btn_sort_dir = QPushButton("↑ Auf.")
+        self.btn_sort_dir = QPushButton()
+        self.btn_sort_dir.setIcon(get_sort_icon(False, "#cbd5e1", 13))
+        self.btn_sort_dir.setIconSize(QSize(13, 13))
+        self.btn_sort_dir.setFixedSize(26, 22)
         self.btn_sort_dir.setCheckable(True)
         self.btn_sort_dir.setChecked(False)
-        self.btn_sort_dir.setToolTip("Sortierreihenfolge wechseln (Aufsteigend / Absteigend)")
+        self.btn_sort_dir.setToolTip("Sortierung: Aufsteigend (Klicken für Absteigend)")
         self.btn_sort_dir.setStyleSheet("""
             QPushButton {
-                background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;
-                border-radius: 4px; padding: 2px 8px; font-size: 10px;
+                background-color: #1e293b; border: 1px solid #334155; border-radius: 3px;
             }
             QPushButton:checked {
-                background-color: #0284c7; color: white; border-color: #38bdf8;
+                background-color: #0284c7; border-color: #38bdf8;
             }
         """)
         self.btn_sort_dir.clicked.connect(self._on_sort_dir_toggled)
-        f_row_sort.addWidget(self.btn_sort_dir)
+        f_row2.addWidget(self.btn_sort_dir)
 
-        filter_layout.addLayout(f_row_sort)
-
-        # Row 3: Selection tools & View Mode switcher
-        f_row2 = QHBoxLayout()
-        f_row2.setSpacing(6)
-
-        btn_sel_all = QPushButton("☑ Alle")
-        btn_sel_all.setToolTip("Alle sichtbaren Dateien auswählen")
-        btn_sel_all.clicked.connect(self.select_all)
-        f_row2.addWidget(btn_sel_all)
-
-        btn_sel_none = QPushButton("☐ Keine")
-        btn_sel_none.setToolTip("Auswahl aufheben")
-        btn_sel_none.clicked.connect(self.select_none)
-        f_row2.addWidget(btn_sel_none)
-
-        btn_sel_inv = QPushButton("🔄 Invertieren")
-        btn_sel_inv.setToolTip("Auswahl umkehren")
-        btn_sel_inv.clicked.connect(self.invert_selection)
-        f_row2.addWidget(btn_sel_inv)
-
-        self.lbl_sel_count = QLabel("0 von 0 markiert (0 B)")
-        self.lbl_sel_count.setStyleSheet("color: #94a3b8; font-size: 11px;")
-        f_row2.addWidget(self.lbl_sel_count)
-
-        f_row2.addStretch()
-
-        # View Mode Toggle (List vs Grid)
-        self.btn_view_list = QPushButton("📋 Liste")
-        self.btn_view_list.setCheckable(True)
-        self.btn_view_list.setChecked(True)
-        self.btn_view_list.clicked.connect(lambda: self.set_view_mode("list"))
-        f_row2.addWidget(self.btn_view_list)
-
-        self.btn_view_grid = QPushButton("🖼️ Vorschau")
-        self.btn_view_grid.setCheckable(True)
-        self.btn_view_grid.setChecked(False)
-        self.btn_view_grid.clicked.connect(lambda: self.set_view_mode("grid"))
-        f_row2.addWidget(self.btn_view_grid)
-
-        self.combo_thumb_size = QComboBox()
-        self.combo_thumb_size.addItems(list(self.THUMB_SIZES.keys()))
-        self.combo_thumb_size.setCurrentText("Mittel (140px)")
-        self.combo_thumb_size.currentIndexChanged.connect(self._on_thumb_size_changed)
-        f_row2.addWidget(self.combo_thumb_size)
+        # Single Configurable Display Mode Dropdown (replaces multiple view/size buttons)
+        self.combo_view_mode = QComboBox()
+        self.combo_view_mode.setToolTip("Darstellungsart & Vorschaugröße wählen")
+        self.combo_view_mode.addItem(get_list_icon("#cbd5e1", 13), "Liste", "list")
+        self.combo_view_mode.addItem(get_grid_icon("#cbd5e1", 13), "Vorschau: Klein", "grid:80")
+        self.combo_view_mode.addItem(get_grid_icon("#cbd5e1", 13), "Vorschau: Mittel", "grid:140")
+        self.combo_view_mode.addItem(get_grid_icon("#cbd5e1", 13), "Vorschau: Groß", "grid:200")
+        self.combo_view_mode.currentIndexChanged.connect(self._on_view_mode_combo_changed)
+        f_row2.addWidget(self.combo_view_mode)
 
         filter_layout.addLayout(f_row2)
         content_layout.addWidget(filter_card)
@@ -409,8 +424,8 @@ class TransferPaneWidget(QWidget):
         content_layout.addWidget(self.view_stack, 1)
         self.pane_splitter.addWidget(self.files_container)
 
-        # Splitter sizing: Left = ~240px tree on left side, Right = photo content gets remaining space
-        self.pane_splitter.setSizes([240, 500])
+        # Splitter sizing: Left = ~190px tree on left side, Right = photo content gets remaining space
+        self.pane_splitter.setSizes([190, 420])
         self.pane_splitter.setStretchFactor(0, 0)
         self.pane_splitter.setStretchFactor(1, 1)
 
@@ -479,9 +494,13 @@ class TransferPaneWidget(QWidget):
         self._set_files_visible(self.btn_toggle_files.isChecked())
 
     def _on_sort_dir_toggled(self):
-        """Updates sort direction label and re-sorts current items."""
+        """Updates sort direction icon/tooltip and re-sorts current items."""
         is_desc = self.btn_sort_dir.isChecked()
-        self.btn_sort_dir.setText("↓ Ab." if is_desc else "↑ Auf.")
+        self.btn_sort_dir.setIcon(get_sort_icon(is_desc, "#ffffff" if is_desc else "#cbd5e1", 13))
+        if is_desc:
+            self.btn_sort_dir.setToolTip("Sortierung: Absteigend (Klicken für Aufsteigend)")
+        else:
+            self.btn_sort_dir.setToolTip("Sortierung: Aufsteigend (Klicken für Absteigend)")
         self.apply_filter()
 
     def _on_table_header_clicked(self, column: int):
@@ -657,23 +676,42 @@ class TransferPaneWidget(QWidget):
         self.combo_type.setCurrentIndex(0)
         self.combo_status.setCurrentIndex(0)
 
-    def set_view_mode(self, mode: str):
-        """Toggles between 'list' and 'grid'."""
+    @staticmethod
+    def _parse_view_mode_key(key: Optional[str]) -> tuple:
+        if key and key.startswith("grid:"):
+            try:
+                return ("grid", int(key.split(":", 1)[1]))
+            except ValueError:
+                return ("grid", 140)
+        return ("list", 0)
+
+    def set_view_mode(self, mode: str, thumb_size: Optional[int] = None):
+        """Sets display mode ('list' or 'grid') and optional thumbnail size, syncing the dropdown."""
         if mode == "list":
-            self.btn_view_list.setChecked(True)
-            self.btn_view_grid.setChecked(False)
+            self.combo_view_mode.blockSignals(True)
+            self.combo_view_mode.setCurrentIndex(0)
+            self.combo_view_mode.blockSignals(False)
             self.view_stack.setCurrentIndex(0)
         else:
-            self.btn_view_list.setChecked(False)
-            self.btn_view_grid.setChecked(True)
+            target_size = thumb_size or 140
+            idx = self.combo_view_mode.findData(f"grid:{target_size}")
+            if idx < 0:
+                idx = 2  # Default: Vorschau Mittel (140px)
+            self.combo_view_mode.blockSignals(True)
+            self.combo_view_mode.setCurrentIndex(idx)
+            self.combo_view_mode.blockSignals(False)
+            self._update_grid_item_size(target_size)
             self.view_stack.setCurrentIndex(1)
             self._request_visible_thumbnails()
 
-    def _on_thumb_size_changed(self):
-        size_label = self.combo_thumb_size.currentText()
-        thumb_size = self.THUMB_SIZES.get(size_label, 140)
-        self._update_grid_item_size(thumb_size)
-        if self.view_stack.currentIndex() == 1:
+    def _on_view_mode_combo_changed(self):
+        """Handles selection changes in the unified display mode dropdown."""
+        mode, size = self._parse_view_mode_key(self.combo_view_mode.currentData())
+        if mode == "list":
+            self.view_stack.setCurrentIndex(0)
+        else:
+            self._update_grid_item_size(size)
+            self.view_stack.setCurrentIndex(1)
             self._request_visible_thumbnails()
 
     def _update_grid_item_size(self, thumb_size: int):
@@ -750,8 +788,9 @@ class TransferPaneWidget(QWidget):
 
     def _request_visible_thumbnails(self):
         """Asynchronously requests thumbnails for media items in filtered list."""
-        size_label = self.combo_thumb_size.currentText()
-        thumb_dim = self.THUMB_SIZES.get(size_label, 140)
+        _, thumb_dim = self._parse_view_mode_key(self.combo_view_mode.currentData())
+        if thumb_dim <= 0:
+            thumb_dim = 140
 
         thread_pool = QThreadPool.globalInstance()
         for it in self.filtered_items[:150]:  # batch of visible / top items
@@ -849,7 +888,8 @@ class TransferPaneWidget(QWidget):
         marked_cnt = len(marked_items)
         marked_bytes = sum(it.size for it in marked_items)
 
-        self.lbl_sel_count.setText(f"{marked_cnt} von {total_cnt} markiert ({format_size(marked_bytes)})")
+        self.lbl_sel_count.setText(f"{marked_cnt}/{total_cnt} ({format_size(marked_bytes)})")
+        self.lbl_sel_count.setToolTip(f"{marked_cnt} von {total_cnt} markiert ({format_size(marked_bytes)})")
         self.selection_changed.emit()
 
     def get_effective_selected_paths(self) -> List[Path]:
@@ -912,18 +952,18 @@ class TransferTabView(QWidget):
             is_source=True,
             config=self.config
         )
-        self.pane_source.setMinimumWidth(340)
+        self.pane_source.setMinimumWidth(260)
         splitter.addWidget(self.pane_source)
 
-        # Center Column: Action Controls and Progress
+        # Center Column: Action Controls and Progress (compact width for laptop displays)
         self.center_panel = QFrame()
         self.center_panel.setObjectName("cardFrame")
-        self.center_panel.setFixedWidth(200)
+        self.center_panel.setFixedWidth(156)
         self.center_panel.setStyleSheet("background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 8px;")
 
         center_layout = QVBoxLayout(self.center_panel)
-        center_layout.setContentsMargins(8, 16, 8, 16)
-        center_layout.setSpacing(10)
+        center_layout.setContentsMargins(6, 12, 6, 12)
+        center_layout.setSpacing(8)
 
         lbl_actions = QLabel("AKTIONEN")
         lbl_actions.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -931,12 +971,14 @@ class TransferTabView(QWidget):
         center_layout.addWidget(lbl_actions)
 
         # Action: Copy Selection
-        self.btn_copy_sel = QPushButton("▶ Kopieren (Auswahl)")
+        self.btn_copy_sel = QPushButton("Kopieren")
+        self.btn_copy_sel.setIcon(get_arrow_right_icon("#ffffff", 14, double=False))
+        self.btn_copy_sel.setIconSize(QSize(14, 14))
         self.btn_copy_sel.setToolTip("Markierte Fotos von links nach rechts kopieren")
         self.btn_copy_sel.setStyleSheet("""
             QPushButton {
                 background-color: #0284c7; color: white; font-weight: bold;
-                border-radius: 5px; padding: 8px 6px; font-size: 11px;
+                border-radius: 5px; padding: 7px 6px; font-size: 11px;
             }
             QPushButton:hover { background-color: #0369a1; }
             QPushButton:disabled { background-color: #334155; color: #64748b; }
@@ -945,12 +987,14 @@ class TransferTabView(QWidget):
         center_layout.addWidget(self.btn_copy_sel)
 
         # Action: Move Selection
-        self.btn_move_sel = QPushButton("➔ Verschieben (Auswahl)")
+        self.btn_move_sel = QPushButton("Verschieben")
+        self.btn_move_sel.setIcon(get_move_icon("#ffffff", 14, double=False))
+        self.btn_move_sel.setIconSize(QSize(14, 14))
         self.btn_move_sel.setToolTip("Markierte Fotos verschieben (Quelle wird nach Transfer gelöscht)")
         self.btn_move_sel.setStyleSheet("""
             QPushButton {
                 background-color: #0d9488; color: white; font-weight: bold;
-                border-radius: 5px; padding: 8px 6px; font-size: 11px;
+                border-radius: 5px; padding: 7px 6px; font-size: 11px;
             }
             QPushButton:hover { background-color: #0f766e; }
             QPushButton:disabled { background-color: #334155; color: #64748b; }
@@ -965,7 +1009,9 @@ class TransferTabView(QWidget):
         center_layout.addWidget(sep)
 
         # Action: Copy All
-        self.btn_copy_all = QPushButton("▶▶ Alle kopieren")
+        self.btn_copy_all = QPushButton("Alle kopieren")
+        self.btn_copy_all.setIcon(get_arrow_right_icon("#38bdf8", 14, double=True))
+        self.btn_copy_all.setIconSize(QSize(14, 14))
         self.btn_copy_all.setToolTip("Alle gefilterten Fotos von links nach rechts kopieren")
         self.btn_copy_all.setStyleSheet("""
             QPushButton {
@@ -979,7 +1025,9 @@ class TransferTabView(QWidget):
         center_layout.addWidget(self.btn_copy_all)
 
         # Action: Move All
-        self.btn_move_all = QPushButton("➔➔ Alle verschieben")
+        self.btn_move_all = QPushButton("Alle versch.")
+        self.btn_move_all.setIcon(get_move_icon("#2dd4bf", 14, double=True))
+        self.btn_move_all.setIconSize(QSize(14, 14))
         self.btn_move_all.setToolTip("Alle gefilterten Fotos verschieben (vom Laptop löschen)")
         self.btn_move_all.setStyleSheet("""
             QPushButton {
@@ -993,7 +1041,9 @@ class TransferTabView(QWidget):
         center_layout.addWidget(self.btn_move_all)
 
         # Swap sides button
-        self.btn_swap = QPushButton("⇄ Seiten tauschen")
+        self.btn_swap = QPushButton("Tauschen")
+        self.btn_swap.setIcon(get_swap_icon("#94a3b8", 13))
+        self.btn_swap.setIconSize(QSize(13, 13))
         self.btn_swap.setToolTip("Tauscht die Ordner von Quelle und Ziel")
         self.btn_swap.setStyleSheet("background-color: #1e293b; color: #94a3b8; font-size: 10px; padding: 4px; border: 1px solid #334155;")
         self.btn_swap.clicked.connect(self._swap_folders)
@@ -1042,12 +1092,12 @@ class TransferTabView(QWidget):
             is_source=False,
             config=self.config
         )
-        self.pane_dest.setMinimumWidth(340)
+        self.pane_dest.setMinimumWidth(260)
         splitter.addWidget(self.pane_dest)
         self.main_splitter = splitter
 
         # Sizing: Source ~45%, Center ~10%, Dest ~45%
-        splitter.setSizes([550, 180, 550])
+        splitter.setSizes([580, 156, 580])
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 0)
         splitter.setStretchFactor(2, 1)
