@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.20.2")
+        self.assertEqual(__version__, "0.20.3")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1952,10 +1952,22 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             pane = TransferPaneWidget("Test Quelle", is_source=True, config=cfg)
             pane.load_folder(test_dir)
 
-            # Verzeichnisbaum must be present on the left side (horizontal splitter) as in Culling (Tab 2)
+            # Verzeichnisbaum must be present on the left side (horizontal splitter) and non-collapsible
             self.assertIsNotNone(pane.tree_widget)
             self.assertTrue(hasattr(pane.tree_widget, "folder_selected"))
             self.assertEqual(pane.pane_splitter.orientation(), Qt.Orientation.Horizontal)
+            self.assertFalse(pane.pane_splitter.childrenCollapsible())
+
+            # Toggle tree hidden and restore -> must bring tree back with non-zero width
+            pane.resize(800, 600)
+            pane.show()
+            pane._set_tree_visible(False)
+            self.assertFalse(pane.tree_widget.isVisible())
+            self.assertFalse(pane.btn_toggle_tree.isChecked())
+            pane._set_tree_visible(True)
+            self.assertTrue(pane.tree_widget.isVisible())
+            self.assertTrue(pane.btn_toggle_tree.isChecked())
+            self.assertGreater(pane.pane_splitter.sizes()[0], 0)
 
             # Only media files should be listed (pic1.jpg, pic2.orf, movie.mp4) - not notes.txt or xmp
             self.assertEqual(len(pane.all_items), 3)
@@ -1991,7 +2003,11 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             pane.set_view_mode("list")
             self.assertEqual(pane.view_stack.currentIndex(), 0)
 
+            from PySide6.QtCore import QThreadPool
+            QThreadPool.globalInstance().waitForDone(2000)
             pane.close()
+            pane.deleteLater()
+            _app.processEvents()
 
     def test_transfer_tab_and_main_window_integration(self):
         from gui_qt.main_window import MainWindow
@@ -2015,6 +2031,7 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
         # Test helper method
         win.open_transfer_tab()
         self.assertEqual(win.main_workflow_stack.currentIndex(), 2)
+        self.assertFalse(win.transfer_tab_view.main_splitter.childrenCollapsible())
 
         if win._drive_watcher:
             win._drive_watcher.stop()

@@ -128,6 +128,7 @@ class TransferPaneWidget(QWidget):
         self.filtered_items: List[TransferItem] = []
         self._checked_paths: Set[str] = set()
         self._thumb_cache: Dict[str, QPixmap] = {}
+        self._last_tree_width: int = 230
 
         self._thumb_signals = ThumbnailSignals()
         self._thumb_signals.thumbnail_ready.connect(self._on_thumbnail_ready)
@@ -141,12 +142,18 @@ class TransferPaneWidget(QWidget):
 
         # Horizontal Splitter: Left = Verzeichnisbaum (Tree Widget), Right = Photo / File Content
         self.pane_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.pane_splitter.setChildrenCollapsible(False)
+        self.pane_splitter.setHandleWidth(6)
         self.pane_splitter.setStyleSheet("""
             QSplitter::handle {
                 background-color: #334155;
-                width: 4px;
+                border-radius: 2px;
+            }
+            QSplitter::handle:hover {
+                background-color: #38bdf8;
             }
         """)
+        self.pane_splitter.splitterMoved.connect(self._on_splitter_moved)
 
         # 1. Directory Tree Widget on Left side (Identical to Culling / Tab 2)
         tree_title = f"VERZEICHNISSE ({'QUELLE' if self.is_source else 'ZIEL / NAS'})"
@@ -166,13 +173,14 @@ class TransferPaneWidget(QWidget):
             default_root=default_root,
             show_collapse_btn=True
         )
-        self.tree_widget.setMinimumWidth(180)
+        self.tree_widget.setMinimumWidth(140)
         self.tree_widget.folder_selected.connect(self.load_folder)
         self.tree_widget.collapse_panel_requested.connect(self._toggle_tree_visibility)
         self.pane_splitter.addWidget(self.tree_widget)
 
-        # 2. Bottom Content Container: Active Folder Bar + Filter Toolbar + View Stack
+        # 2. Content Container: Active Folder Bar + Filter Toolbar + View Stack
         content_container = QWidget()
+        content_container.setMinimumWidth(180)
         content_layout = QVBoxLayout(content_container)
         content_layout.setContentsMargins(2, 2, 2, 2)
         content_layout.setSpacing(4)
@@ -361,15 +369,39 @@ class TransferPaneWidget(QWidget):
 
         main_layout.addWidget(self.pane_splitter)
 
+    def _on_splitter_moved(self, pos: int, index: int):
+        """Stores valid non-zero tree width and keeps toggle button state synced."""
+        sizes = self.pane_splitter.sizes()
+        if sizes and sizes[0] > 0:
+            self._last_tree_width = sizes[0]
+            if not self.btn_toggle_tree.isChecked():
+                self.btn_toggle_tree.setChecked(True)
+        elif sizes and sizes[0] == 0:
+            self.btn_toggle_tree.setChecked(False)
+
+    def _set_tree_visible(self, visible: bool):
+        """Shows or hides the directory tree and ensures non-zero splitter sizing on restore."""
+        if not visible:
+            sizes = self.pane_splitter.sizes()
+            if sizes and sizes[0] > 0:
+                self._last_tree_width = sizes[0]
+            self.tree_widget.setVisible(False)
+            self.btn_toggle_tree.setChecked(False)
+        else:
+            self.tree_widget.setVisible(True)
+            self.btn_toggle_tree.setChecked(True)
+            restore_w = max(180, self._last_tree_width)
+            total_w = max(restore_w + 220, sum(self.pane_splitter.sizes()), self.width())
+            self.pane_splitter.setSizes([restore_w, max(180, total_w - restore_w)])
+
     def _toggle_tree_visibility(self):
         """Toggles tree view visibility via collapse button in tree header."""
-        is_vis = not self.tree_widget.isVisible()
-        self.tree_widget.setVisible(is_vis)
-        self.btn_toggle_tree.setChecked(is_vis)
+        sizes = self.pane_splitter.sizes()
+        currently_visible = (not self.tree_widget.isHidden()) and (not sizes or sizes[0] > 0)
+        self._set_tree_visible(not currently_visible)
 
     def _on_toggle_tree_clicked(self):
-        is_checked = self.btn_toggle_tree.isChecked()
-        self.tree_widget.setVisible(is_checked)
+        self._set_tree_visible(self.btn_toggle_tree.isChecked())
 
     def _show_quick_menu(self):
         """Displays quick folder navigation shortcuts."""
@@ -740,10 +772,15 @@ class TransferTabView(QWidget):
         main_layout.setSpacing(6)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setChildrenCollapsible(False)
+        splitter.setHandleWidth(6)
         splitter.setStyleSheet("""
             QSplitter::handle {
                 background-color: #334155;
-                width: 4px;
+                border-radius: 2px;
+            }
+            QSplitter::handle:hover {
+                background-color: #38bdf8;
             }
         """)
 
@@ -753,6 +790,7 @@ class TransferTabView(QWidget):
             is_source=True,
             config=self.config
         )
+        self.pane_source.setMinimumWidth(340)
         splitter.addWidget(self.pane_source)
 
         # Center Column: Action Controls and Progress
@@ -882,10 +920,12 @@ class TransferTabView(QWidget):
             is_source=False,
             config=self.config
         )
+        self.pane_dest.setMinimumWidth(340)
         splitter.addWidget(self.pane_dest)
+        self.main_splitter = splitter
 
         # Sizing: Source ~45%, Center ~10%, Dest ~45%
-        splitter.setSizes([450, 180, 450])
+        splitter.setSizes([550, 180, 550])
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 0)
         splitter.setStretchFactor(2, 1)

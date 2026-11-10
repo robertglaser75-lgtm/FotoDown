@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.20.3] - 2026-11-10
+
+### Behoben
+- **Verzeichnisbaum-Größenänderung und Wiederherstellung im Tab „3. Sichern & Archivieren“ ([`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
+  - `setChildrenCollapsible(False)` für sowohl den inneren Teiler (`pane_splitter`) als auch den Hauptteiler (`main_splitter`) aktiviert, damit der Verzeichnisbaum beim Ziehen über den Splitter nicht mehr auf `0 px` einklappt.
+  - Verbreiterter, gut sichtbarer Splitter-Griff (`6px`) mit Hover-Hervorhebung sowie sinnvolle Mindestbreiten (`140px` für den Verzeichnisbaum, `180px` für die Dateiansicht).
+  - Ein-/Ausklappen des Baums (*„📂 Baum“* bzw. Klapp-Symbol) speichert die letzte gültige Breite und stellt diese beim erneuten Öffnen zuverlässig wieder her.
+
 ## [0.20.2] - 2026-11-08
 
 ### Verbessert
