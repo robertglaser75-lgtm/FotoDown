@@ -168,7 +168,9 @@ class CullingDirectoryTreeWidget(QWidget):
 
         self.lbl_root_path = QLabel("")
         self.lbl_root_path.setStyleSheet("color: #94a3b8; font-size: 10px;")
-        self.lbl_root_path.setWordWrap(False)
+        self.lbl_root_path.setWordWrap(True)
+        self.lbl_root_path.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.lbl_root_path.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         path_box.addWidget(self.lbl_root_path, stretch=1)
         h_layout.addLayout(path_box)
 
@@ -286,10 +288,13 @@ class CullingDirectoryTreeWidget(QWidget):
             except Exception:
                 pass
 
-        # Update label
-        display_text = path.name if path.name else str(path)
-        self.lbl_root_path.setText(display_text)
-        self.lbl_root_path.setToolTip(str(path.resolve()))
+        # Update label with full path
+        try:
+            full_path_str = str(path.resolve())
+        except Exception:
+            full_path_str = str(path)
+        self.lbl_root_path.setText(full_path_str)
+        self.lbl_root_path.setToolTip(full_path_str)
 
         self.refresh()
         self.root_changed.emit(path)
@@ -353,8 +358,8 @@ class CullingDirectoryTreeWidget(QWidget):
         if not self.root_path or not self.root_path.exists():
             return
 
-        # Add root folder as the top-level node
-        root_rows = self._build_folder_row(self.root_path)
+        # Add root folder as the top-level node with full path
+        root_rows = self._build_folder_row(self.root_path, is_root=True)
         self.model.appendRow(root_rows)
         root_item = root_rows[0]
 
@@ -365,11 +370,17 @@ class CullingDirectoryTreeWidget(QWidget):
         root_idx = self.model.indexFromItem(root_item)
         self.tree_view.expand(root_idx)
 
-    def _build_folder_row(self, folder: Path) -> List[QStandardItem]:
+    def _build_folder_row(self, folder: Path, is_root: bool = False) -> List[QStandardItem]:
         """Creates the 4 items for a folder row: (Ordner, Bilder, RAW, JPG)."""
         total, raw, jpg = count_folder_images(folder)
 
-        folder_name = folder.name if folder.name else str(folder)
+        if is_root:
+            try:
+                folder_name = str(folder.resolve())
+            except Exception:
+                folder_name = str(folder)
+        else:
+            folder_name = folder.name if folder.name else str(folder)
         item_name = QStandardItem(folder_name)
         item_name.setIcon(get_folder_icon("#38bdf8", 14))
         item_name.setData(str(folder.resolve()), Qt.ItemDataRole.UserRole)

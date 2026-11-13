@@ -533,4 +533,32 @@ def get_swap_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
+def get_search_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+    """Renders a crisp magnifying glass (search/reconcile/compare) icon."""
+    pix = QPixmap(size, size)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    pen = QPen(QColor(color), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+    p.setPen(pen)
+
+    # Circle (magnifying glass lens)
+    radius = size * 0.28
+    center_x = size * 0.42
+    center_y = size * 0.42
+    p.drawEllipse(QPointF(center_x, center_y), radius, radius)
+
+    # Handle angled down-right
+    start_x = center_x + radius * 0.707
+    start_y = center_y + radius * 0.707
+    end_x = size * 0.86
+    end_y = size * 0.86
+    p.drawLine(QPointF(start_x, start_y), QPointF(end_x, end_y))
+
+    p.end()
+    return QIcon(pix)
+
+
+
 

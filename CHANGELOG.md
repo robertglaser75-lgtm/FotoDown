@@ -3,6 +3,22 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.23.0] - 2026-11-13
+
+### Hinzugefügt & Verbessert
+- **Dateiabgleich & automatische Markierung fehlender Dateien (JPG, RAW, beide) ([`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py), [`gui_qt/styles/icons.py`](gui_qt/styles/icons.py)):**
+  - Neuer Button *„Abgleich ▾“* im zentralen Aktionsbereich von *3. Sichern & Archivieren*:
+    - **Fehlende JPGs markieren:** Ermittelt alle JPG-Dateien, die links vorhanden sind, aber im rechten Zielordner noch fehlen, und markiert sie.
+    - **Fehlende RAWs markieren:** Ermittelt alle RAW-Dateien, die links vorhanden sind, aber rechts noch fehlen, und markiert sie.
+    - **Beides (RAW & JPG) markieren:** Ermittelt alle fehlenden Bilddateien auf einmal und markiert sie für den Transfer.
+  - Die nicht vorhandenen Dateien werden direkt links zur Übertragung ausgewählt, sodass sie mit einem einzigen Klick auf *„Kopieren“* (oder *„Verschieben“*) gesichert werden können.
+  - Sofortiges visuelles Feedback über ein Status-Label im Aktionsbereich (z. B. *„✓ 14 fehlende RAWs links markiert“* oder *„✓ Ziel aktuell (0 fehlen)“*).
+  - Neues Vektor-Icon `get_search_icon` in `gui_qt/styles/icons.py` für Lupe/Abgleich.
+- **Vollständige Pfadanzeige beim Einstiegspunkt der Ordnerauswahl ([`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py)):**
+  - Beim Einstiegspunkt im Verzeichnisbaum (sowohl in *2. Sichten & Sortieren* als auch in *3. Sichern & Archivieren*) wird nun der vollständige Pfad angezeigt statt nur der Ordnername.
+  - Das Einstiegspunkt-Label neben der Schaltfläche *„Einstiegspunkt...“* zeigt den vollständigen Pfad mit automatischem Zeilenumbruch und Textselektion per Maus an.
+  - Der Wurzelknoten des Verzeichnisbaums selbst stellt ebenfalls den vollständigen Pfad dar, während Unterordner weiterhin übersichtlich als relative Ordnernamen dargestellt werden.
+
 ## [0.22.0] - 2026-11-10
 
 ### Hinzugefügt & Verbessert

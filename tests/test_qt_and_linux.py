@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.22.0")
+        self.assertEqual(__version__, "0.23.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -2121,6 +2121,190 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
 
             tree.close()
             tree.deleteLater()
+            _app.processEvents()
+
+    def test_transfer_tab_reconciliation(self):
+        """Verifies missing files reconciliation (JPG, RAW, both) in TransferTabView."""
+        import tempfile
+        from pathlib import Path
+        from core.config import AppConfig
+        from gui_qt.views.transfer_tab import TransferTabView
+        from PySide6.QtCore import QThreadPool
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            src = tmp / "Quelle"
+            dst = tmp / "Ziel"
+            src.mkdir()
+            dst.mkdir()
+
+            # Source has: img1.jpg, img2.jpg, raw1.orf, raw2.orf, vid1.mp4
+            (src / "img1.jpg").write_text("jpg1")
+            (src / "img2.jpg").write_text("jpg2")
+            (src / "raw1.orf").write_text("raw1")
+            (src / "raw2.orf").write_text("raw2")
+            (src / "vid1.mp4").write_text("vid1")
+
+            # Destination already has: img1.jpg and raw1.orf
+            (dst / "img1.jpg").write_text("jpg1")
+            (dst / "raw1.orf").write_text("raw1")
+
+            cfg = AppConfig()
+            view = TransferTabView(cfg)
+            view.pane_source.load_folder(src)
+            view.pane_dest.load_folder(dst)
+            _app.processEvents()
+
+            # 1. Test reconcile JPG (only img2.jpg is missing)
+            missing_jpgs = view.reconcile_missing_jpg()
+            self.assertEqual(len(missing_jpgs), 1)
+            self.assertEqual(missing_jpgs[0].name, "img2.jpg")
+            self.assertIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
+            self.assertNotIn(str(src / "img1.jpg"), view.pane_source._checked_paths)
+            self.assertIn("1 fehlende JPGs links markiert", view.lbl_reconcile_status.text())
+
+            # 2. Test reconcile RAW (only raw2.orf is missing)
+            missing_raws = view.reconcile_missing_raw()
+            self.assertEqual(len(missing_raws), 1)
+            self.assertEqual(missing_raws[0].name, "raw2.orf")
+            self.assertIn(str(src / "raw2.orf"), view.pane_source._checked_paths)
+            self.assertNotIn(str(src / "raw1.orf"), view.pane_source._checked_paths)
+            self.assertNotIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
+            self.assertIn("1 fehlende RAWs links markiert", view.lbl_reconcile_status.text())
+
+            # 3. Test reconcile both (RAW & JPG -> img2.jpg and raw2.orf)
+            missing_both = view.reconcile_missing_both()
+            self.assertEqual(len(missing_both), 2)
+            missing_names = {p.name for p in missing_both}
+            self.assertEqual(missing_names, {"img2.jpg", "raw2.orf"})
+            self.assertIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
+            self.assertIn(str(src / "raw2.orf"), view.pane_source._checked_paths)
+            self.assertIn("2 fehlende RAW & JPG links markiert", view.lbl_reconcile_status.text())
+
+            # 4. Copy missing files to destination and re-check -> should report Ziel aktuell
+            (dst / "img2.jpg").write_text("jpg2")
+            (dst / "raw2.orf").write_text("raw2")
+            missing_none = view.reconcile_missing_both()
+            self.assertEqual(len(missing_none), 0)
+            self.assertEqual(len(view.pane_source._checked_paths), 0)
+            self.assertIn("Ziel aktuell", view.lbl_reconcile_status.text())
+
+            # Clean up widgets
+            QThreadPool.globalInstance().waitForDone(2000)
+            view.close()
+            view.deleteLater()
+            _app.processEvents()
+
+    def test_culling_directory_tree_entry_point_full_path(self):
+        """Verifies that the full path is displayed at the entry point (header label and tree root node)."""
+        import tempfile
+        from pathlib import Path
+        from core.config import AppConfig
+        from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            sub = root / "Urlaub"
+            sub.mkdir()
+
+            cfg = AppConfig(culling_root_folder=str(root))
+            tree = CullingDirectoryTreeWidget(cfg)
+
+            # Check header label shows the full resolved path
+            self.assertEqual(tree.lbl_root_path.text(), str(root.resolve()))
+            self.assertEqual(tree.lbl_root_path.toolTip(), str(root.resolve()))
+
+            # Check tree root item displays full resolved path
+            root_item = tree.model.item(0, 0)
+            self.assertIsNotNone(root_item)
+            self.assertEqual(root_item.text(), str(root.resolve()))
+
+            # Check child item displays only directory name
+            child_item = root_item.child(0, 0)
+            self.assertIsNotNone(child_item)
+            self.assertEqual(child_item.text(), "Urlaub")
+
+            # Update entry point and verify full path is updated everywhere
+            tree.set_root_folder(sub)
+            self.assertEqual(tree.lbl_root_path.text(), str(sub.resolve()))
+            new_root_item = tree.model.item(0, 0)
+            self.assertIsNotNone(new_root_item)
+            self.assertEqual(new_root_item.text(), str(sub.resolve()))
+
+            tree.close()
+            tree.deleteLater()
+            _app.processEvents()
+
+    def test_transfer_tab_reconciliation(self):
+        """Verifies missing files reconciliation (JPG, RAW, both) in TransferTabView."""
+        import tempfile
+        from pathlib import Path
+        from core.config import AppConfig
+        from gui_qt.views.transfer_tab import TransferTabView
+        from PySide6.QtCore import QThreadPool
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            src = tmp / "Quelle"
+            dst = tmp / "Ziel"
+            src.mkdir()
+            dst.mkdir()
+
+            # Source has: img1.jpg, img2.jpg, raw1.orf, raw2.orf, vid1.mp4
+            (src / "img1.jpg").write_text("jpg1")
+            (src / "img2.jpg").write_text("jpg2")
+            (src / "raw1.orf").write_text("raw1")
+            (src / "raw2.orf").write_text("raw2")
+            (src / "vid1.mp4").write_text("vid1")
+
+            # Destination already has: img1.jpg and raw1.orf
+            (dst / "img1.jpg").write_text("jpg1")
+            (dst / "raw1.orf").write_text("raw1")
+
+            cfg = AppConfig()
+            view = TransferTabView(cfg)
+            view.pane_source.load_folder(src)
+            view.pane_dest.load_folder(dst)
+            _app.processEvents()
+
+            # 1. Test reconcile JPG (only img2.jpg is missing)
+            missing_jpgs = view.reconcile_missing_jpg()
+            self.assertEqual(len(missing_jpgs), 1)
+            self.assertEqual(missing_jpgs[0].name, "img2.jpg")
+            self.assertIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
+            self.assertNotIn(str(src / "img1.jpg"), view.pane_source._checked_paths)
+            self.assertIn("1 fehlende JPGs links markiert", view.lbl_reconcile_status.text())
+
+            # 2. Test reconcile RAW (only raw2.orf is missing)
+            missing_raws = view.reconcile_missing_raw()
+            self.assertEqual(len(missing_raws), 1)
+            self.assertEqual(missing_raws[0].name, "raw2.orf")
+            self.assertIn(str(src / "raw2.orf"), view.pane_source._checked_paths)
+            self.assertNotIn(str(src / "raw1.orf"), view.pane_source._checked_paths)
+            self.assertNotIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
+            self.assertIn("1 fehlende RAWs links markiert", view.lbl_reconcile_status.text())
+
+            # 3. Test reconcile both (RAW & JPG -> img2.jpg and raw2.orf)
+            missing_both = view.reconcile_missing_both()
+            self.assertEqual(len(missing_both), 2)
+            missing_names = {p.name for p in missing_both}
+            self.assertEqual(missing_names, {"img2.jpg", "raw2.orf"})
+            self.assertIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
+            self.assertIn(str(src / "raw2.orf"), view.pane_source._checked_paths)
+            self.assertIn("2 fehlende RAW & JPG links markiert", view.lbl_reconcile_status.text())
+
+            # 4. Copy missing files to destination and re-check -> should report Ziel aktuell
+            (dst / "img2.jpg").write_text("jpg2")
+            (dst / "raw2.orf").write_text("raw2")
+            missing_none = view.reconcile_missing_both()
+            self.assertEqual(len(missing_none), 0)
+            self.assertEqual(len(view.pane_source._checked_paths), 0)
+            self.assertIn("Ziel aktuell", view.lbl_reconcile_status.text())
+
+            # Clean up widgets
+            QThreadPool.globalInstance().waitForDone(2000)
+            view.close()
+            view.deleteLater()
             _app.processEvents()
 
 

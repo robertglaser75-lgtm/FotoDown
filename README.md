@@ -90,6 +90,11 @@ Lauffähig unter **Windows** und **Linux**.
 - 🛡️ **Duales Backup & Bit-genaue Verifikation:**
   - Gleichzeitiges Kopieren auf zwei Ziele (z.B. Arbeits-SSD und NAS-Archiv).
   - SHA-256 Checksum-Prüfung nach dem Schreiben garantiert 100%ige Datenintegrität.
+- 💾 **Dual-Pane Sicherung & Archivierung (Tab 3):**
+  - Direkter Transfer zwischen lokaler Arbeitsstation (PC/Laptop) und Langzeitspeicher (NAS / Familienalbum).
+  - Parallele Verzeichnisbäume links (Quelle) und rechts (Ziel) mit vollständiger Pfadanzeige beim Einstiegspunkt.
+  - Intelligenter **Dateiabgleich**: Prüft und markiert automatisch fehlende JPGs, fehlende RAWs oder beide Dateitypen zur schnellen Übertragung.
+  - Integrierte XMP-Sidecar-Mitführung, Sortierung und flexible Listen-/Kachel-Vorschau.
 - 🚀 **Professioneller Fluent Dark Splashscreen:** Schneller, visuell ansprechender Start mit asynchroner Status- und Ladeanzeige.
 - 🔍 **Quick-Look & Vollbild-Schnellvorschau:** Sofortige hochauflösende Schnellvorschau per **Leertaste** oder Doppelklick inklusive RAW-Unterstützung, Pfeiltasten-Navigation und EXIF-Inspektor.
 - ⚡ **Echtzeit-Performance & Restzeit (ETA):** Live-Anzeige der Kopiergeschwindigkeit (MB/s) und der verbleibenden Restzeit während des Imports.

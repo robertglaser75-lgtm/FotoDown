@@ -34,8 +34,8 @@ from core.xmp_sync import read_xmp_workflow_info
 from gui_qt.styles.icons import (
     get_arrow_right_icon, get_check_all_icon, get_clear_icon, get_files_icon,
     get_folder_icon, get_grid_icon, get_invert_icon, get_list_icon,
-    get_move_icon, get_quick_icon, get_refresh_icon, get_sort_icon,
-    get_swap_icon, get_uncheck_all_icon
+    get_move_icon, get_quick_icon, get_refresh_icon, get_search_icon,
+    get_sort_icon, get_swap_icon, get_uncheck_all_icon
 )
 from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
 from gui_qt.workers.thumb_worker import ThumbnailSignals, ThumbnailTask
@@ -970,6 +970,67 @@ class TransferTabView(QWidget):
         lbl_actions.setStyleSheet("color: #38bdf8; font-weight: bold; font-size: 11px; letter-spacing: 1px;")
         center_layout.addWidget(lbl_actions)
 
+        # Abgleich (Reconcile / Check missing files on right side)
+        self.btn_reconcile = QPushButton("Abgleich ▾")
+        self.btn_reconcile.setIcon(get_search_icon("#fbbf24", 13))
+        self.btn_reconcile.setIconSize(QSize(13, 13))
+        self.btn_reconcile.setToolTip("Abgleich: Ermittelt welche Dateien links vorhanden sind, aber rechts noch fehlen, und markiert sie zum Kopieren.")
+        self.btn_reconcile.setStyleSheet("""
+            QPushButton {
+                background-color: #1e293b; color: #fbbf24; border: 1px solid #d97706;
+                font-weight: bold; border-radius: 5px; padding: 7px 6px; font-size: 11px;
+            }
+            QPushButton:hover { background-color: #d97706; color: white; }
+            QPushButton::menu-indicator { subcontrol-origin: padding; subcontrol-position: right center; width: 12px; }
+        """)
+
+        reconcile_menu = QMenu(self.btn_reconcile)
+        reconcile_menu.setStyleSheet("""
+            QMenu {
+                background-color: #1e293b; color: #f1f5f9; border: 1px solid #334155;
+                border-radius: 6px; padding: 4px;
+            }
+            QMenu::item {
+                padding: 6px 14px; border-radius: 4px; font-size: 11px;
+            }
+            QMenu::item:selected {
+                background-color: #0284c7; color: #ffffff;
+            }
+        """)
+
+        act_missing_jpg = reconcile_menu.addAction("Fehlende JPGs markieren")
+        act_missing_jpg.setIcon(get_search_icon("#38bdf8", 12))
+        act_missing_jpg.setToolTip("Prüft welche JPGs links vorhanden sind und rechts fehlen, und markiert sie links.")
+        act_missing_jpg.triggered.connect(self.reconcile_missing_jpg)
+
+        act_missing_raw = reconcile_menu.addAction("Fehlende RAWs markieren")
+        act_missing_raw.setIcon(get_search_icon("#f43f5e", 12))
+        act_missing_raw.setToolTip("Prüft welche RAWs links vorhanden sind und rechts fehlen, und markiert sie links.")
+        act_missing_raw.triggered.connect(self.reconcile_missing_raw)
+
+        reconcile_menu.addSeparator()
+
+        act_missing_both = reconcile_menu.addAction("Beides (RAW & JPG) markieren")
+        act_missing_both.setIcon(get_search_icon("#fbbf24", 12))
+        act_missing_both.setToolTip("Prüft alle RAW- und JPG-Dateien, die links vorhanden sind und rechts fehlen, und markiert sie links.")
+        act_missing_both.triggered.connect(self.reconcile_missing_both)
+
+        self.btn_reconcile.setMenu(reconcile_menu)
+        self.btn_reconcile.clicked.connect(self.btn_reconcile.showMenu)
+        center_layout.addWidget(self.btn_reconcile)
+
+        self.lbl_reconcile_status = QLabel("")
+        self.lbl_reconcile_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_reconcile_status.setWordWrap(True)
+        self.lbl_reconcile_status.setStyleSheet("color: #94a3b8; font-size: 9px;")
+        center_layout.addWidget(self.lbl_reconcile_status)
+
+        # Separator line
+        sep_rec = QFrame()
+        sep_rec.setFrameShape(QFrame.Shape.HLine)
+        sep_rec.setStyleSheet("color: #334155; margin: 2px 0;")
+        center_layout.addWidget(sep_rec)
+
         # Action: Copy Selection
         self.btn_copy_sel = QPushButton("Kopieren")
         self.btn_copy_sel.setIcon(get_arrow_right_icon("#ffffff", 14, double=False))
@@ -1252,6 +1313,7 @@ class TransferTabView(QWidget):
         QMessageBox.critical(self, "Übertragungsfehler", message)
 
     def _set_buttons_transferring(self, is_running: bool):
+        self.btn_reconcile.setEnabled(not is_running)
         self.btn_copy_sel.setEnabled(not is_running)
         self.btn_move_sel.setEnabled(not is_running)
         self.btn_copy_all.setEnabled(not is_running)
@@ -1259,3 +1321,98 @@ class TransferTabView(QWidget):
         self.btn_swap.setEnabled(not is_running)
         if not is_running:
             self._update_action_states()
+
+    def reconcile_missing_jpg(self) -> List[Path]:
+        """Checks which JPG files in source are missing in destination and marks them for transfer."""
+        return self.reconcile_missing_files("jpg")
+
+    def reconcile_missing_raw(self) -> List[Path]:
+        """Checks which RAW files in source are missing in destination and marks them for transfer."""
+        return self.reconcile_missing_files("raw")
+
+    def reconcile_missing_both(self) -> List[Path]:
+        """Checks which RAW and JPG files in source are missing in destination and marks them for transfer."""
+        return self.reconcile_missing_files("both")
+
+    def reconcile_missing_files(self, mode: str = "both") -> List[Path]:
+        """
+        Reconciles source (left) with destination (right).
+        Checks which files matching `mode` ('jpg', 'raw', 'both'/'all') exist in source
+        but are missing in the destination directory.
+        Selected missing files are marked/checked in pane_source for immediate transfer.
+        Returns the list of missing file Paths.
+        """
+        src_folder = self.pane_source.current_folder
+        if not src_folder or not src_folder.exists():
+            self.lbl_reconcile_status.setText("Kein Quellordner gewählt")
+            self.lbl_reconcile_status.setStyleSheet("color: #f87171; font-size: 9px;")
+            return []
+
+        dest_folder = self.pane_dest.current_folder
+        if not dest_folder or not dest_folder.exists():
+            self.lbl_reconcile_status.setText("Kein Zielordner gewählt")
+            self.lbl_reconcile_status.setStyleSheet("color: #f87171; font-size: 9px;")
+            return []
+
+        # Read destination filenames
+        dest_filenames: Set[str] = set()
+        try:
+            with os.scandir(dest_folder) as entries:
+                for entry in entries:
+                    if entry.is_file():
+                        dest_filenames.add(entry.name.lower())
+        except Exception as err:
+            self.lbl_reconcile_status.setText(f"Zielfehler: {err}")
+            self.lbl_reconcile_status.setStyleSheet("color: #f87171; font-size: 9px;")
+            return []
+
+        # Ensure source folder is scanned
+        if not self.pane_source.all_items:
+            self.pane_source.refresh(force_scan=True)
+
+        mode_clean = mode.lower()
+        missing_items: List[TransferItem] = []
+        for it in self.pane_source.all_items:
+            if mode_clean == "jpg" and not it.is_jpeg:
+                continue
+            elif mode_clean == "raw" and not it.is_raw:
+                continue
+            elif mode_clean in ("both", "all") and not (it.is_raw or it.is_jpeg):
+                continue
+
+            if it.name.lower() not in dest_filenames:
+                missing_items.append(it)
+
+        # Clear existing selection and mark all missing items
+        self.pane_source.select_none()
+        for it in missing_items:
+            self.pane_source._checked_paths.add(str(it.path))
+
+        # Make sure files view is visible on source pane
+        if not self.pane_source._show_files:
+            self.pane_source.set_files_visible(True)
+
+        # Reset conflicting type filter if active so user can see checked items
+        if mode_clean == "jpg" and self.pane_source.combo_type.currentText() == "Nur RAW":
+            self.pane_source.combo_type.setCurrentIndex(0)
+        elif mode_clean == "raw" and self.pane_source.combo_type.currentText() == "Nur JPG":
+            self.pane_source.combo_type.setCurrentIndex(0)
+
+        self.pane_source._populate_views()
+        self.pane_source._update_selection_counter()
+
+        # Update feedback UI
+        labels = {"jpg": "JPGs", "raw": "RAWs", "both": "RAW & JPG", "all": "Dateien"}
+        lbl = labels.get(mode_clean, "Dateien")
+        count = len(missing_items)
+        if count > 0:
+            self.lbl_reconcile_status.setText(f"✓ {count} fehlende {lbl} links markiert")
+            self.lbl_reconcile_status.setStyleSheet("color: #4ade80; font-size: 9px; font-weight: bold;")
+            self.lbl_reconcile_status.setToolTip(f"{count} {lbl} links gefunden, die im Zielordner fehlen. Zur Übertragung markiert.")
+        else:
+            self.lbl_reconcile_status.setText(f"✓ Ziel aktuell (0 {lbl} fehlen)")
+            self.lbl_reconcile_status.setStyleSheet("color: #38bdf8; font-size: 9px;")
+            self.lbl_reconcile_status.setToolTip(f"Alle {lbl} aus dem Quellordner sind im Zielordner bereits vorhanden.")
+
+        return [it.path for it in missing_items]
+
