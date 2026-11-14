@@ -3,6 +3,17 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.24.0] - 2026-11-15
+
+### Hinzugefügt & Verbessert
+- **Konfigurierbare Abgleich-Methoden im Einstellungsmenü ([`gui_qt/dialogs/settings_dialog.py`](gui_qt/dialogs/settings_dialog.py), [`core/config.py`](core/config.py), [`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
+  - Neue Konfigurationsoption *„Dateiabgleich-Methode (Sichern & Archivieren)“* (`transfer_reconcile_method`) im Einstellungsmenü unter *„🏠 NAS & Archivierung“*:
+    - **📁 Namensgleichheit (Dateiname):** Blitzschneller Abgleich über Dateinamen (Groß-/Kleinschreibung tolerant).
+    - **📅 EXIF-Aufnahmezeit (`DateTimeOriginal`):** Gleicht Fotos über ihren exakten Metadaten-Aufnahmezeitpunkt ab. Erkennt Fotos auch dann zuverlässig als vorhanden, wenn sie beim Import oder Archivieren umbenannt wurden.
+    - **🔒 SHA-256 Prüfsumme:** Bit-genauer Inhaltsabgleich zur 100%igen Duplikatserkennung (optimiert mit Dateigrößen-Vorfilterung zur Minimierung von Netzwerklasten).
+  - Anzeige der aktuell aktiven Methode im Ausklappmenü des Abgleich-Buttons inklusive Schnellzugriff auf die Programmeinstellungen.
+  - Das Status-Label im Aktionsbereich zeigt nun transparent die verwendete Methode an (z. B. *„✓ 14 fehlende RAWs markiert (EXIF-Zeit)“* oder *„✓ Ziel aktuell (0 fehlen, SHA-256)“*).
+
 ## [0.23.0] - 2026-11-13
 
 ### Hinzugefügt & Verbessert

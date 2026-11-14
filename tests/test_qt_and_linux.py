@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.23.0")
+        self.assertEqual(__version__, "0.24.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -2161,7 +2161,7 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             self.assertEqual(missing_jpgs[0].name, "img2.jpg")
             self.assertIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
             self.assertNotIn(str(src / "img1.jpg"), view.pane_source._checked_paths)
-            self.assertIn("1 fehlende JPGs links markiert", view.lbl_reconcile_status.text())
+            self.assertIn("1 fehlende JPGs markiert", view.lbl_reconcile_status.text())
 
             # 2. Test reconcile RAW (only raw2.orf is missing)
             missing_raws = view.reconcile_missing_raw()
@@ -2170,7 +2170,7 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             self.assertIn(str(src / "raw2.orf"), view.pane_source._checked_paths)
             self.assertNotIn(str(src / "raw1.orf"), view.pane_source._checked_paths)
             self.assertNotIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
-            self.assertIn("1 fehlende RAWs links markiert", view.lbl_reconcile_status.text())
+            self.assertIn("1 fehlende RAWs markiert", view.lbl_reconcile_status.text())
 
             # 3. Test reconcile both (RAW & JPG -> img2.jpg and raw2.orf)
             missing_both = view.reconcile_missing_both()
@@ -2179,7 +2179,7 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             self.assertEqual(missing_names, {"img2.jpg", "raw2.orf"})
             self.assertIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
             self.assertIn(str(src / "raw2.orf"), view.pane_source._checked_paths)
-            self.assertIn("2 fehlende RAW & JPG links markiert", view.lbl_reconcile_status.text())
+            self.assertIn("2 fehlende RAW & JPG markiert", view.lbl_reconcile_status.text())
 
             # 4. Copy missing files to destination and re-check -> should report Ziel aktuell
             (dst / "img2.jpg").write_text("jpg2")
@@ -2194,6 +2194,124 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             view.close()
             view.deleteLater()
             _app.processEvents()
+
+    def test_transfer_tab_reconciliation_exif(self):
+        """Verifies EXIF date_taken reconciliation even when files are renamed."""
+        import tempfile
+        from pathlib import Path
+        from PIL import Image
+        from core.config import AppConfig
+        from gui_qt.views.transfer_tab import TransferTabView
+        from PySide6.QtCore import QThreadPool
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            src = tmp / "Quelle"
+            dst = tmp / "Ziel"
+            src.mkdir()
+            dst.mkdir()
+
+            # Create test JPGs with EXIF dates
+            img = Image.new("RGB", (20, 20), color="blue")
+
+            # Source: DSC_0001.jpg (2026:05:20 14:00:00) and DSC_0002.jpg (2026:05:20 14:15:00)
+            exif1 = img.getexif()
+            exif1[36867] = "2026:05:20 14:00:00"
+            img.save(src / "DSC_0001.jpg", exif=exif1)
+
+            exif2 = img.getexif()
+            exif2[36867] = "2026:05:20 14:15:00"
+            img.save(src / "DSC_0002.jpg", exif=exif2)
+
+            # Destination: Foto_Renamed.jpg with SAME EXIF as DSC_0001.jpg
+            exif_dst = img.getexif()
+            exif_dst[36867] = "2026:05:20 14:00:00"
+            img.save(dst / "Foto_Renamed.jpg", exif=exif_dst)
+
+            cfg = AppConfig(transfer_reconcile_method="exif")
+            view = TransferTabView(cfg)
+            view.pane_source.load_folder(src)
+            view.pane_dest.load_folder(dst)
+            _app.processEvents()
+
+            # Reconcile JPG: DSC_0001.jpg should be recognized as existing, DSC_0002.jpg missing
+            missing = view.reconcile_missing_jpg()
+            self.assertEqual(len(missing), 1)
+            self.assertEqual(missing[0].name, "DSC_0002.jpg")
+            self.assertIn("EXIF-Zeit", view.lbl_reconcile_status.text())
+
+            QThreadPool.globalInstance().waitForDone(2000)
+            view.close()
+            view.deleteLater()
+            _app.processEvents()
+
+    def test_transfer_tab_reconciliation_sha256(self):
+        """Verifies bit-exact SHA-256 reconciliation."""
+        import tempfile
+        from pathlib import Path
+        from core.config import AppConfig
+        from gui_qt.views.transfer_tab import TransferTabView
+        from PySide6.QtCore import QThreadPool
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            src = tmp / "Quelle"
+            dst = tmp / "Ziel"
+            src.mkdir()
+            dst.mkdir()
+
+            # Source: pic_a.jpg and pic_b.jpg
+            (src / "pic_a.jpg").write_bytes(b"content_alpha_123456789")
+            (src / "pic_b.jpg").write_bytes(b"content_beta_987654321")
+
+            # Destination: different filename, but identical content to pic_a.jpg
+            (dst / "archived_pic.jpg").write_bytes(b"content_alpha_123456789")
+
+            cfg = AppConfig(transfer_reconcile_method="sha256")
+            view = TransferTabView(cfg)
+            view.pane_source.load_folder(src)
+            view.pane_dest.load_folder(dst)
+            _app.processEvents()
+
+            # Reconcile: pic_a.jpg matches destination content; pic_b.jpg is missing
+            missing = view.reconcile_missing_both()
+            self.assertEqual(len(missing), 1)
+            self.assertEqual(missing[0].name, "pic_b.jpg")
+            self.assertIn("SHA-256", view.lbl_reconcile_status.text())
+
+            QThreadPool.globalInstance().waitForDone(2000)
+            view.close()
+            view.deleteLater()
+            _app.processEvents()
+
+    def test_settings_dialog_reconcile_method(self):
+        """Verifies that SettingsDialog loads and saves the transfer_reconcile_method."""
+        from core.config import AppConfig
+        from gui_qt.dialogs.settings_dialog import SettingsDialog
+
+        cfg = AppConfig(transfer_reconcile_method="filename")
+        dlg = SettingsDialog(cfg, initial_tab=2)
+
+        # Check default value in combo box
+        self.assertEqual(dlg.combo_reconcile_method.currentData(), "filename")
+
+        # Change to exif
+        idx_exif = dlg.combo_reconcile_method.findData("exif")
+        dlg.combo_reconcile_method.setCurrentIndex(idx_exif)
+        dlg.save_to_config()
+
+        self.assertEqual(cfg.transfer_reconcile_method, "exif")
+
+        # Change to sha256
+        idx_sha = dlg.combo_reconcile_method.findData("sha256")
+        dlg.combo_reconcile_method.setCurrentIndex(idx_sha)
+        dlg.save_to_config()
+
+        self.assertEqual(cfg.transfer_reconcile_method, "sha256")
+
+        dlg.close()
+        dlg.deleteLater()
+        _app.processEvents()
 
     def test_culling_directory_tree_entry_point_full_path(self):
         """Verifies that the full path is displayed at the entry point (header label and tree root node)."""
@@ -2273,7 +2391,7 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             self.assertEqual(missing_jpgs[0].name, "img2.jpg")
             self.assertIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
             self.assertNotIn(str(src / "img1.jpg"), view.pane_source._checked_paths)
-            self.assertIn("1 fehlende JPGs links markiert", view.lbl_reconcile_status.text())
+            self.assertIn("1 fehlende JPGs markiert", view.lbl_reconcile_status.text())
 
             # 2. Test reconcile RAW (only raw2.orf is missing)
             missing_raws = view.reconcile_missing_raw()
@@ -2282,7 +2400,7 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             self.assertIn(str(src / "raw2.orf"), view.pane_source._checked_paths)
             self.assertNotIn(str(src / "raw1.orf"), view.pane_source._checked_paths)
             self.assertNotIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
-            self.assertIn("1 fehlende RAWs links markiert", view.lbl_reconcile_status.text())
+            self.assertIn("1 fehlende RAWs markiert", view.lbl_reconcile_status.text())
 
             # 3. Test reconcile both (RAW & JPG -> img2.jpg and raw2.orf)
             missing_both = view.reconcile_missing_both()
@@ -2291,7 +2409,7 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             self.assertEqual(missing_names, {"img2.jpg", "raw2.orf"})
             self.assertIn(str(src / "img2.jpg"), view.pane_source._checked_paths)
             self.assertIn(str(src / "raw2.orf"), view.pane_source._checked_paths)
-            self.assertIn("2 fehlende RAW & JPG links markiert", view.lbl_reconcile_status.text())
+            self.assertIn("2 fehlende RAW & JPG markiert", view.lbl_reconcile_status.text())
 
             # 4. Copy missing files to destination and re-check -> should report Ziel aktuell
             (dst / "img2.jpg").write_text("jpg2")
@@ -2306,6 +2424,124 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             view.close()
             view.deleteLater()
             _app.processEvents()
+
+    def test_transfer_tab_reconciliation_exif(self):
+        """Verifies EXIF date_taken reconciliation even when files are renamed."""
+        import tempfile
+        from pathlib import Path
+        from PIL import Image
+        from core.config import AppConfig
+        from gui_qt.views.transfer_tab import TransferTabView
+        from PySide6.QtCore import QThreadPool
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            src = tmp / "Quelle"
+            dst = tmp / "Ziel"
+            src.mkdir()
+            dst.mkdir()
+
+            # Create test JPGs with EXIF dates
+            img = Image.new("RGB", (20, 20), color="blue")
+
+            # Source: DSC_0001.jpg (2026:05:20 14:00:00) and DSC_0002.jpg (2026:05:20 14:15:00)
+            exif1 = img.getexif()
+            exif1[36867] = "2026:05:20 14:00:00"
+            img.save(src / "DSC_0001.jpg", exif=exif1)
+
+            exif2 = img.getexif()
+            exif2[36867] = "2026:05:20 14:15:00"
+            img.save(src / "DSC_0002.jpg", exif=exif2)
+
+            # Destination: Foto_Renamed.jpg with SAME EXIF as DSC_0001.jpg
+            exif_dst = img.getexif()
+            exif_dst[36867] = "2026:05:20 14:00:00"
+            img.save(dst / "Foto_Renamed.jpg", exif=exif_dst)
+
+            cfg = AppConfig(transfer_reconcile_method="exif")
+            view = TransferTabView(cfg)
+            view.pane_source.load_folder(src)
+            view.pane_dest.load_folder(dst)
+            _app.processEvents()
+
+            # Reconcile JPG: DSC_0001.jpg should be recognized as existing, DSC_0002.jpg missing
+            missing = view.reconcile_missing_jpg()
+            self.assertEqual(len(missing), 1)
+            self.assertEqual(missing[0].name, "DSC_0002.jpg")
+            self.assertIn("EXIF-Zeit", view.lbl_reconcile_status.text())
+
+            QThreadPool.globalInstance().waitForDone(2000)
+            view.close()
+            view.deleteLater()
+            _app.processEvents()
+
+    def test_transfer_tab_reconciliation_sha256(self):
+        """Verifies bit-exact SHA-256 reconciliation."""
+        import tempfile
+        from pathlib import Path
+        from core.config import AppConfig
+        from gui_qt.views.transfer_tab import TransferTabView
+        from PySide6.QtCore import QThreadPool
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            src = tmp / "Quelle"
+            dst = tmp / "Ziel"
+            src.mkdir()
+            dst.mkdir()
+
+            # Source: pic_a.jpg and pic_b.jpg
+            (src / "pic_a.jpg").write_bytes(b"content_alpha_123456789")
+            (src / "pic_b.jpg").write_bytes(b"content_beta_987654321")
+
+            # Destination: different filename, but identical content to pic_a.jpg
+            (dst / "archived_pic.jpg").write_bytes(b"content_alpha_123456789")
+
+            cfg = AppConfig(transfer_reconcile_method="sha256")
+            view = TransferTabView(cfg)
+            view.pane_source.load_folder(src)
+            view.pane_dest.load_folder(dst)
+            _app.processEvents()
+
+            # Reconcile: pic_a.jpg matches destination content; pic_b.jpg is missing
+            missing = view.reconcile_missing_both()
+            self.assertEqual(len(missing), 1)
+            self.assertEqual(missing[0].name, "pic_b.jpg")
+            self.assertIn("SHA-256", view.lbl_reconcile_status.text())
+
+            QThreadPool.globalInstance().waitForDone(2000)
+            view.close()
+            view.deleteLater()
+            _app.processEvents()
+
+    def test_settings_dialog_reconcile_method(self):
+        """Verifies that SettingsDialog loads and saves the transfer_reconcile_method."""
+        from core.config import AppConfig
+        from gui_qt.dialogs.settings_dialog import SettingsDialog
+
+        cfg = AppConfig(transfer_reconcile_method="filename")
+        dlg = SettingsDialog(cfg, initial_tab=2)
+
+        # Check default value in combo box
+        self.assertEqual(dlg.combo_reconcile_method.currentData(), "filename")
+
+        # Change to exif
+        idx_exif = dlg.combo_reconcile_method.findData("exif")
+        dlg.combo_reconcile_method.setCurrentIndex(idx_exif)
+        dlg.save_to_config()
+
+        self.assertEqual(cfg.transfer_reconcile_method, "exif")
+
+        # Change to sha256
+        idx_sha = dlg.combo_reconcile_method.findData("sha256")
+        dlg.combo_reconcile_method.setCurrentIndex(idx_sha)
+        dlg.save_to_config()
+
+        self.assertEqual(cfg.transfer_reconcile_method, "sha256")
+
+        dlg.close()
+        dlg.deleteLater()
+        _app.processEvents()
 
 
 if __name__ == "__main__":

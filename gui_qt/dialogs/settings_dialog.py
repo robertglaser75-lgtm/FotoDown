@@ -414,6 +414,26 @@ class SettingsDialog(QDialog):
         row_na.addWidget(btn_browse_na)
         layout.addLayout(row_na)
 
+        layout.addSpacing(12)
+
+        # Abgleich-Methode (Sichern & Archivieren)
+        lbl_reconcile = QLabel("🔍 Dateiabgleich-Methode (Sichern & Archivieren):")
+        lbl_reconcile.setStyleSheet("font-weight: 600; color: #38bdf8;")
+        layout.addWidget(lbl_reconcile)
+
+        lbl_reconcile_hint = QLabel(
+            "Legt fest, anhand welcher Kriterien festgestellt wird, ob ein Foto links (Quelle) "
+            "bereits im rechten Zielordner (NAS/Archiv) vorhanden ist:"
+        )
+        lbl_reconcile_hint.setStyleSheet("color: #64748b; font-size: 11px;")
+        layout.addWidget(lbl_reconcile_hint)
+
+        self.combo_reconcile_method = QComboBox()
+        self.combo_reconcile_method.addItem("📁 Namensgleichheit (Dateiname: DSC001.JPG == DSC001.JPG, blitzschnell)", "filename")
+        self.combo_reconcile_method.addItem("📅 EXIF-Aufnahmezeit (DateTimeOriginal, erkennt auch umbenannte Fotos)", "exif")
+        self.combo_reconcile_method.addItem("🔒 SHA-256 Prüfsumme (Bit-genauer Dateiinhalt, 100% sicher)", "sha256")
+        layout.addWidget(self.combo_reconcile_method)
+
         layout.addStretch()
         return w
 
@@ -570,6 +590,8 @@ class SettingsDialog(QDialog):
         # 3. NAS
         self.edit_family_album.setText(c.family_album_dir)
         self.edit_nas_archive.setText(c.nas_archive_dir)
+        idx_rec = self.combo_reconcile_method.findData(getattr(c, "transfer_reconcile_method", "filename"))
+        self.combo_reconcile_method.setCurrentIndex(max(0, idx_rec))
 
         # 4. External editors
         self.edit_darktable.setText(c.darktable_path)
@@ -610,6 +632,7 @@ class SettingsDialog(QDialog):
         # 3. NAS
         c.family_album_dir = self.edit_family_album.text().strip()
         c.nas_archive_dir = self.edit_nas_archive.text().strip()
+        c.transfer_reconcile_method = self.combo_reconcile_method.currentData() or "filename"
 
         # 4. External editors
         c.darktable_path = self.edit_darktable.text().strip()

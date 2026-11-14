@@ -93,7 +93,7 @@ Lauffähig unter **Windows** und **Linux**.
 - 💾 **Dual-Pane Sicherung & Archivierung (Tab 3):**
   - Direkter Transfer zwischen lokaler Arbeitsstation (PC/Laptop) und Langzeitspeicher (NAS / Familienalbum).
   - Parallele Verzeichnisbäume links (Quelle) und rechts (Ziel) mit vollständiger Pfadanzeige beim Einstiegspunkt.
-  - Intelligenter **Dateiabgleich**: Prüft und markiert automatisch fehlende JPGs, fehlende RAWs oder beide Dateitypen zur schnellen Übertragung.
+  - Intelligenter, konfigurierbarer **Dateiabgleich**: Prüft und markiert automatisch fehlende JPGs, RAWs oder beide Dateitypen wahlweise über **Dateinamen**, **EXIF-Aufnahmezeit** (findet auch umbenannte Fotos) oder **SHA-256 Prüfsumme**.
   - Integrierte XMP-Sidecar-Mitführung, Sortierung und flexible Listen-/Kachel-Vorschau.
 - 🚀 **Professioneller Fluent Dark Splashscreen:** Schneller, visuell ansprechender Start mit asynchroner Status- und Ladeanzeige.
 - 🔍 **Quick-Look & Vollbild-Schnellvorschau:** Sofortige hochauflösende Schnellvorschau per **Leertaste** oder Doppelklick inklusive RAW-Unterstützung, Pfeiltasten-Navigation und EXIF-Inspektor.

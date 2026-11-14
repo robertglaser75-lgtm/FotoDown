@@ -127,6 +127,7 @@ class AppConfig:
     family_album_pattern: str = "0001_Unsere_Fotos/{YYYY}/{MM}"
     transfer_source_dir: str = ""
     transfer_target_dir: str = ""
+    transfer_reconcile_method: str = "filename"  # "filename", "exif", "sha256"
     # Verzeichnisbaum Spalten-Optionen
     tree_show_col_bilder: bool = True
     tree_show_col_raw: bool = True

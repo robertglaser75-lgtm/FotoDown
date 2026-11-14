@@ -13,11 +13,13 @@ Features:
 - Full companion sidecar synchronization (.xmp) during copy and move operations.
 """
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
+import hashlib
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Union
+from typing import Counter as CounterType, Dict, List, Optional, Set, Tuple, Union
 
 from PySide6.QtCore import Qt, Signal, QSize, QThreadPool
 from PySide6.QtGui import QColor, QFont, QIcon, QImage, QPixmap
@@ -30,10 +32,11 @@ from PySide6.QtWidgets import (
 
 from core.config import AppConfig
 from core.drive_detector import format_size
+from core.exif_reader import extract_metadata
 from core.xmp_sync import read_xmp_workflow_info
 from gui_qt.styles.icons import (
     get_arrow_right_icon, get_check_all_icon, get_clear_icon, get_files_icon,
-    get_folder_icon, get_grid_icon, get_invert_icon, get_list_icon,
+    get_folder_icon, get_gear_icon, get_grid_icon, get_invert_icon, get_list_icon,
     get_move_icon, get_quick_icon, get_refresh_icon, get_search_icon,
     get_sort_icon, get_swap_icon, get_uncheck_all_icon
 )
@@ -45,6 +48,18 @@ RAW_EXTENSIONS = {".orf", ".rw2", ".cr2", ".cr3", ".nef", ".arw", ".dng", ".raf"
 JPEG_EXTENSIONS = {".jpg", ".jpeg", ".jpe", ".png", ".webp", ".tif", ".tiff", ".heic"}
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".m4v"}
 ALL_MEDIA_EXTENSIONS = RAW_EXTENSIONS | JPEG_EXTENSIONS | VIDEO_EXTENSIONS
+
+
+def compute_file_sha256(file_path: Path, chunk_size: int = 65536) -> str:
+    """Computes SHA-256 hash of a file for exact bit-level matching."""
+    hasher = hashlib.sha256()
+    try:
+        with open(file_path, "rb") as f:
+            while chunk := f.read(chunk_size):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+    except Exception:
+        return ""
 
 
 @dataclass
@@ -1015,6 +1030,13 @@ class TransferTabView(QWidget):
         act_missing_both.setToolTip("Prüft alle RAW- und JPG-Dateien, die links vorhanden sind und rechts fehlen, und markiert sie links.")
         act_missing_both.triggered.connect(self.reconcile_missing_both)
 
+        reconcile_menu.addSeparator()
+
+        self.act_reconcile_settings = reconcile_menu.addAction("")
+        self.act_reconcile_settings.setIcon(get_gear_icon("#94a3b8", 12))
+        self.act_reconcile_settings.triggered.connect(self._open_reconcile_settings)
+        self._update_reconcile_action_label()
+
         self.btn_reconcile.setMenu(reconcile_menu)
         self.btn_reconcile.clicked.connect(self.btn_reconcile.showMenu)
         center_layout.addWidget(self.btn_reconcile)
@@ -1322,6 +1344,25 @@ class TransferTabView(QWidget):
         if not is_running:
             self._update_action_states()
 
+    def _update_reconcile_action_label(self):
+        method = getattr(self.config, "transfer_reconcile_method", "filename").lower()
+        method_names = {
+            "filename": "Dateiname",
+            "exif": "EXIF-Aufnahmezeit",
+            "sha256": "SHA-256 Prüfsumme"
+        }
+        name = method_names.get(method, "Dateiname")
+        if hasattr(self, "act_reconcile_settings"):
+            self.act_reconcile_settings.setText(f"⚙️ Methode: {name}...")
+            self.act_reconcile_settings.setToolTip(f"Aktive Abgleich-Methode: {name}. Klicken zum Anpassen in den Programmeinstellungen.")
+        self.btn_reconcile.setToolTip(f"Abgleich (nach {name}): Ermittelt links vorhandene, rechts fehlende Dateien und markiert sie zum Kopieren.")
+
+    def _open_reconcile_settings(self):
+        from gui_qt.dialogs.settings_dialog import SettingsDialog
+        dlg = SettingsDialog(self.config, parent=self, initial_tab=2)
+        if dlg.exec():
+            self._update_reconcile_action_label()
+
     def reconcile_missing_jpg(self) -> List[Path]:
         """Checks which JPG files in source are missing in destination and marks them for transfer."""
         return self.reconcile_missing_files("jpg")
@@ -1337,8 +1378,10 @@ class TransferTabView(QWidget):
     def reconcile_missing_files(self, mode: str = "both") -> List[Path]:
         """
         Reconciles source (left) with destination (right).
-        Checks which files matching `mode` ('jpg', 'raw', 'both'/'all') exist in source
-        but are missing in the destination directory.
+        Uses the comparison method defined in `self.config.transfer_reconcile_method`:
+          - 'filename': identical filename comparison (case-insensitive)
+          - 'exif': matching EXIF date_taken (DateTimeOriginal) and media category
+          - 'sha256': exact bit-level SHA-256 file content hash
         Selected missing files are marked/checked in pane_source for immediate transfer.
         Returns the list of missing file Paths.
         """
@@ -1354,24 +1397,12 @@ class TransferTabView(QWidget):
             self.lbl_reconcile_status.setStyleSheet("color: #f87171; font-size: 9px;")
             return []
 
-        # Read destination filenames
-        dest_filenames: Set[str] = set()
-        try:
-            with os.scandir(dest_folder) as entries:
-                for entry in entries:
-                    if entry.is_file():
-                        dest_filenames.add(entry.name.lower())
-        except Exception as err:
-            self.lbl_reconcile_status.setText(f"Zielfehler: {err}")
-            self.lbl_reconcile_status.setStyleSheet("color: #f87171; font-size: 9px;")
-            return []
-
         # Ensure source folder is scanned
         if not self.pane_source.all_items:
             self.pane_source.refresh(force_scan=True)
 
         mode_clean = mode.lower()
-        missing_items: List[TransferItem] = []
+        candidate_items: List[TransferItem] = []
         for it in self.pane_source.all_items:
             if mode_clean == "jpg" and not it.is_jpeg:
                 continue
@@ -1379,9 +1410,106 @@ class TransferTabView(QWidget):
                 continue
             elif mode_clean in ("both", "all") and not (it.is_raw or it.is_jpeg):
                 continue
+            candidate_items.append(it)
 
-            if it.name.lower() not in dest_filenames:
-                missing_items.append(it)
+        method = getattr(self.config, "transfer_reconcile_method", "filename").lower()
+        if method not in ("filename", "exif", "sha256"):
+            method = "filename"
+
+        missing_items: List[TransferItem] = []
+
+        if method == "exif":
+            # 1. EXIF DateTimeOriginal matching
+            dest_exif_counts: CounterType[Tuple[str, str]] = Counter()
+            dest_filenames: Set[str] = set()
+            try:
+                with os.scandir(dest_folder) as entries:
+                    for entry in entries:
+                        if entry.is_file():
+                            dest_filenames.add(entry.name.lower())
+                            p = Path(entry.path)
+                            if p.suffix.lower() in ALL_MEDIA_EXTENSIONS:
+                                try:
+                                    meta = extract_metadata(p)
+                                    if meta and meta.date_taken:
+                                        d_str = meta.date_taken.strftime("%Y-%m-%d %H:%M:%S")
+                                        type_key = "raw" if meta.is_raw else "jpg"
+                                        dest_exif_counts[(d_str, type_key)] += 1
+                                except Exception:
+                                    pass
+            except Exception as err:
+                self.lbl_reconcile_status.setText(f"Zielfehler: {err}")
+                self.lbl_reconcile_status.setStyleSheet("color: #f87171; font-size: 9px;")
+                return []
+
+            for it in candidate_items:
+                try:
+                    meta = extract_metadata(it.path)
+                    if meta and meta.date_taken:
+                        d_str = meta.date_taken.strftime("%Y-%m-%d %H:%M:%S")
+                        type_key = "raw" if it.is_raw else "jpg"
+                        k = (d_str, type_key)
+                        if dest_exif_counts[k] > 0:
+                            dest_exif_counts[k] -= 1
+                        else:
+                            missing_items.append(it)
+                    else:
+                        # Fallback to filename if file has no EXIF date
+                        if it.name.lower() not in dest_filenames:
+                            missing_items.append(it)
+                except Exception:
+                    if it.name.lower() not in dest_filenames:
+                        missing_items.append(it)
+
+        elif method == "sha256":
+            # 2. Exact bit-level SHA-256 matching (with file size pre-filter)
+            dest_by_size: Dict[int, List[Path]] = {}
+            try:
+                with os.scandir(dest_folder) as entries:
+                    for entry in entries:
+                        if entry.is_file():
+                            try:
+                                dest_by_size.setdefault(entry.stat().st_size, []).append(Path(entry.path))
+                            except OSError:
+                                pass
+            except Exception as err:
+                self.lbl_reconcile_status.setText(f"Zielfehler: {err}")
+                self.lbl_reconcile_status.setStyleSheet("color: #f87171; font-size: 9px;")
+                return []
+
+            dest_hash_cache: Dict[Path, str] = {}
+            for it in candidate_items:
+                if it.size not in dest_by_size:
+                    missing_items.append(it)
+                    continue
+
+                src_hash = compute_file_sha256(it.path)
+                matched = False
+                for dest_p in dest_by_size[it.size]:
+                    if dest_p not in dest_hash_cache:
+                        dest_hash_cache[dest_p] = compute_file_sha256(dest_p)
+                    if dest_hash_cache[dest_p] == src_hash:
+                        matched = True
+                        break
+                if not matched:
+                    missing_items.append(it)
+
+        else:
+            # 3. Default: Filename equality
+            dest_filenames = set()
+            try:
+                with os.scandir(dest_folder) as entries:
+                    for entry in entries:
+                        if entry.is_file():
+                            dest_filenames.add(entry.name.lower())
+            except Exception as err:
+                self.lbl_reconcile_status.setText(f"Zielfehler: {err}")
+                self.lbl_reconcile_status.setStyleSheet("color: #f87171; font-size: 9px;")
+                return []
+
+            for it in candidate_items:
+                if it.name.lower() not in dest_filenames:
+                    missing_items.append(it)
 
         # Clear existing selection and mark all missing items
         self.pane_source.select_none()
@@ -1402,17 +1530,23 @@ class TransferTabView(QWidget):
         self.pane_source._update_selection_counter()
 
         # Update feedback UI
+        method_labels = {
+            "filename": "Name",
+            "exif": "EXIF-Zeit",
+            "sha256": "SHA-256"
+        }
+        m_lbl = method_labels.get(method, "Name")
         labels = {"jpg": "JPGs", "raw": "RAWs", "both": "RAW & JPG", "all": "Dateien"}
         lbl = labels.get(mode_clean, "Dateien")
         count = len(missing_items)
         if count > 0:
-            self.lbl_reconcile_status.setText(f"✓ {count} fehlende {lbl} links markiert")
+            self.lbl_reconcile_status.setText(f"✓ {count} fehlende {lbl} markiert ({m_lbl})")
             self.lbl_reconcile_status.setStyleSheet("color: #4ade80; font-size: 9px; font-weight: bold;")
-            self.lbl_reconcile_status.setToolTip(f"{count} {lbl} links gefunden, die im Zielordner fehlen. Zur Übertragung markiert.")
+            self.lbl_reconcile_status.setToolTip(f"{count} {lbl} links gefunden, die im Zielordner fehlen (geprüft nach {m_lbl}). Zur Übertragung markiert.")
         else:
-            self.lbl_reconcile_status.setText(f"✓ Ziel aktuell (0 {lbl} fehlen)")
+            self.lbl_reconcile_status.setText(f"✓ Ziel aktuell (0 {lbl} fehlen, {m_lbl})")
             self.lbl_reconcile_status.setStyleSheet("color: #38bdf8; font-size: 9px;")
-            self.lbl_reconcile_status.setToolTip(f"Alle {lbl} aus dem Quellordner sind im Zielordner bereits vorhanden.")
+            self.lbl_reconcile_status.setToolTip(f"Alle {lbl} aus dem Quellordner sind im Zielordner bereits vorhanden (geprüft nach {m_lbl}).")
 
         return [it.path for it in missing_items]
 
