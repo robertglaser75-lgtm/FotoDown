@@ -3,6 +3,12 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.10] - 2026-11-17
+
+### Behoben
+- **PySide6 / Shiboken6 Refcount-Fehler behoben (`culling_tree.py`, `tree_view.py`, `rename_dialog.py`):**
+  - Explizites Instanziieren von `QBrush(QColor(...))` bei `setForeground()`-Aufrufen in allen Standard-Items und Views anstelle der impliziten Konvertierung von `QColor`. Dies behebt den fatalen Fehler `Fatal Python error: none_dealloc: deallocating None` (Exit-Code 134) unter PySide6 auf Linux-Runnern.
+
 ## [0.32.9] - 2026-11-17
 
 ### Behoben

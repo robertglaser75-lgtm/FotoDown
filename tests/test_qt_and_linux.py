@@ -47,7 +47,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.32.9")
+        self.assertEqual(__version__, "0.32.10")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -3144,17 +3144,17 @@ class TestAllSettingsPersistence(unittest.TestCase):
 
         # Check total / raw / jpg item colors for Light mode
         c_tot, c_raw, c_jpg = tree._get_item_colors(10, 5, 5)
-        self.assertEqual(c_tot.name(), "#0f172a")  # Dark slate for contrast on white
-        self.assertEqual(c_raw.name(), "#be185d")  # Deep rose for contrast on white
-        self.assertEqual(c_jpg.name(), "#0284c7")  # Deep sky blue for contrast on white
+        self.assertEqual(c_tot.color().name(), "#0f172a")  # Dark slate for contrast on white
+        self.assertEqual(c_raw.color().name(), "#be185d")  # Deep rose for contrast on white
+        self.assertEqual(c_jpg.color().name(), "#0284c7")  # Deep sky blue for contrast on white
 
         # 2. Dark Mode Verification
         theme_manager.apply_theme("dark")
         self.assertEqual(theme_manager.effective_theme, "dark")
         c_tot_d, c_raw_d, c_jpg_d = tree._get_item_colors(10, 5, 5)
-        self.assertEqual(c_tot_d.name(), "#f8fafc")  # White/light for contrast on dark
-        self.assertEqual(c_raw_d.name(), "#f472b6")  # Light pink on dark
-        self.assertEqual(c_jpg_d.name(), "#38bdf8")  # Sky blue on dark
+        self.assertEqual(c_tot_d.color().name(), "#f8fafc")  # White/light for contrast on dark
+        self.assertEqual(c_raw_d.color().name(), "#f472b6")  # Light pink on dark
+        self.assertEqual(c_jpg_d.color().name(), "#38bdf8")  # Sky blue on dark
 
         # 3. Dock & Empty State inline styles clean check
         dock = CullingLeftNavigationDock(cfg)

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QFont, QIcon
+from PySide6.QtGui import QBrush, QColor, QFont, QIcon
 from PySide6.QtWidgets import (
     QCheckBox, QDialog, QFrame, QGridLayout, QHBoxLayout,
     QHeaderView, QLabel, QLineEdit, QMessageBox, QPushButton,
@@ -337,11 +337,11 @@ class BatchRenameDialog(QDialog):
             item_status = QTableWidgetItem(item.status_text)
 
             if item.original_path.name == item.new_filename:
-                item_new.setForeground(QColor("#94a3b8"))
-                item_status.setForeground(QColor("#64748b"))
+                item_new.setForeground(QBrush(QColor("#94a3b8")))
+                item_status.setForeground(QBrush(QColor("#64748b")))
             else:
-                item_new.setForeground(QColor("#38bdf8"))
-                item_status.setForeground(QColor("#4ade80"))
+                item_new.setForeground(QBrush(QColor("#38bdf8")))
+                item_status.setForeground(QBrush(QColor("#4ade80")))
 
             self.table_preview.setItem(row, 0, item_old)
             self.table_preview.setItem(row, 1, item_new)

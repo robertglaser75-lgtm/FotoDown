@@ -4,7 +4,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional
 from PySide6.QtCore import Qt, Signal, QModelIndex
-from PySide6.QtGui import QColor, QFont, QIcon, QStandardItem, QStandardItemModel
+from PySide6.QtGui import QBrush, QColor, QFont, QIcon, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton,
     QTreeView, QVBoxLayout, QWidget
@@ -101,17 +101,17 @@ class MediaTreeView(QWidget):
             # Folder row
             folder_name_item = QStandardItem(f"📁 {folder_path.name or str(folder_path)}")
             folder_name_item.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
-            folder_name_item.setForeground(QColor("#38bdf8"))
+            folder_name_item.setForeground(QBrush(QColor("#38bdf8")))
             folder_name_item.setToolTip(str(folder_path))
 
             folder_status_item = QStandardItem(f"{len(folder_items)} Dateien")
-            folder_status_item.setForeground(QColor("#94a3b8"))
+            folder_status_item.setForeground(QBrush(QColor("#94a3b8")))
 
             folder_type_item = QStandardItem("Verzeichnis")
-            folder_type_item.setForeground(QColor("#64748b"))
+            folder_type_item.setForeground(QBrush(QColor("#64748b")))
 
             folder_size_item = QStandardItem(format_size(folder_size))
-            folder_size_item.setForeground(QColor("#cbd5e1"))
+            folder_size_item.setForeground(QBrush(QColor("#cbd5e1")))
 
             # Add child files under this folder
             for it in sorted(folder_items, key=lambda x: x.target_path.name):
@@ -122,13 +122,13 @@ class MediaTreeView(QWidget):
 
                 status_color = "#4ade80" if it.status == "Neu" else ("#fbbf24" if it.status == "Existiert im Ziel" else "#94a3b8")
                 status_item = QStandardItem(it.status)
-                status_item.setForeground(QColor(status_color))
+                status_item.setForeground(QBrush(QColor(status_color)))
 
                 type_item = QStandardItem(it.display_type)
-                type_item.setForeground(QColor("#cbd5e1"))
+                type_item.setForeground(QBrush(QColor("#cbd5e1")))
 
                 size_item = QStandardItem(format_size(it.total_size))
-                size_item.setForeground(QColor("#94a3b8"))
+                size_item.setForeground(QBrush(QColor("#94a3b8")))
 
                 folder_name_item.appendRow([file_name_item, status_item, type_item, size_item])
 
@@ -136,16 +136,16 @@ class MediaTreeView(QWidget):
                 if it.is_pair and it.companion_target_path and it.companion_target_path.parent == folder_path:
                     comp_name_item = QStandardItem(f"   ↳ 🖼️ {it.companion_target_path.name}")
                     comp_name_item.setData(it, Qt.ItemDataRole.UserRole)
-                    comp_name_item.setForeground(QColor("#a5b4fc"))
+                    comp_name_item.setForeground(QBrush(QColor("#a5b4fc")))
 
                     comp_status = QStandardItem(it.status)
-                    comp_status.setForeground(QColor(status_color))
+                    comp_status.setForeground(QBrush(QColor(status_color)))
 
                     comp_type = QStandardItem("JPG (Gepaart)")
-                    comp_type.setForeground(QColor("#818cf8"))
+                    comp_type.setForeground(QBrush(QColor("#818cf8")))
 
                     comp_size = QStandardItem(format_size(it.companion_metadata.file_size if it.companion_metadata else 0))
-                    comp_size.setForeground(QColor("#94a3b8"))
+                    comp_size.setForeground(QBrush(QColor("#94a3b8")))
 
                     folder_name_item.appendRow([comp_name_item, comp_status, comp_type, comp_size])
 

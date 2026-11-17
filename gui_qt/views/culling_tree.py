@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from PySide6.QtCore import QSize, Qt, Signal, QUrl
-from PySide6.QtGui import QColor, QDesktopServices, QFont, QIcon, QStandardItem, QStandardItemModel
+from PySide6.QtGui import QBrush, QColor, QDesktopServices, QFont, QIcon, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QFileDialog, QFrame, QHBoxLayout, QHeaderView, QLabel,
     QMenu, QPushButton, QSizePolicy, QTreeView, QVBoxLayout, QWidget
@@ -349,7 +349,7 @@ class CullingDirectoryTreeWidget(QWidget):
             c_tot = "#f8fafc" if total > 0 else "#475569"
             c_raw = "#f472b6" if raw > 0 else "#475569"
             c_jpg = "#38bdf8" if jpg > 0 else "#475569"
-        return QColor(c_tot), QColor(c_raw), QColor(c_jpg)
+        return QBrush(QColor(c_tot)), QBrush(QColor(c_raw)), QBrush(QColor(c_jpg))
 
     def _on_theme_changed(self, theme_name: str):
         """Refreshes button icons and item colors when the theme switches."""
