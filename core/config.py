@@ -1,4 +1,4 @@
-"""Configuration management for FotoDown."""
+"""Configuration management for Vitrina."""
 
 from dataclasses import dataclass, field, asdict
 import json
@@ -240,13 +240,13 @@ class AppConfig:
         """Returns the default configuration file path."""
         appdata = os.getenv("LOCALAPPDATA") or os.getenv("APPDATA")
         if appdata:
-            config_dir = Path(appdata) / "FotoDown"
+            config_dir = Path(appdata) / "Vitrina"
         else:
             xdg = os.getenv("XDG_CONFIG_HOME")
             if xdg:
-                config_dir = Path(xdg) / "fotodown"
+                config_dir = Path(xdg) / "vitrina"
             else:
-                config_dir = Path.home() / ".config" / "fotodown"
+                config_dir = Path.home() / ".config" / "vitrina"
         config_dir.mkdir(parents=True, exist_ok=True)
         return config_dir / "config.json"
 
@@ -257,23 +257,30 @@ class AppConfig:
         # Primary standard path
         candidates.append(cls.get_default_config_path())
 
-        # Windows Local & Roaming
+        # Windows Local & Roaming (Vitrina and legacy FotoDown)
         local_appdata = os.getenv("LOCALAPPDATA")
         if local_appdata:
-            p = Path(local_appdata) / "FotoDown" / "config.json"
-            if p not in candidates:
-                candidates.append(p)
+            for folder in ["Vitrina", "FotoDown"]:
+                p = Path(local_appdata) / folder / "config.json"
+                if p not in candidates:
+                    candidates.append(p)
         roaming_appdata = os.getenv("APPDATA")
         if roaming_appdata:
-            p = Path(roaming_appdata) / "FotoDown" / "config.json"
-            if p not in candidates:
-                candidates.append(p)
+            for folder in ["Vitrina", "FotoDown"]:
+                p = Path(roaming_appdata) / folder / "config.json"
+                if p not in candidates:
+                    candidates.append(p)
 
-        # Linux XDG & Home
+        # Linux XDG & Home (Vitrina and legacy FotoDown)
         xdg_config = os.getenv("XDG_CONFIG_HOME")
         if xdg_config:
+            candidates.append(Path(xdg_config) / "vitrina" / "config.json")
+            candidates.append(Path(xdg_config) / "Vitrina" / "config.json")
             candidates.append(Path(xdg_config) / "fotodown" / "config.json")
             candidates.append(Path(xdg_config) / "FotoDown" / "config.json")
+        candidates.append(Path.home() / ".config" / "vitrina" / "config.json")
+        candidates.append(Path.home() / ".config" / "Vitrina" / "config.json")
+        candidates.append(Path.home() / ".vitrina" / "config.json")
         candidates.append(Path.home() / ".config" / "fotodown" / "config.json")
         candidates.append(Path.home() / ".config" / "FotoDown" / "config.json")
         candidates.append(Path.home() / ".fotodown" / "config.json")
@@ -283,14 +290,15 @@ class AppConfig:
             root_dir = Path(__file__).resolve().parent.parent
             candidates.append(root_dir / "config.json")
             candidates.append(root_dir / "data" / "config.json")
-            # Check parent folder for previous versions (e.g. ../FotoDown*/config.json)
+            # Check parent folder for previous versions (e.g. ../Vitrina*/config.json or ../FotoDown*/config.json)
             parent_dir = root_dir.parent
             if parent_dir.exists():
-                for sibling in parent_dir.glob("FotoDown*"):
-                    if sibling.is_dir() and sibling != root_dir:
-                        cand = sibling / "config.json"
-                        if cand.exists() and cand not in candidates:
-                            candidates.append(cand)
+                for pattern in ["Vitrina*", "FotoDown*"]:
+                    for sibling in parent_dir.glob(pattern):
+                        if sibling.is_dir() and sibling != root_dir:
+                            cand = sibling / "config.json"
+                            if cand.exists() and cand not in candidates:
+                                candidates.append(cand)
         except Exception:
             pass
 

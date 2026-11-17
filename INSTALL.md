@@ -1,6 +1,6 @@
-# 📦 Installationsanleitung für FotoDown
+# 📦 Installationsanleitung für Vitrina
 
-Diese Anleitung führt Sie Schritt für Schritt durch die Installation von **FotoDown** unter **Windows** sowie unter **Linux** (mit speziellem Fokus auf **alle Arch Linux Varianten**).
+Diese Anleitung führt Sie Schritt für Schritt durch die Installation von **Vitrina** (ehemals *FotoDown*) unter **Windows** sowie unter **Linux** (mit speziellem Fokus auf **alle Arch Linux Varianten**).
 
 ---
 
@@ -42,13 +42,13 @@ Diese Anleitung führt Sie Schritt für Schritt durch die Installation von **Fot
    - Download: [python.org/downloads](https://www.python.org/downloads/)
    - > [!IMPORTANT]
      > Achten Sie bei der Python-Installation unbedingt darauf, das Häkchen bei **„Add python.exe to PATH“** zu setzen!
-2. Laden Sie FotoDown herunter oder entpacken Sie das ZIP-Archiv in ein Verzeichnis Ihrer Wahl.
-3. Führen Sie im FotoDown-Ordner die Datei **`install_windows.bat`** per Doppelklick aus.
+2. Laden Sie Vitrina herunter oder entpacken Sie das ZIP-Archiv in ein Verzeichnis Ihrer Wahl.
+3. Führen Sie im Vitrina-Ordner die Datei **`install_windows.bat`** per Doppelklick aus.
 4. Das Skript erledigt alles automatisch:
    - Richtet eine isolierte virtuelle Umgebung (`.venv`) ein
    - Installiert alle Abhängigkeiten (`PySide6`, `Pillow`)
-   - Erstellt eine **Desktop-Verknüpfung** mit individuellem FotoDown-Kamera-Icon
-5. Sie können FotoDown nun direkt vom Desktop oder über **`FotoDown.bat`** starten.
+   - Erstellt eine **Desktop-Verknüpfung** mit individuellem Vitrina-Icon (`assets/vitrina.ico`)
+5. Sie können Vitrina nun direkt vom Desktop oder über **`Vitrina.bat`** starten (abwärtskompatibler Starter: `FotoDown.bat`).
 
 ---
 
@@ -57,8 +57,8 @@ Diese Anleitung führt Sie Schritt für Schritt durch die Installation von **Fot
 Falls Sie die Schritte manuell in der Eingabeaufforderung (CMD) oder PowerShell ausführen möchten:
 
 ```cmd
-:: 1. In das Verzeichnis von FotoDown wechseln
-cd C:\Pfad\zu\FotoDown
+:: 1. In das Verzeichnis von Vitrina wechseln
+cd C:\Pfad\zu\Vitrina
 
 :: 2. Virtuelle Python-Umgebung erstellen
 python -m venv .venv
@@ -70,8 +70,8 @@ call .venv\Scripts\activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 
-:: 5. FotoDown starten
-python fotodown.py
+:: 5. Vitrina starten
+python vitrina.py
 ```
 
 ---
@@ -96,7 +96,7 @@ Diese Anleitung gilt für **alle** auf Arch Linux basierenden Betriebssysteme:
 
 Der einfachste und schnellste Weg unter Arch Linux und allen Derivaten:
 
-1. Öffnen Sie ein Terminal im FotoDown-Ordner.
+1. Öffnen Sie ein Terminal im Vitrina-Ordner.
 2. Führen Sie das mitgelieferte Installationsskript aus:
    ```bash
    chmod +x install_linux.sh
@@ -108,7 +108,7 @@ Der einfachste und schnellste Weg unter Arch Linux und allen Derivaten:
    - Erstellt eine saubere, PEP-668-konforme virtuelle Umgebung (`.venv`).
    - Installiert alle Abhängigkeiten.
    - Setzt Ausführungsrechte für alle Starter.
-   - Bindet **FotoDown automatisch in Ihr Anwendungsmenü** (KDE, GNOME, Rofi etc.) mit vollem Icon-Support ein.
+   - Bindet **Vitrina automatisch in Ihr Anwendungsmenü** (KDE, GNOME, Rofi etc.) mit vollem Icon-Support (`assets/vitrina.png`) ein.
 
 ---
 
@@ -120,14 +120,14 @@ Arch Linux bietet den Vorteil, dass alle benötigten Bibliotheken direkt als off
 # 1. Systempakete via Pacman installieren
 sudo pacman -S --needed python python-pyside6 python-pillow qt6-base qt6-wayland
 
-# 2. In das FotoDown-Verzeichnis wechseln
-cd /pfad/zu/FotoDown
+# 2. In das Vitrina-Verzeichnis wechseln
+cd /pfad/zu/Vitrina
 
 # 3. Starter ausführbar machen
-chmod +x fotodown.sh fotodown.py
+chmod +x vitrina.sh vitrina.py
 
-# 4. FotoDown starten
-./fotodown.sh
+# 4. Vitrina starten
+./vitrina.sh
 ```
 
 ---
@@ -147,41 +147,41 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# 4. FotoDown starten
-./fotodown.sh
+# 4. Vitrina starten
+./vitrina.sh
 ```
 
 > [!TIP]
-> Das Startskript `fotodown.sh` erkennt automatisch, ob eine `.venv` vorhanden ist, und verwendet diese bevorzugt. Sie müssen die Umgebung vor dem Start nicht jedes Mal manuell aktivieren!
+> Das Startskript `vitrina.sh` (sowie der Alias `fotodown.sh`) erkennt automatisch, ob eine `.venv` vorhanden ist, und verwendet diese bevorzugt. Sie müssen die Umgebung vor dem Start nicht jedes Mal manuell aktivieren!
 
 ---
 
 ### Desktop-Integration & Anwendungsmenü
 
-Damit FotoDown im Startmenü Ihres Desktops (KDE Kickoff, GNOME Aktivitäten, XFCE, Rofi, dmenu etc.) erscheint:
+Damit Vitrina im Startmenü Ihres Desktops (KDE Kickoff, GNOME Aktivitäten, XFCE, Rofi, dmenu etc.) erscheint:
 
 ```bash
 # Verzeichnis für Desktop-Einträge sicherstellen
 mkdir -p ~/.local/share/applications
 
-# Starter erzeugen (ersetzen Sie /pfad/zu/FotoDown mit Ihrem echten Pfad)
-cat <<EOF > ~/.local/share/applications/fotodown.desktop
+# Starter erzeugen (ersetzen Sie /pfad/zu/Vitrina mit Ihrem echten Pfad)
+cat <<EOF > ~/.local/share/applications/vitrina.desktop
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=FotoDown
+Name=Vitrina
 GenericName=Foto-Importeur & EXIF-Manager
-Comment=Automatischer Foto- & Video-Import mit EXIF-Umbenennung und Sicherung
-Exec=/pfad/zu/FotoDown/fotodown.sh
-Icon=/pfad/zu/FotoDown/assets/icon_256.png
+Comment=Automatischer Foto- & Video-Import mit EXIF-Umbenennung, Sichten und Sicherung
+Exec=/pfad/zu/Vitrina/vitrina.sh
+Icon=/pfad/zu/Vitrina/assets/vitrina.png
 Terminal=false
 Categories=Graphics;Photography;Utility;
-Keywords=Photo;Camera;Import;SD;EXIF;RAW;
+Keywords=Photo;Camera;Import;SD;EXIF;RAW;Vitrina;FotoDown;
 StartupNotify=true
 EOF
 
 # Ausführungsrecht vergeben und Menü-Cache aktualisieren
-chmod +x ~/.local/share/applications/fotodown.desktop
+chmod +x ~/.local/share/applications/vitrina.desktop
 update-desktop-database ~/.local/share/applications/ 2>/dev/null || true
 ```
 
@@ -189,7 +189,7 @@ update-desktop-database ~/.local/share/applications/ 2>/dev/null || true
 
 ### Grafikserver: Wayland vs. X11
 
-FotoDown nutzt Qt 6 (PySide6) und läuft nativ unter **Wayland** sowie unter **X11 / Xorg**.
+Vitrina nutzt Qt 6 (PySide6) und läuft nativ unter **Wayland** sowie unter **X11 / Xorg**.
 
 - **Unter Wayland (KDE Wayland, GNOME Wayland, Hyprland, Sway):**
   Stellen Sie sicher, dass das Paket `qt6-wayland` installiert ist:
@@ -198,12 +198,12 @@ FotoDown nutzt Qt 6 (PySide6) und läuft nativ unter **Wayland** sowie unter **X
   ```
 - **Erzwingen von Wayland:**
   ```bash
-  QT_QPA_PLATFORM=wayland ./fotodown.sh
+  QT_QPA_PLATFORM=wayland ./vitrina.sh
   ```
 - **Erzwingen von X11 (Fallback via XWayland):**
   Falls unter Wayland Darstellungsprobleme auftreten:
   ```bash
-  QT_QPA_PLATFORM=xcb ./fotodown.sh
+  QT_QPA_PLATFORM=xcb ./vitrina.sh
   ```
 
 ---
@@ -216,7 +216,7 @@ Unter Arch Linux werden Speicherkarten und USB-Laufwerke typischerweise über `u
   ```bash
   sudo usermod -aG storage $USER
   ```
-- FotoDown erkennt eingehängte Karten in `/run/media/$USER/` und `/media/` automatisch beim Einstecken.
+- Vitrina erkennt eingehängte Karten in `/run/media/$USER/` und `/media/` automatisch beim Einstecken.
 
 ---
 
@@ -260,15 +260,15 @@ sudo dnf install python3 python3-pip qt6-qtbase-gui qt6-qtwayland
 
 ## 🚀 Deinstallation
 
-Da FotoDown keine Dateien im System verstreut, ist die Deinstallation denkbar einfach:
+Da Vitrina keine Dateien im System verstreut, ist die Deinstallation denkbar einfach:
 
-- **Windows:** Löschen Sie den FotoDown-Projektordner und die Desktop-Verknüpfung `FotoDown.lnk`.
+- **Windows:** Löschen Sie den Vitrina-Projektordner und die Desktop-Verknüpfung `Vitrina.lnk` (sowie ggf. `FotoDown.lnk`).
 - **Linux:**
   ```bash
-  rm ~/.local/share/applications/fotodown.desktop
-  rm -rf /pfad/zu/FotoDown
+  rm ~/.local/share/applications/vitrina.desktop ~/.local/share/applications/fotodown.desktop 2>/dev/null || true
+  rm -rf /pfad/zu/Vitrina
   ```
 - **Benutzerkonfigurationen entfernen (optional):**
-  - Windows: `%LOCALAPPDATA%\FotoDown`
-  - Linux: `~/.config/FotoDown` oder `~/.fotodown`
+  - Windows: `%LOCALAPPDATA%\Vitrina` (bzw. Legacy `%LOCALAPPDATA%\FotoDown`)
+  - Linux: `~/.config/Vitrina` oder `~/.vitrina` (bzw. Legacy `~/.config/FotoDown`)
 

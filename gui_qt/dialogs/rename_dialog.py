@@ -1,4 +1,4 @@
-"""Batch Rename Dialog for FotoDown (Transfer & Archiving Tab).
+"""Batch Rename Dialog for Vitrina (Transfer & Archiving Tab).
 
 Allows renaming marked files on either Source or Destination side
 using configurable patterns with EXIF placeholders, companion sidecar synchronization,
@@ -68,7 +68,7 @@ class BatchRenameDialog(QDialog):
         self.renamed_paths: List[Path] = []
         self._metadata_cache: Dict[str, MediaMetadata] = {}
 
-        self.setWindowTitle("FotoDown - Dateien umbenennen")
+        self.setWindowTitle("Vitrina - Dateien umbenennen")
         self.resize(840, 620)
         self.setMinimumSize(680, 480)
         self.setMaximumWidth(1200)

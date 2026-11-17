@@ -12,7 +12,7 @@ from core.version import __version__
 class HelpDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("FotoDown - Hilfe & Anleitung")
+        self.setWindowTitle("Vitrina - Hilfe & Anleitung")
         self.resize(720, 560)
         self._setup_ui()
 
@@ -21,7 +21,7 @@ class HelpDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(14)
 
-        header = QLabel(f"FotoDown v{__version__} • Dokumentation & Platzhalter")
+        header = QLabel(f"Vitrina v{__version__} • Dokumentation & Platzhalter")
         header.setObjectName("appTitle")
         layout.addWidget(header)
 
@@ -60,7 +60,7 @@ class HelpDialog(QDialog):
         </table>
 
         <h2>2. Intelligente Duplikaterkennung</h2>
-        <p>FotoDown speichert bei jedem erfolgreichen Import den SHA-256-Hash der Datei in einer lokalen SQLite-Datenbank.
+        <p>Vitrina speichert bei jedem erfolgreichen Import den SHA-256-Hash der Datei in einer lokalen SQLite-Datenbank.
         Beim erneuten Einstecken derselben SD-Karte werden nur noch diejenigen Fotos geladen, die noch nicht importiert wurden.</p>
 
         <h2>3. Unterstützte Dateiformate</h2>
@@ -86,7 +86,7 @@ class HelpDialog(QDialog):
         </table>
 
         <h2>5. Plattformunabhängigkeit (Windows & Linux)</h2>
-        <p>FotoDown funktioniert vollständig und ohne Einschränkungen unter <b>Windows</b> und <b>Linux</b>.
+        <p>Vitrina funktioniert vollständig und ohne Einschränkungen unter <b>Windows</b> und <b>Linux</b>.
         Speicherkarten und USB-Laufwerke werden unter Linux in <code>/media</code>, <code>/run/media</code> sowie <code>/mnt</code> automatisch gefunden.</p>
         """)
         layout.addWidget(browser)

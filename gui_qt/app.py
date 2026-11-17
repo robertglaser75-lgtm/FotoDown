@@ -1,4 +1,4 @@
-"""Application entry point for FotoDown PySide6 Qt GUI."""
+"""Application entry point for Vitrina PySide6 Qt GUI."""
 
 from pathlib import Path
 import sys
@@ -9,11 +9,11 @@ from PySide6.QtWidgets import QApplication
 
 from core.version import __version__
 from .main_window import MainWindow
-from .widgets.splash_screen import FotoDownSplashScreen
+from .widgets.splash_screen import VitrinaSplashScreen, FotoDownSplashScreen
 
 
 def run_gui():
-    """Initializes and runs the FotoDown Qt Application."""
+    """Initializes and runs the Vitrina Qt Application."""
     # High-DPI handling
     if hasattr(Qt, "HighDpiScaleFactorRoundingPolicy"):
         QApplication.setHighDpiScaleFactorRoundingPolicy(
@@ -24,13 +24,13 @@ def run_gui():
     if sys.platform == "win32":
         try:
             import ctypes
-            app_id = f"RobertGlaser.FotoDown.App.{__version__}"
+            app_id = f"RobertGlaser.Vitrina.App.{__version__}"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
         except Exception:
             pass
 
     app = QApplication(sys.argv)
-    app.setApplicationName("FotoDown")
+    app.setApplicationName("Vitrina")
     app.setApplicationVersion(__version__)
     app.setOrganizationName("RobertGlaser")
 
@@ -39,14 +39,14 @@ def run_gui():
     theme_manager.apply_theme("dark", app)
 
     # Set Window Icon
-    for icon_name in ["icon.png", "icon_64.png", "fotodown.ico", "icon.ico"]:
+    for icon_name in ["vitrina.png", "icon.png", "icon_256.png", "icon_64.png", "vitrina.ico", "icon.ico", "fotodown.ico"]:
         icon_path = Path("assets") / icon_name
         if icon_path.exists():
             app.setWindowIcon(QIcon(str(icon_path)))
             break
 
     # Show Splash Screen
-    splash = FotoDownSplashScreen()
+    splash = VitrinaSplashScreen()
     splash.show()
     splash.set_status("Lade Farbschema & Ressourcen...", 1, 5)
 

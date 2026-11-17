@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build script for FotoDown installation packages (Windows ZIP & Linux TAR.GZ)."""
+"""Build script for Vitrina installation packages (Windows ZIP & Linux TAR.GZ)."""
 
 import hashlib
 import os
@@ -31,14 +31,18 @@ def collect_project_files() -> list:
     
     # Root files
     root_patterns = [
+        "vitrina.py",
+        "Vitrina.bat",
+        "vitrina.sh",
         "fotodown.py",
+        "FotoDown.bat",
+        "fotodown.sh",
+        "run_tests.py",
         "requirements.txt",
         "README.md",
         "INSTALL.md",
         "LICENSE",
         "CHANGELOG.md",
-        "FotoDown.bat",
-        "fotodown.sh",
         "install_windows.bat",
         "install_linux.sh",
     ]
@@ -81,7 +85,7 @@ def collect_project_files() -> list:
 
 def build_windows_package(dist_dir: Path, version: str, files: list) -> Path:
     """Builds Windows installation ZIP archive."""
-    pkg_name = f"FotoDown-v{version}-Windows"
+    pkg_name = f"Vitrina-v{version}-Windows"
     zip_path = dist_dir / f"{pkg_name}.zip"
     
     if zip_path.exists():
@@ -99,7 +103,7 @@ def build_windows_package(dist_dir: Path, version: str, files: list) -> Path:
 
 def build_linux_package(dist_dir: Path, version: str, files: list) -> Path:
     """Builds Linux installation TAR.GZ archive with preserved executable permissions."""
-    pkg_name = f"FotoDown-v{version}-Linux"
+    pkg_name = f"Vitrina-v{version}-Linux"
     tar_path = dist_dir / f"{pkg_name}.tar.gz"
     
     if tar_path.exists():
@@ -111,7 +115,7 @@ def build_linux_package(dist_dir: Path, version: str, files: list) -> Path:
             archive_name = Path(pkg_name) / rel
             tar_info = tf.gettarinfo(str(src), arcname=str(archive_name))
             # Set executable bits for scripts
-            if rel.suffix in (".sh", ".py") or rel.name in ("fotodown.sh", "install_linux.sh", "fotodown.py"):
+            if rel.suffix in (".sh", ".py") or rel.name in ("vitrina.sh", "install_linux.sh", "vitrina.py", "fotodown.sh", "fotodown.py"):
                 tar_info.mode = 0o755
             else:
                 tar_info.mode = 0o644
@@ -127,7 +131,7 @@ def main():
     dist_dir.mkdir(parents=True, exist_ok=True)
     version = __version__
 
-    print(f"=== FotoDown Packaging Suite v{version} ===")
+    print(f"=== Vitrina Packaging Suite v{version} ===")
     files = collect_project_files()
     print(f"Gefundene Projektdateien: {len(files)} Dateien.")
 

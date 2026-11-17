@@ -15,7 +15,7 @@ class HistoryDialog(QDialog):
     def __init__(self, history: ImportHistory, parent=None):
         super().__init__(parent)
         self.history = history
-        self.setWindowTitle("FotoDown - Import-Historie")
+        self.setWindowTitle("Vitrina - Import-Historie")
         self.resize(850, 520)
         self._setup_ui()
         self._load_data()

@@ -43,11 +43,21 @@ class ImportHistory:
         if db_path is None:
             appdata = os.getenv("LOCALAPPDATA") or os.getenv("APPDATA")
             if appdata:
-                db_dir = Path(appdata) / "FotoDown"
+                db_dir = Path(appdata) / "Vitrina"
+                legacy_dir = Path(appdata) / "FotoDown"
             else:
-                db_dir = Path.home() / ".fotodown"
+                db_dir = Path.home() / ".vitrina"
+                legacy_dir = Path.home() / ".fotodown"
             db_dir.mkdir(parents=True, exist_ok=True)
             self.db_path = db_dir / "history.db"
+
+            # Auto-migrate legacy FotoDown history if new Vitrina history doesn't exist
+            if not self.db_path.exists() and (legacy_dir / "history.db").exists():
+                try:
+                    import shutil
+                    shutil.copy2(legacy_dir / "history.db", self.db_path)
+                except Exception:
+                    pass
         else:
             self.db_path = db_path
 

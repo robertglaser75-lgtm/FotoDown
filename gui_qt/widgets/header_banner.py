@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import List, Optional
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtGui import QAction, QActionGroup, QPixmap
 from PySide6.QtWidgets import (
     QComboBox, QFrame, QHBoxLayout, QLabel, QMenu,
     QMessageBox, QPushButton, QSizePolicy, QWidget
@@ -66,9 +66,17 @@ class HeaderBanner(QFrame):
         title_box.setSpacing(6)
         title_box.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
-        lbl_logo = QLabel("\U0001F4F8")  # Camera emoji
+        lbl_logo = QLabel()
         lbl_logo.setObjectName("logoIcon")
-        lbl_title = QLabel("FotoDown")
+        icon_path = Path("assets") / "icon_32.png"
+        if not icon_path.exists():
+            icon_path = Path("assets") / "vitrina.png"
+        if icon_path.exists():
+            lbl_logo.setPixmap(QPixmap(str(icon_path)).scaled(20, 20, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        else:
+            lbl_logo.setText("\U0001F4F8")
+
+        lbl_title = QLabel("Vitrina")
         lbl_title.setObjectName("appTitle")
 
         lbl_version = QLabel(f"v{__version__}")

@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion
-title FotoDown - Windows Installation
+title Vitrina - Windows Installation
 
 echo =====================================================
-echo    FotoDown - Installations-Assistent für Windows
+echo    Vitrina - Installations-Assistent für Windows
 echo =====================================================
 echo.
 
@@ -68,14 +68,15 @@ echo.
 
 :: 4. Desktop-Verknüpfung erstellen
 echo [3/3] Erstelle Desktop-Verknüpfung...
-set "BAT_PATH=%~dp0FotoDown.bat"
-set "ICON_PATH=%~dp0assets\fotodown.ico"
+set "BAT_PATH=%~dp0Vitrina.bat"
+set "ICON_PATH=%~dp0assets\vitrina.ico"
+if not exist "%ICON_PATH%" set "ICON_PATH=%~dp0assets\icon.ico"
 set "DESKTOP_DIR=%USERPROFILE%\Desktop"
 
-powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%DESKTOP_DIR%\FotoDown.lnk'); $s.TargetPath = '%BAT_PATH%'; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%ICON_PATH%,0'; $s.Description = 'FotoDown - Foto-Importeur & EXIF-Manager'; $s.Save()"
+powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%DESKTOP_DIR%\Vitrina.lnk'); $s.TargetPath = '%BAT_PATH%'; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%ICON_PATH%,0'; $s.Description = 'Vitrina - Foto-Importeur & EXIF-Manager'; $s.Save()"
 
-if exist "%DESKTOP_DIR%\FotoDown.lnk" (
-    echo [OK] Desktop-Verknüpfung 'FotoDown' wurde erfolgreich erstellt.
+if exist "%DESKTOP_DIR%\Vitrina.lnk" (
+    echo [OK] Desktop-Verknüpfung 'Vitrina' wurde erfolgreich erstellt.
 ) else (
     echo [Hinweis] Verknüpfung konnte nicht automatisch auf dem Desktop angelegt werden.
 )
@@ -85,13 +86,13 @@ echo =====================================================
 echo    Installation erfolgreich abgeschlossen!
 echo =====================================================
 echo.
-echo Sie können FotoDown jetzt starten:
-echo  - Per Doppelklick auf die Verknüpfung 'FotoDown' auf Ihrem Desktop
-echo  - Oder direkt über 'FotoDown.bat' in diesem Ordner
+echo Sie können Vitrina jetzt starten:
+echo  - Per Doppelklick auf die Verknüpfung 'Vitrina' auf Ihrem Desktop
+echo  - Oder direkt über 'Vitrina.bat' in diesem Ordner
 echo.
-set /p "START_NOW=Möchten Sie FotoDown jetzt starten? (J/N): "
+set /p "START_NOW=Möchten Sie Vitrina jetzt starten? (J/N): "
 if /i "%START_NOW%"=="J" (
-    start "" "%~dp0FotoDown.bat"
+    start "" "%~dp0Vitrina.bat"
 )
 
 popd 2>nul

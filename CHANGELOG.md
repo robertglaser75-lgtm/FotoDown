@@ -3,7 +3,23 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
-## [0.32.13] - 2026-11-17
+## [0.33.0] - 2026-11-17
+
+### Hinzugefügt
+- **Vollständiges Rebranding zu Vitrina & Neues Anwendungs-Icon:**
+  - Vollständige Umbenennung der Anwendung von *FotoDown* zu **Vitrina** in allen Modulen, GUI-Dialogen, Headern und Fenstertiteln.
+  - Neues 3D-Vitrinen-Icon mit Filmstreifen-Negativ in allen Auflösungen (16px bis 770px) als PNG (`assets/vitrina.png`, `assets/icon.png` etc.) und Multi-Resolution-ICO (`assets/vitrina.ico`).
+  - Neue primäre Programmeinstiegspunkte: [`vitrina.py`](vitrina.py), [`Vitrina.bat`](Vitrina.bat) und [`vitrina.sh`](vitrina.sh).
+  - Automatische Desktop-Integration via [`install_windows.bat`](install_windows.bat) (`Vitrina.lnk`) und [`install_linux.sh`](install_linux.sh) (`vitrina.desktop`).
+  - Nahtlose automatische Konfigurations- & Historiemigration von Legacy-`FotoDown`-Pfade in moderne `Vitrina`-Pfade ohne Datenverlust.
+  - Erweiterte XMP-Workflow-Status-Tags: schreibt standardmäßig `vitrina:WorkflowStatus` und liest abwärtskompatibel sowohl `vitrina:` als auch `fotodown:`.
+  - Vollständige Dokumentationsaktualisierung (`README.md`, `INSTALL.md`) und Packaging-Umstellung auf `Vitrina-v0.33.0-*`.
+
+### Behoben
+- **Fehlender `QPixmap`-Import in `header_banner.py` behoben:**
+  - `QPixmap` in `gui_qt/widgets/header_banner.py` importiert, um saubere Logo-Skalierung im Header zu gewährleisten.
+- **Konsistente XMP-Aktualisierung bei vorhandenen Sidecars (`xmp_sync.py`):**
+  - Aktualisierung beider Tags (`vitrina:WorkflowStatus` und `fotodown:WorkflowStatus`) bei Re-Write eines existierenden Sidecars.
 
 ### Behoben
 - **PySide6 C++ Shutdown Segfault behoben (`run_tests.py`, `.github/workflows/release.yml`):**

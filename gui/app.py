@@ -1,4 +1,4 @@
-"""Modern CustomTkinter GUI for FotoDown (Windows 11 Fluent Dark UI) with Non-Stalling Async Gallery & Cache Persistence."""
+"""Modern CustomTkinter GUI for Vitrina (Windows 11 Fluent Dark UI) with Non-Stalling Async Gallery & Cache Persistence."""
 
 from datetime import datetime
 import io
@@ -32,7 +32,7 @@ def set_high_dpi():
         try:
             import ctypes
             # Set explicit AppUserModelID so Windows Taskbar shows custom app icon!
-            app_id = "RobertGlaser.FotoDown.App.0.2.5"
+            app_id = f"RobertGlaser.Vitrina.App.{__version__}"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
         except Exception:
             pass
@@ -139,7 +139,7 @@ class HelpWindow(ctk.CTkToplevel):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.title("FotoDown - Hilfe & Anleitung")
+        self.title("Vitrina - Hilfe & Anleitung")
         self.geometry("720x580")
         self.minsize(600, 480)
 
@@ -254,7 +254,7 @@ class HistoryWindow(ctk.CTkToplevel):
 
     def __init__(self, parent, history: ImportHistory, on_cleared=None):
         super().__init__(parent)
-        self.title("FotoDown - Download-Historie")
+        self.title("Vitrina - Download-Historie")
         self.geometry("900x540")
         self.history = history
         self.on_cleared = on_cleared
@@ -383,7 +383,7 @@ class FotoDownApp:
 
     def __init__(self, root: ctk.CTk):
         self.root = root
-        self.root.title("FotoDown - Foto-Importeur & EXIF-Manager")
+        self.root.title("Vitrina - Foto-Importeur & EXIF-Manager")
         self.root.geometry("1280x920")
         self.root.minsize(1020, 720)
 

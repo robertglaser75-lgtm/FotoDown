@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      VITRINA_HEADLESS_TEST: "1"
       FOTODOWN_HEADLESS_TEST: "1"
       PYTHONUNBUFFERED: "1"
       QT_LOGGING_RULES: "*.debug=false"
@@ -69,7 +70,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: FotoDown ${{ github.ref_name }}
+          name: Vitrina ${{ github.ref_name }}
           files: |
             dist/*.zip
             dist/*.tar.gz

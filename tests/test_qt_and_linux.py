@@ -47,7 +47,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.32.13")
+        self.assertEqual(__version__, "0.33.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -3283,6 +3283,9 @@ class TestPackagingSuite(unittest.TestCase):
 
         self.assertIn("gui_qt/styles/dark_fluent.qss", rel_paths)
         self.assertIn("gui_qt/styles/light_fluent.qss", rel_paths)
+        self.assertIn("vitrina.py", rel_paths)
+        self.assertIn("Vitrina.bat", rel_paths)
+        self.assertIn("vitrina.sh", rel_paths)
         self.assertIn("fotodown.py", rel_paths)
         self.assertIn("FotoDown.bat", rel_paths)
         self.assertIn("fotodown.sh", rel_paths)

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# FotoDown - Installationsskript für Linux (optimiert für Arch Linux & Derivate)
+# Vitrina - Installationsskript für Linux (optimiert für Arch Linux & Derivate)
 # Unterstützt: Arch Linux, Manjaro, EndeavourOS, Garuda, ArcoLinux, CachyOS etc.
 # ==============================================================================
 
@@ -14,7 +14,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}=====================================================${NC}"
-echo -e "${BLUE}   FotoDown - Installations-Assistent für Linux      ${NC}"
+echo -e "${BLUE}   Vitrina - Installations-Assistent für Linux       ${NC}"
 echo -e "${BLUE}=====================================================${NC}"
 echo ""
 
@@ -73,7 +73,7 @@ echo -e "${GREEN}[OK]${NC} Alle Abhängigkeiten (Pyside6, Pillow) installiert."
 
 # 6. Starter-Skripte ausführbar machen
 echo -e "${BLUE}[3/4]${NC} Setze Ausführungsrechte für Skripte..."
-chmod +x fotodown.sh fotodown.py
+chmod +x vitrina.sh vitrina.py fotodown.sh fotodown.py 2>/dev/null || true
 echo -e "${GREEN}[OK]${NC} Skripte sind ausführbar."
 
 # 7. Desktop-Integration (.desktop Starter erstellen)
@@ -81,46 +81,49 @@ echo -e "${BLUE}[4/4]${NC} Erstelle Desktop-Eintrag für Anwendungsmenü..."
 APP_DIR="$HOME/.local/share/applications"
 mkdir -p "$APP_DIR"
 
-ICON_PATH="$SCRIPT_DIR/assets/icon_256.png"
+ICON_PATH="$SCRIPT_DIR/assets/vitrina.png"
+if [ ! -f "$ICON_PATH" ]; then
+    ICON_PATH="$SCRIPT_DIR/assets/icon_256.png"
+fi
 if [ ! -f "$ICON_PATH" ]; then
     ICON_PATH="$SCRIPT_DIR/assets/icon.png"
 fi
 
-cat <<EOF > "$APP_DIR/fotodown.desktop"
+cat <<EOF > "$APP_DIR/vitrina.desktop"
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=FotoDown
+Name=Vitrina
 GenericName=Foto-Importeur & EXIF-Manager
-Comment=Automatischer Foto- & Video-Import mit EXIF-Umbenennung und Sicherung
-Exec="$SCRIPT_DIR/fotodown.sh"
+Comment=Automatischer Foto- & Video-Import mit Sichten, EXIF-Umbenennung und Archivierung
+Exec="$SCRIPT_DIR/vitrina.sh"
 Icon=$ICON_PATH
 Terminal=false
 Categories=Graphics;Photography;Utility;
-Keywords=Photo;Camera;Import;SD;EXIF;RAW;
+Keywords=Photo;Camera;Import;SD;EXIF;RAW;Vitrina;Culling;
 StartupNotify=true
 EOF
 
-chmod +x "$APP_DIR/fotodown.desktop"
+chmod +x "$APP_DIR/vitrina.desktop"
 
 # Desktop-Datenbank aktualisieren, falls vorhanden
 if command -v update-desktop-database &>/dev/null; then
     update-desktop-database "$APP_DIR" 2>/dev/null || true
 fi
 
-echo -e "${GREEN}[OK]${NC} Desktop-Starter erstellt: $APP_DIR/fotodown.desktop"
+echo -e "${GREEN}[OK]${NC} Desktop-Starter erstellt: $APP_DIR/vitrina.desktop"
 echo ""
 echo -e "${GREEN}=====================================================${NC}"
 echo -e "${GREEN}   Installation erfolgreich abgeschlossen!           ${NC}"
 echo -e "${GREEN}=====================================================${NC}"
 echo ""
-echo "FotoDown kann jetzt auf folgende Weisen gestartet werden:"
+echo "Vitrina kann jetzt auf folgende Weisen gestartet werden:"
 echo "  1. Über das Anwendungsmenü Ihres Desktops (KDE, GNOME, XFCE etc.)"
-echo "  2. Im Terminal über: ./fotodown.sh"
+echo "  2. Im Terminal über: ./vitrina.sh"
 echo ""
-echo -e "${YELLOW}Möchten Sie FotoDown jetzt starten? (j/N)${NC}"
+echo -e "${YELLOW}Möchten Sie Vitrina jetzt starten? (j/N)${NC}"
 read -r -p "> " start_now
 if [[ "$start_now" =~ ^[jJyY]$ ]]; then
-    ./fotodown.sh &
+    ./vitrina.sh &
 fi
 

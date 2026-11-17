@@ -37,7 +37,7 @@ from .widgets.general_settings import GeneralSettingsWidget
 from .widgets.action_bar import ActionBarWidget
 from .widgets.filter_bar import FilterBarWidget
 from .widgets.exif_inspector import ExifInspectorWidget
-from .widgets.splash_screen import FotoDownSplashScreen
+from .widgets.splash_screen import VitrinaSplashScreen, FotoDownSplashScreen
 from .widgets.empty_state import EmptyStateWidget
 from .widgets.card_notification import CardNotificationBanner
 from .workers.scan_worker import ScanWorker
@@ -52,9 +52,9 @@ from .styles.theme import theme_manager
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, splash: Optional[FotoDownSplashScreen] = None):
+    def __init__(self, splash: Optional[VitrinaSplashScreen] = None):
         super().__init__()
-        self.setWindowTitle(f"FotoDown v{__version__} - Foto-Importeur & EXIF-Manager")
+        self.setWindowTitle(f"Vitrina v{__version__} - Foto-Importeur & EXIF-Manager")
         self.setMinimumSize(1000, 680)
 
         self._set_app_icon()
@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
             self.showMaximized()
 
     def _set_app_icon(self):
-        for icon_name in ["icon.png", "icon_64.png", "icon_256.png", "fotodown.ico", "icon.ico"]:
+        for icon_name in ["vitrina.png", "icon.png", "icon_256.png", "icon_64.png", "vitrina.ico", "icon.ico", "fotodown.ico"]:
             p = Path("assets") / icon_name
             if p.exists():
                 self.setWindowIcon(QIcon(str(p)))

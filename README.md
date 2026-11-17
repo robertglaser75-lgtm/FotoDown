@@ -1,6 +1,6 @@
-# FotoDown 📸
+# Vitrina 📸
 
-**FotoDown** ist ein intelligentes, schnelles Werkzeug zum automatischen Importieren, Umbenennen und Sortieren von Fotos und Videos direkt von Speicherkarten (SD-Karten, USB-Laufwerken) oder beliebigen Quellordnern.
+**Vitrina** (ehemals *FotoDown*) ist ein intelligentes, schnelles Werkzeug zum automatischen Importieren, Umbenennen, Sichten und Archivieren von Fotos und Videos direkt von Speicherkarten (SD-Karten, USB-Laufwerken) oder beliebigen Quellordnern.
 
 Lauffähig unter **Windows** und **Linux**.
 
@@ -41,7 +41,7 @@ Lauffähig unter **Windows** und **Linux**.
     - Klare Klassifizierung jedes Fotos: *📸 SOOC ok [Q]* (Kamera-Qualität passt), *🎨 Zu bearbeiten [B]* (Nachbearbeitung nötig) oder *✔ Bearbeitung fertig [E]*.
     - Automatische Erkennung bestehender Darktable-Bearbeitungen via XMP-Sidecar-Historie (`darktable:history_end`).
     - Automatische Erkennung bereits ins Familienalbum exportierter Bilder (`0001_Unsere_Fotos/{YYYY}/{MM}`).
-    - Dauerhafte, standardkonforme Speicherung in `.xmp`-Sidecars (`fotodown:WorkflowStatus`).
+    - Dauerhafte, standardkonforme Speicherung in `.xmp`-Sidecars (`vitrina:WorkflowStatus` & `fotodown:WorkflowStatus`).
   - **Umfassender Filter-Tab im linken Dock:**
     - Schnelle Filterung nach Workflow-Stand (z.B. nur noch „Zu bearbeiten“ anzeigen).
     - Filter nach Dateityp (RAW / JPEG), Bewertung (Sterne, Pick, Reject, Farblabels), Kamera, Objektiv, ISO-Bereich und Volltextsuche.
@@ -141,8 +141,8 @@ Lauffähig unter **Windows** und **Linux**.
 
 ### 1. Unter Windows (10 / 11):
 - **1-Klick-Installation:** Führen Sie einfach die Datei **`install_windows.bat`** per Doppelklick aus.
-  - Richtet eine isolierte Umgebung ein, installiert alle Abhängigkeiten und erstellt ein Desktop-Icon.
-- **Starten:** Danach einfach per Doppelklick auf die Desktop-Verknüpfung **`FotoDown`** oder **`FotoDown.bat`**.
+  - Richtet eine isolierte Umgebung ein, installiert alle Abhängigkeiten und erstellt ein Desktop-Icon (**`Vitrina`**).
+- **Starten:** Danach einfach per Doppelklick auf die Desktop-Verknüpfung **`Vitrina`** oder **`Vitrina.bat`** (Abwärtskompatibilität via `FotoDown.bat` gewährleistet).
 
 ### 2. Unter Linux (Arch Linux, Manjaro, EndeavourOS, Ubuntu, Fedora etc.):
 - **1-Klick-Installation:**
@@ -150,14 +150,13 @@ Lauffähig unter **Windows** und **Linux**.
   chmod +x install_linux.sh
   ./install_linux.sh
   ```
-  - Installiert alle Abhängigkeiten, richtet `.venv` ein und integriert FotoDown in Ihr **Anwendungsmenü** (KDE, GNOME, etc.).
+  - Installiert alle Abhängigkeiten, richtet `.venv` ein und integriert Vitrina in Ihr **Anwendungsmenü** (KDE, GNOME, etc.).
 - **Nativ auf Arch Linux via Pacman (ohne venv):**
   ```bash
   sudo pacman -S --needed python python-pyside6 python-pillow qt6-base qt6-wayland
-  ./fotodown.sh
+  ./vitrina.sh
   ```
-- **Starten:** Über das Anwendungsmenü oder im Terminal via **`./fotodown.sh`**.
-```
+- **Starten:** Über das Anwendungsmenü oder im Terminal via **`./vitrina.sh`** (oder `./fotodown.sh`).
 
 ---
 

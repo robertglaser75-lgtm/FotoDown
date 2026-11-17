@@ -1,4 +1,4 @@
-"""Modern Fluent Dark Splash Screen for FotoDown."""
+"""Modern Fluent Dark Splash Screen for Vitrina."""
 
 from pathlib import Path
 from PySide6.QtCore import Qt
@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 from core.version import __version__
 
 
-class FotoDownSplashScreen(QSplashScreen):
+class VitrinaSplashScreen(QSplashScreen):
     def __init__(self):
         # Create base pixmap with rounded fluent dark canvas
         width, height = 540, 300
@@ -60,7 +60,9 @@ class FotoDownSplashScreen(QSplashScreen):
         header.setSpacing(16)
 
         lbl_icon = QLabel()
-        icon_path = Path("assets") / "icon_256.png"
+        icon_path = Path("assets") / "vitrina.png"
+        if not icon_path.exists():
+            icon_path = Path("assets") / "icon_256.png"
         if not icon_path.exists():
             icon_path = Path("assets") / "icon.png"
         if icon_path.exists():
@@ -80,7 +82,7 @@ class FotoDownSplashScreen(QSplashScreen):
         title_row = QHBoxLayout()
         title_row.setSpacing(10)
 
-        lbl_title = QLabel("FotoDown")
+        lbl_title = QLabel("Vitrina")
         lbl_title.setStyleSheet("font-size: 26px; font-weight: 800; color: #38bdf8;")
 
         lbl_ver = QLabel(f"v{__version__}")
@@ -123,4 +125,8 @@ class FotoDownSplashScreen(QSplashScreen):
         pct = int((step / max_steps) * 100)
         self.progress_bar.setValue(pct)
         QApplication.processEvents()
+
+
+# Backwards compatibility alias
+FotoDownSplashScreen = VitrinaSplashScreen
 

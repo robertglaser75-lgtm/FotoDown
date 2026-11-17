@@ -1,4 +1,4 @@
-"""Preferences and settings dialog for FotoDown."""
+"""Preferences and settings dialog for Vitrina."""
 
 from pathlib import Path
 from typing import Optional
@@ -29,7 +29,7 @@ class SettingsDialog(QDialog):
     def __init__(self, config: AppConfig, parent=None, initial_tab: int = 0):
         super().__init__(parent)
         self.config = config
-        self.setWindowTitle("FotoDown - Einstellungen & Konfiguration")
+        self.setWindowTitle("Vitrina - Einstellungen & Konfiguration")
         self.resize(740, 620)
         self.setMinimumSize(640, 520)
         self.setMaximumWidth(950)

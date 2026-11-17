@@ -34,7 +34,7 @@ class QuickPreviewDialog(QDialog):
         self._current_pixmap: Optional[QPixmap] = None
         self._was_maximized_before_fullscreen: bool = False
 
-        self.setWindowTitle("FotoDown - Vollbildvorschau")
+        self.setWindowTitle("Vitrina - Vollbildvorschau")
         self.resize(1200, 800)
         self.setMinimumSize(640, 480)
 

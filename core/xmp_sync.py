@@ -13,14 +13,16 @@ from typing import Optional, Tuple
 
 
 DEFAULT_XMP_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
-<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="FotoDown XMP Core">
+<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Vitrina XMP Core">
  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:about=""
     xmlns:xmp="http://ns.adobe.com/xap/1.0/"
     xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
+    xmlns:vitrina="http://vitrina.app/1.0/"
     xmlns:fotodown="http://fotodown.app/1.0/"
     xmp:Rating="{rating}"
     xmp:Label="{label}"
+    vitrina:WorkflowStatus="{workflow_status}"
     fotodown:WorkflowStatus="{workflow_status}">
   </rdf:Description>
  </rdf:RDF>
@@ -102,10 +104,10 @@ def read_xmp_workflow_info(media_path: Path) -> XMPWorkflowInfo:
         else:
             has_darktable_edit = True
 
-    # 5. Check fotodown:WorkflowStatus
-    m_wf = re.search(r'fotodown:WorkflowStatus\s*=\s*["\']([^"\']+)["\']', content)
+    # 5. Check vitrina:WorkflowStatus or fotodown:WorkflowStatus
+    m_wf = re.search(r'(?:vitrina|fotodown):WorkflowStatus\s*=\s*["\']([^"\']+)["\']', content)
     if not m_wf:
-        m_wf = re.search(r'<fotodown:WorkflowStatus>([^<]+)</fotodown:WorkflowStatus>', content)
+        m_wf = re.search(r'<(?:vitrina|fotodown):WorkflowStatus>([^<]+)</(?:vitrina|fotodown):WorkflowStatus>', content)
     if m_wf:
         workflow_status = m_wf.group(1).strip().upper()
     elif has_darktable_edit:
@@ -141,8 +143,15 @@ def write_xmp_metadata(
         try:
             content = sidecar.read_text(encoding="utf-8", errors="ignore")
 
-            # Ensure fotodown namespace exists
-            if "xmlns:fotodown=" not in content and "<rdf:Description" in content:
+            # Ensure vitrina and fotodown namespaces exist
+            if "xmlns:vitrina=" not in content and "<rdf:Description" in content:
+                content = re.sub(
+                    r'<rdf:Description',
+                    '<rdf:Description xmlns:vitrina="http://vitrina.app/1.0/" xmlns:fotodown="http://fotodown.app/1.0/"',
+                    content,
+                    count=1
+                )
+            elif "xmlns:fotodown=" not in content and "<rdf:Description" in content:
                 content = re.sub(
                     r'<rdf:Description',
                     '<rdf:Description xmlns:fotodown="http://fotodown.app/1.0/"',
@@ -165,8 +174,13 @@ def write_xmp_metadata(
             else:
                 content = re.sub(r'\s*xmp:Label\s*=\s*["\'][^"\']*["\']', '', content)
 
-            # Update or inject fotodown:WorkflowStatus
+            # Update or inject vitrina:WorkflowStatus and fotodown:WorkflowStatus
             if workflow_status:
+                if re.search(r'vitrina:WorkflowStatus\s*=\s*["\'][^"\']*["\']', content):
+                    content = re.sub(r'vitrina:WorkflowStatus\s*=\s*["\'][^"\']*["\']', f'vitrina:WorkflowStatus="{workflow_status}"', content)
+                elif "<rdf:Description" in content:
+                    content = re.sub(r'<rdf:Description', f'<rdf:Description vitrina:WorkflowStatus="{workflow_status}"', content, count=1)
+
                 if re.search(r'fotodown:WorkflowStatus\s*=\s*["\'][^"\']*["\']', content):
                     content = re.sub(r'fotodown:WorkflowStatus\s*=\s*["\'][^"\']*["\']', f'fotodown:WorkflowStatus="{workflow_status}"', content)
                 elif "<rdf:Description" in content:

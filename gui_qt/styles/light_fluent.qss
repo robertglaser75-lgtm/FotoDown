@@ -1,4 +1,4 @@
-/* FotoDown Modern Fluent Light Theme (Cross-Platform Windows & Linux) */
+/* Vitrina Modern Fluent Light Theme (Cross-Platform Windows & Linux) */
 
 QMainWindow, QWidget#centralWidget {
     background-color: #f1f5f9;
