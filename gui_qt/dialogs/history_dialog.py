@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.history import ImportHistory
+from gui_qt.widgets.paired_header import PairedHeaderView
 
 
 class HistoryDialog(QDialog):
@@ -40,13 +41,20 @@ class HistoryDialog(QDialog):
 
         # Table
         self.table = QTableWidget()
+        self.table.setHorizontalHeader(PairedHeaderView(Qt.Orientation.Horizontal, self.table))
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["Importiert am", "Dateiname", "Originalpfad", "Größe", "SHA256-Hash"])
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setStretchLastSection(False)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        self.table.setColumnWidth(0, 140)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
+        self.table.setColumnWidth(1, 160)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
-        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.setColumnWidth(2, 220)
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
+        self.table.setColumnWidth(3, 85)
+        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
+        self.table.setColumnWidth(4, 180)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setAlternatingRowColors(True)
         layout.addWidget(self.table)

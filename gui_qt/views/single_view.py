@@ -410,7 +410,11 @@ class MediaSingleView(QWidget):
             self.open_quick_preview_requested.emit(item)
 
     def mouseDoubleClickEvent(self, event):
-        self._toggle_zoom()
+        if event.button() == Qt.MouseButton.LeftButton:
+            item = self.get_current_item()
+            if item:
+                self.open_quick_preview_requested.emit(item)
+                return
         super().mouseDoubleClickEvent(event)
 
     def resizeEvent(self, event: QResizeEvent):

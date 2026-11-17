@@ -27,6 +27,7 @@ from gui_qt.styles.icons import (
     get_collapse_panel_icon, get_columns_icon, get_folder_icon,
     get_minus_icon, get_plus_icon, get_refresh_icon, get_sort_icon
 )
+from gui_qt.widgets.paired_header import PairedHeaderView
 
 
 DUMMY_ITEM_TEXT = "..."
@@ -197,9 +198,10 @@ class CullingDirectoryTreeWidget(QWidget):
         # Connect collapse button now that tree_view exists
         self.btn_collapse_all.clicked.connect(self.tree_view.collapseAll)
 
+        self.tree_view.setHeader(PairedHeaderView(Qt.Orientation.Horizontal, self.tree_view))
         header = self.tree_view.header()
         header.setStretchLastSection(False)
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)

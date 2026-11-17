@@ -3,6 +3,22 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.29.0] - 2026-11-17
+
+### Hinzugefügt & Verbessert
+- **Gekoppelte Spaltenbreitenänderung in Listenansichten ([`gui_qt/widgets/paired_header.py`](gui_qt/widgets/paired_header.py), [`gui_qt/views/table_view.py`](gui_qt/views/table_view.py), [`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py), [`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py), [`gui_qt/dialogs/history_dialog.py`](gui_qt/dialogs/history_dialog.py)):**
+  - Neuer `PairedHeaderView`: Beim Ziehen am rechten Rand einer Spalte nach rechts wird die Spalte links breiter und die direkt rechts angrenzende Spalte um denselben Betrag kleiner (Splitter-Verhalten).
+  - Beim Ziehen nach links verhält es sich umgekehrt: Die linke Spalte wird schmaler und die rechte Spalte breiter.
+  - Berücksichtigt automatisch Mindestbreiten (`minimumSectionSize`), unsichtbare/ausgeblendete Spalten und verhindert unerwünschte Nebeneffekte bei programmatischen Tabellen-Setups.
+- **Vollbildvorschau in eigenem Fenster bei Doppelklick ([`gui_qt/dialogs/quick_preview_dialog.py`](gui_qt/dialogs/quick_preview_dialog.py), [`gui_qt/views/single_view.py`](gui_qt/views/single_view.py), [`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
+  - Doppelklick mit der linken Maustaste auf eine beliebige Bildvorschau öffnet nun sofort eine gestochen scharfe Vollbildvorschau des Bildes in einem eigenständigen neuen Fenster (`QuickPreviewDialog.showFullScreen()`).
+  - Unterstützt in allen Workflows:
+    - **Tab 1 (Importieren):** Galerie-Kacheln, Tabellenzeilen, Einzelansicht und Zielstruktur.
+    - **Tab 2 (Sichten & Sortieren):** Großes Vorschaubild (`CullingCanvasWidget`) und Filmstreifen-Miniaturbilder (`FilmstripBar`).
+    - **Tab 3 (Sichern & Archivieren):** Vorschau-Kacheln (Klein/Mittel/Groß) und Tabellenzeilen für Quelle und Ziel.
+  - Doppelklick auf das Bild im Vollbildmodus schaltet bequem zwischen Vollbild und normalem Fenstermodus um (alternativ per Taste `F11`).
+  - Unterstützung für `ScanItem`, `CullingItem`, `TransferItem` sowie reguläre Dateipfade mit EXIF-Chips, Schärfebetrachtung bis 4K und Tastaturnavigation.
+
 ## [0.28.0] - 2026-11-17
 
 ### Hinzugefügt & Verbessert

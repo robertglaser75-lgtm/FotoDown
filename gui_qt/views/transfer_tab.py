@@ -41,6 +41,7 @@ from gui_qt.styles.icons import (
     get_sort_icon, get_swap_icon, get_uncheck_all_icon
 )
 from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+from gui_qt.widgets.paired_header import PairedHeaderView
 from gui_qt.workers.thumb_worker import ThumbnailSignals, ThumbnailTask
 from gui_qt.workers.transfer_worker import TransferWorker
 
@@ -400,16 +401,27 @@ class TransferPaneWidget(QWidget):
 
         # Page 0: Detailed Table View
         self.table_view = QTableWidget()
+        self.table_view.setHorizontalHeader(PairedHeaderView(Qt.Orientation.Horizontal, self.table_view))
         self.table_view.setColumnCount(6)
         self.table_view.setHorizontalHeaderLabels(["Markiert", "Dateiname", "Typ", "Größe", "Änderungsdatum", "Status / XMP"])
-        self.table_view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.table_view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.table_view.horizontalHeader().sectionClicked.connect(self._on_table_header_clicked)
+        h_table = self.table_view.horizontalHeader()
+        h_table.setStretchLastSection(False)
+        h_table.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        self.table_view.setColumnWidth(0, 50)
+        for col_i in range(1, 6):
+            h_table.setSectionResizeMode(col_i, QHeaderView.ResizeMode.Interactive)
+        self.table_view.setColumnWidth(1, 180)  # Dateiname
+        self.table_view.setColumnWidth(2, 65)   # Typ
+        self.table_view.setColumnWidth(3, 75)   # Größe
+        self.table_view.setColumnWidth(4, 130)  # Änderungsdatum
+        self.table_view.setColumnWidth(5, 110)  # Status / XMP
+        h_table.sectionClicked.connect(self._on_table_header_clicked)
         self.table_view.setAlternatingRowColors(True)
         self.table_view.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table_view.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
         self.table_view.itemChanged.connect(self._on_table_item_changed)
         self.table_view.itemSelectionChanged.connect(self._on_table_selection_changed)
+        self.table_view.itemDoubleClicked.connect(self._on_table_item_double_clicked)
         self.view_stack.addWidget(self.table_view)
 
         # Page 1: Thumbnail Grid (Icon Mode QListWidget)
@@ -439,6 +451,7 @@ class TransferPaneWidget(QWidget):
         """)
         self.list_grid.itemChanged.connect(self._on_grid_item_changed)
         self.list_grid.itemSelectionChanged.connect(self._on_grid_selection_changed)
+        self.list_grid.itemDoubleClicked.connect(self._on_grid_item_double_clicked)
         self._update_grid_item_size(140)
         self.view_stack.addWidget(self.list_grid)
 
@@ -966,6 +979,43 @@ class TransferPaneWidget(QWidget):
         self.selection_changed.emit()
 
     def _on_grid_selection_changed(self):
+        self.selection_changed.emit()
+
+    def _on_table_item_double_clicked(self, item: QTableWidgetItem):
+        row = item.row()
+        if 0 <= row < len(self.filtered_items):
+            self._open_fullscreen_preview(row)
+
+    def _on_grid_item_double_clicked(self, item: QListWidgetItem):
+        row = self.list_grid.row(item)
+        if 0 <= row < len(self.filtered_items):
+            self._open_fullscreen_preview(row)
+
+    def _open_fullscreen_preview(self, start_idx: int):
+        if not self.filtered_items or start_idx < 0 or start_idx >= len(self.filtered_items):
+            return
+        from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
+        for it in self.filtered_items:
+            it.selected = (str(it.path) in self._checked_paths)
+        dlg = QuickPreviewDialog(
+            items=self.filtered_items,
+            start_index=start_idx,
+            parent=self,
+            config=self.config,
+            fullscreen=True
+        )
+        dlg.selection_changed.connect(self._on_fullscreen_selection_changed)
+        dlg.exec()
+
+    def _on_fullscreen_selection_changed(self):
+        for it in self.filtered_items:
+            p_str = str(it.path)
+            if getattr(it, "selected", False):
+                self._checked_paths.add(p_str)
+            else:
+                self._checked_paths.discard(p_str)
+        self._populate_views()
+        self._update_selection_counter()
         self.selection_changed.emit()
 
     def _sync_check_to_grid(self, path_str: str, state: Qt.CheckState):

@@ -1,7 +1,8 @@
 """Quick Look / Fullscreen Preview Dialog with keyboard navigation and EXIF inspector."""
 
+from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from PIL import Image, ImageOps
 
 from PySide6.QtCore import Qt, Signal
@@ -21,20 +22,24 @@ from gui_qt.key_navigation import DEFAULT_NAVIGATION_SCHEME, is_nav_next, is_nav
 class QuickPreviewDialog(QDialog):
     selection_changed = Signal()
 
-    def __init__(self, items: List[ScanItem], start_index: int = 0, parent=None, config: Optional[AppConfig] = None):
+    def __init__(self, items: List[Any], start_index: int = 0, parent=None, config: Optional[AppConfig] = None, fullscreen: bool = False):
         super().__init__(parent)
+        self.setWindowFlag(Qt.WindowType.Window, True)
         self.config = config
         self.items = items
         self.current_idx = max(0, min(start_index, len(items) - 1)) if items else 0
         self._current_pixmap: Optional[QPixmap] = None
+        self._was_maximized_before_fullscreen: bool = False
 
-        self.setWindowTitle("FotoDown - Schnellvorschau")
-        self.resize(1000, 720)
+        self.setWindowTitle("FotoDown - Vollbildvorschau")
+        self.resize(1200, 800)
         self.setMinimumSize(640, 480)
-        self.setModal(True)
 
         self._setup_ui()
         self._load_current_item()
+
+        if fullscreen:
+            self.showFullScreen()
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -87,6 +92,7 @@ class QuickPreviewDialog(QDialog):
         self.lbl_image = QLabel()
         self.lbl_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_image.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.lbl_image.mouseDoubleClickEvent = self._on_image_double_clicked
         pf_layout.addWidget(self.lbl_image)
 
         layout.addWidget(self.preview_frame, stretch=1)
@@ -95,7 +101,7 @@ class QuickPreviewDialog(QDialog):
         bottom_bar = QHBoxLayout()
         bottom_bar.setSpacing(12)
 
-        self.chk_selected = QCheckBox("Für Import ausgewählt [S]")
+        self.chk_selected = QCheckBox("Ausgewählt [S]")
         self.chk_selected.setStyleSheet("font-weight: 600; font-size: 13px; color: #f8fafc;")
         self.chk_selected.toggled.connect(self._on_selection_toggled)
         bottom_bar.addWidget(self.chk_selected)
@@ -121,18 +127,115 @@ class QuickPreviewDialog(QDialog):
 
         bottom_bar.addStretch()
 
-        lbl_hint = QLabel("Navigation: \u25C0 / \u25B6 | Schließen: Leertaste / Esc")
+        lbl_hint = QLabel("Navigation: \u25C0 / \u25B6 | F11: Vollbild | Doppelklick: Umschalten | Schließen: Leertaste / Esc")
         lbl_hint.setStyleSheet("color: #64748b; font-size: 11px;")
         bottom_bar.addWidget(lbl_hint)
 
         layout.addLayout(bottom_bar)
+
+    def _on_image_double_clicked(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.toggle_fullscreen()
+
+    def _extract_item_info(self, item: Any) -> Dict[str, Any]:
+        """Extracts display properties uniformly from ScanItem, CullingItem, TransferItem, or Path."""
+        display_name = ""
+        target_path: Optional[Path] = None
+        is_selected = False
+        camera = ""
+        date_str = "-"
+        size_bytes = 0
+        display_type = ""
+        status_text = ""
+
+        # ScanItem (Tab 1)
+        if hasattr(item, "source_path"):
+            display_name = item.source_path.name
+            target_path = (
+                item.companion_path
+                if (getattr(item, "is_pair", False) and item.companion_path and item.companion_path.exists())
+                else item.source_path
+            )
+            is_selected = getattr(item, "selected", False)
+            meta = getattr(item, "metadata", None)
+            if meta:
+                camera = getattr(meta, "camera_name", None) or getattr(meta, "camera_model", "")
+                if getattr(meta, "date_taken", None):
+                    date_str = meta.date_taken.strftime("%d.%m.%Y %H:%M:%S")
+            size_bytes = getattr(item, "total_size", 0)
+            display_type = getattr(item, "display_type", item.source_path.suffix.upper())
+            status_text = getattr(item, "status", "")
+
+        # CullingItem (Tab 2)
+        elif hasattr(item, "primary_path"):
+            display_name = item.primary_path.name
+            target_path = getattr(item, "current_display_path", None) or (
+                item.companion_path
+                if (item.companion_path and item.companion_path.exists())
+                else item.primary_path
+            )
+            is_selected = getattr(item, "selected", False)
+            meta = getattr(item, "metadata", None)
+            if meta:
+                camera = getattr(meta, "camera_name", None) or getattr(meta, "camera_model", "")
+                if getattr(meta, "date_taken", None):
+                    date_str = meta.date_taken.strftime("%d.%m.%Y %H:%M:%S")
+            try:
+                size_bytes = item.primary_path.stat().st_size if item.primary_path.exists() else 0
+            except OSError:
+                size_bytes = 0
+            display_type = getattr(item, "active_view_mode", item.primary_path.suffix.upper())
+            if hasattr(item, "workflow_status_info"):
+                status_text = item.workflow_status_info[0]
+            elif hasattr(item, "workflow_status"):
+                status_text = item.workflow_status
+
+        # TransferItem (Tab 3)
+        elif hasattr(item, "path") and hasattr(item, "is_raw"):
+            display_name = item.name
+            target_path = item.path
+            is_selected = getattr(item, "selected", False)
+            if getattr(item, "mtime", 0) > 0:
+                try:
+                    date_str = datetime.fromtimestamp(item.mtime).strftime("%d.%m.%Y %H:%M:%S")
+                except Exception:
+                    date_str = "-"
+            size_bytes = getattr(item, "size", 0)
+            display_type = item.extension.upper()
+            status_text = item.workflow_status or ("Mit XMP" if item.has_xmp else "")
+
+        # Path or str
+        elif isinstance(item, (Path, str)):
+            p = Path(item)
+            display_name = p.name
+            target_path = p
+            display_type = p.suffix.upper()
+            try:
+                st = p.stat()
+                size_bytes = st.st_size
+                date_str = datetime.fromtimestamp(st.st_mtime).strftime("%d.%m.%Y %H:%M:%S")
+            except OSError:
+                size_bytes = 0
+
+        return {
+            "name": display_name,
+            "target_path": target_path,
+            "selected": is_selected,
+            "camera": camera,
+            "date": date_str,
+            "size": size_bytes,
+            "type": display_type,
+            "status": status_text,
+        }
 
     def _load_current_item(self):
         if not self.items or self.current_idx < 0 or self.current_idx >= len(self.items):
             return
 
         item = self.items[self.current_idx]
-        self.lbl_filename.setText(item.source_path.name)
+        info = self._extract_item_info(item)
+
+        self.lbl_filename.setText(info["name"])
         self.lbl_counter.setText(f"({self.current_idx + 1} von {len(self.items)})")
 
         self.btn_prev.setEnabled(self.current_idx > 0)
@@ -140,28 +243,28 @@ class QuickPreviewDialog(QDialog):
 
         # Update Selection checkbox without emitting loop
         self.chk_selected.blockSignals(True)
-        self.chk_selected.setChecked(item.selected)
+        self.chk_selected.setChecked(info["selected"])
         self.chk_selected.blockSignals(False)
 
         # Metadata labels
-        cam = item.metadata.camera_name or item.metadata.camera_model or "Kamera: Unbekannt"
+        cam = info["camera"] or "Kamera: Unbekannt"
         self.lbl_camera.setText(f"\U0001F4F7 {cam}")
-
-        date_str = item.metadata.date_taken.strftime("%d.%m.%Y %H:%M:%S") if item.metadata.date_taken else "-"
-        self.lbl_date.setText(f"\U0001F4C5 {date_str}")
-
-        size_str = format_size(item.total_size)
-        self.lbl_size.setText(f"\U0001F4BE {size_str} ({item.display_type})")
-
-        self.lbl_status.setText(f"Status: {item.status}")
+        self.lbl_date.setText(f"\U0001F4C5 {info['date']}")
+        size_str = format_size(info["size"])
+        self.lbl_size.setText(f"\U0001F4BE {size_str} ({info['type']})")
+        self.lbl_status.setText(f"Status: {info['status']}")
 
         # Load Preview Image
-        self._load_image_preview(item)
+        self._load_image_preview(info["target_path"])
 
-    def _load_image_preview(self, item: ScanItem):
-        target_path = item.companion_path if (item.is_pair and item.companion_path and item.companion_path.exists()) else item.source_path
+    def _load_image_preview(self, target_path: Optional[Path]):
+        if not target_path or not target_path.exists():
+            self._current_pixmap = None
+            self.lbl_image.setText("\U0001F5BC Keine Vorschau verfügbar")
+            self.lbl_image.setStyleSheet("color: #64748b; font-size: 16px;")
+            return
+
         pil_img = load_preview_image(target_path, max_dim=3840)
-
         if pil_img:
             try:
                 if pil_img.mode != "RGB":
@@ -211,7 +314,9 @@ class QuickPreviewDialog(QDialog):
 
     def _on_selection_toggled(self, checked: bool):
         if 0 <= self.current_idx < len(self.items):
-            self.items[self.current_idx].selected = checked
+            it = self.items[self.current_idx]
+            if hasattr(it, "selected"):
+                it.selected = checked
             self.selection_changed.emit()
 
     def toggle_fullscreen(self):

@@ -155,10 +155,12 @@ Lauffähig unter **Windows** und **Linux**.
 
 | Taste | Aktion |
 | :--- | :--- |
-| **Leertaste / Doppelklick** | Öffnet die hochauflösende Schnellvorschau (Quick Look) |
-| **Pfeiltasten Links / Rechts** | Im Vorschaumodus zum vorherigen / nächsten Foto blättern |
+| **Doppelklick (Linke Maustaste)** | Öffnet eine gestochen scharfe **Vollbildvorschau** in einem eigenen neuen Fenster |
+| **Leertaste** | Öffnet die hochauflösende Schnellvorschau (Quick Look) |
+| **F11 / Doppelklick im Vollbild** | Vollbildmodus umschalten / verlassen |
+| **Pfeiltasten Links / Rechts (A / D)** | Im Vorschaumodus zum vorherigen / nächsten Foto blättern |
 | **STRG + Klick / Shift + Klick** | Bereichsauswahl: Wählt alle Fotos zwischen erstem und zweitem Klick aus |
-| **S** | Foto / markierte Zeilen für Import an- oder abwählen |
+| **S** | Foto / markierte Zeilen für Import bzw. Transfer an- oder abwählen |
 | **Leertaste / Escape** | Vorschaumodus schließen |
 
 ---

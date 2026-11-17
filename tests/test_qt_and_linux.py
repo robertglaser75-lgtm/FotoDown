@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.28.0")
+        self.assertEqual(__version__, "0.29.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -2951,6 +2951,88 @@ class TestAllSettingsPersistence(unittest.TestCase):
         self.assertEqual(pane.combo_view_mode.currentData(), "grid:200")
         self.assertEqual(pane.combo_sort.currentData(), "size")
         self.assertTrue(pane.btn_sort_dir.isChecked())
+
+    def test_paired_header_view_zero_sum_resizing(self):
+        from PySide6.QtWidgets import QTableView, QHeaderView
+        from PySide6.QtGui import QStandardItemModel
+        from gui_qt.widgets.paired_header import PairedHeaderView
+
+        table = QTableView()
+        header = PairedHeaderView(Qt.Orientation.Horizontal, table)
+        table.setHorizontalHeader(header)
+        model = QStandardItemModel(5, 3)
+        table.setModel(model)
+        for c in range(3):
+            header.setSectionResizeMode(c, QHeaderView.ResizeMode.Interactive)
+            table.setColumnWidth(c, 100)
+
+        self.assertEqual(header.sectionSize(0), 100)
+        self.assertEqual(header.sectionSize(1), 100)
+        self.assertEqual(header.sectionSize(2), 100)
+
+        # Simulate user drag expanding column 0
+        header._user_resizing = True
+        header.resizeSection(0, 140)
+        self.assertEqual(header.sectionSize(0), 140)
+        self.assertEqual(header.sectionSize(1), 60)
+        self.assertEqual(header.sectionSize(2), 100)
+
+        # Simulate user drag shrinking column 0
+        header.resizeSection(0, 80)
+        self.assertEqual(header.sectionSize(0), 80)
+        self.assertEqual(header.sectionSize(1), 120)
+        self.assertEqual(header.sectionSize(2), 100)
+        header._user_resizing = False
+
+    def test_quick_preview_dialog_polymorphic_items_and_fullscreen(self):
+        from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
+        from gui_qt.models.culling_model import CullingItem
+        from gui_qt.views.transfer_tab import TransferItem
+
+        # Test with CullingItem
+        c_item = CullingItem(primary_path=Path("sample.jpg"), rating=4)
+        c_item.selected = True
+        dlg_culling = QuickPreviewDialog(items=[c_item], start_index=0, fullscreen=False)
+        self.assertEqual(dlg_culling.lbl_filename.text(), "sample.jpg")
+        self.assertTrue(dlg_culling.chk_selected.isChecked())
+        dlg_culling.close()
+
+        # Test with TransferItem
+        t_item = TransferItem.from_path(Path("requirements.txt"))
+        t_item.selected = True
+        dlg_transfer = QuickPreviewDialog(items=[t_item], start_index=0, fullscreen=False)
+        self.assertEqual(dlg_transfer.lbl_filename.text(), "requirements.txt")
+        self.assertTrue(dlg_transfer.chk_selected.isChecked())
+        dlg_transfer.close()
+
+    def test_single_view_double_click_signal(self):
+        from gui_qt.views.single_view import MediaSingleView
+        from PySide6.QtCore import QPointF
+        from PySide6.QtGui import QMouseEvent
+        from core.config import AppConfig
+        from core.importer import ScanItem, MediaMetadata
+
+        dt = datetime(2026, 8, 15, 14, 30, 0)
+        meta = MediaMetadata(file_path=Path("IMG_0001.JPG"), orig_name="IMG_0001", extension=".jpg", file_size=1024, date_taken=dt, date_source="EXIF")
+        item = ScanItem(source_path=Path("IMG_0001.JPG"), metadata=meta, target_path=Path("IMG_0001.JPG"), status="Neu", is_duplicate=False, file_hash="h1")
+
+        sv = MediaSingleView(config=AppConfig())
+        sv.set_items([item], current_item=item)
+
+        emitted = []
+        sv.open_quick_preview_requested.connect(lambda it: emitted.append(it))
+
+        event = QMouseEvent(
+            QMouseEvent.Type.MouseButtonDblClick,
+            QPointF(100.0, 100.0),
+            QPointF(100.0, 100.0),
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier
+        )
+        sv.mouseDoubleClickEvent(event)
+        self.assertEqual(len(emitted), 1)
+        self.assertEqual(emitted[0].source_path.name, "IMG_0001.JPG")
 
 
 if __name__ == "__main__":

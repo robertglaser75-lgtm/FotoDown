@@ -46,6 +46,7 @@ from gui_qt.workers.thumb_worker import PreviewSignals, PreviewTask, ThumbnailSi
 class CullingCanvasWidget(QScrollArea):
     """Viewport widget rendering the active photo with smooth scaling, 100% toggle, and pan."""
     toggle_zoom_requested = Signal()
+    open_fullscreen_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -149,8 +150,8 @@ class CullingCanvasWidget(QScrollArea):
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            self.toggle_zoom()
-            self.toggle_zoom_requested.emit()
+            self.open_fullscreen_requested.emit()
+            return
         super().mouseDoubleClickEvent(event)
 
     def keyPressEvent(self, event: QKeyEvent):
@@ -183,6 +184,7 @@ class CullingCanvasWidget(QScrollArea):
 class FilmstripBar(QScrollArea):
     """Horizontal filmstrip showing card thumbnails, star ratings, and rejection status."""
     item_clicked = Signal(int)
+    item_double_clicked = Signal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -342,6 +344,7 @@ class FilmstripBar(QScrollArea):
         layout.addWidget(lbl_info)
 
         card.mousePressEvent = lambda e, i=idx: self.item_clicked.emit(i)
+        card.mouseDoubleClickEvent = lambda e, i=idx: self.item_double_clicked.emit(i) if e.button() == Qt.MouseButton.LeftButton else None
         return card
 
 
@@ -828,12 +831,14 @@ class CullingTabView(QWidget):
         # Canvas: Takes all remaining vertical height!
         self.canvas = CullingCanvasWidget(self)
         self.canvas.toggle_zoom_requested.connect(self._update_zoom_btn_text)
+        self.canvas.open_fullscreen_requested.connect(self._open_fullscreen_preview)
         workspace_layout.addWidget(self.canvas, stretch=1)
 
         # Filmstrip Bar: Docked at bottom (can be collapsed with T)
         self.filmstrip = FilmstripBar(self)
         self.filmstrip.setVisible(is_strip_vis)
         self.filmstrip.item_clicked.connect(self._on_filmstrip_item_clicked)
+        self.filmstrip.item_double_clicked.connect(self._open_fullscreen_preview_at_index)
         workspace_layout.addWidget(self.filmstrip)
 
         self.splitter.addWidget(workspace_container)
@@ -1331,6 +1336,35 @@ class CullingTabView(QWidget):
     def _update_zoom_btn_text(self):
         mode = self.canvas._zoom_mode
         self.btn_zoom.setText("🔍 Einpassen [F]" if mode == "actual" else "🔍 100% Zoom [F]")
+
+    def _open_fullscreen_preview(self):
+        self._open_fullscreen_preview_at_index(self.current_idx)
+
+    def _open_fullscreen_preview_at_index(self, index: int):
+        if not self.filtered_items or index < 0 or index >= len(self.filtered_items):
+            return
+        from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
+        self.current_idx = index
+        self.filmstrip.set_current_index(index)
+        self._render_current_item()
+        dlg = QuickPreviewDialog(
+            items=self.filtered_items,
+            start_index=index,
+            parent=self,
+            config=self.config,
+            fullscreen=True
+        )
+        dlg.selection_changed.connect(self._on_fullscreen_selection_changed)
+        dlg.exec()
+        # Sync index when returning
+        if 0 <= dlg.current_idx < len(self.filtered_items):
+            self.current_idx = dlg.current_idx
+            self.filmstrip.set_current_index(self.current_idx)
+            self._render_current_item()
+
+    def _on_fullscreen_selection_changed(self):
+        if 0 <= self.current_idx < len(self.filtered_items):
+            self.filmstrip.update_card(self.current_idx, self.filtered_items[self.current_idx])
 
     def _prev_item(self):
         if self.filtered_items and self.current_idx > 0:

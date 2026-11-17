@@ -7,6 +7,7 @@ from PySide6.QtGui import QDesktopServices, QKeyEvent
 from PySide6.QtWidgets import QAbstractItemView, QApplication, QHeaderView, QTableView
 
 from core.importer import ScanItem
+from gui_qt.widgets.paired_header import PairedHeaderView
 
 
 class MediaTableView(QTableView):
@@ -15,6 +16,7 @@ class MediaTableView(QTableView):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setHorizontalHeader(PairedHeaderView(Qt.Orientation.Horizontal, self))
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.setSortingEnabled(True)
@@ -22,7 +24,7 @@ class MediaTableView(QTableView):
         self.setShowGrid(False)
         self.verticalHeader().setVisible(False)
         self.horizontalHeader().setHighlightSections(False)
-        self.horizontalHeader().setStretchLastSection(True)
+        self.horizontalHeader().setStretchLastSection(False)
 
         self._last_clicked_row: Optional[int] = None
 
@@ -32,16 +34,21 @@ class MediaTableView(QTableView):
     def setup_column_widths(self):
         h = self.horizontalHeader()
         h.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        self.setColumnWidth(0, 50)  # Checkbox
-        h.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)  # Status
-        h.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)       # Original
-        self.setColumnWidth(2, 200)
-        h.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)       # Target
-        self.setColumnWidth(3, 240)
-        h.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)  # Date
-        h.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)  # Camera
-        h.setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)  # Type
-        h.setSectionResizeMode(7, QHeaderView.ResizeMode.ResizeToContents)  # Size
+        self.setColumnWidth(0, 48)  # Checkbox
+        h.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)  # Status
+        self.setColumnWidth(1, 90)
+        h.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)  # Original
+        self.setColumnWidth(2, 220)
+        h.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)  # Target
+        self.setColumnWidth(3, 220)
+        h.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)  # Date
+        self.setColumnWidth(4, 140)
+        h.setSectionResizeMode(5, QHeaderView.ResizeMode.Interactive)  # Camera
+        self.setColumnWidth(5, 140)
+        h.setSectionResizeMode(6, QHeaderView.ResizeMode.Interactive)  # Type
+        self.setColumnWidth(6, 75)
+        h.setSectionResizeMode(7, QHeaderView.ResizeMode.Interactive)  # Size
+        self.setColumnWidth(7, 85)
 
     def _on_clicked(self, index: QModelIndex):
         if not index.isValid():
