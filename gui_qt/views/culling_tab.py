@@ -399,7 +399,7 @@ class CullingTabView(QWidget):
         sidebar_scroll.setWidgetResizable(True)
         sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
         sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        sidebar_scroll.setMinimumWidth(320)
+        sidebar_scroll.setMinimumWidth(260)
         sidebar_scroll.setMaximumWidth(420)
 
         sidebar_content = QWidget()

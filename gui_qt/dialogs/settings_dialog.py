@@ -32,6 +32,8 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("FotoDown - Einstellungen & Konfiguration")
         self.resize(740, 620)
         self.setMinimumSize(640, 520)
+        self.setMaximumWidth(950)
+        self.setMaximumHeight(850)
 
         self._setup_ui()
         self.load_from_config()

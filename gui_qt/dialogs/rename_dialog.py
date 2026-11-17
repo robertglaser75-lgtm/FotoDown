@@ -71,6 +71,7 @@ class BatchRenameDialog(QDialog):
         self.setWindowTitle("FotoDown - Dateien umbenennen")
         self.resize(840, 620)
         self.setMinimumSize(680, 480)
+        self.setMaximumWidth(1200)
 
         self._setup_ui()
         self._preload_metadata()

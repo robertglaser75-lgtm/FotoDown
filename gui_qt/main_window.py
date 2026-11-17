@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtGui import QIcon, QKeyEvent, QKeySequence, QPixmap, QShortcut
+from PySide6.QtGui import QIcon, QKeyEvent, QKeySequence, QPixmap, QResizeEvent, QShortcut
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
     QScrollArea, QSizePolicy, QSplitter, QStackedWidget, QStatusBar,
@@ -138,7 +138,8 @@ class MainWindow(QMainWindow):
 
         # Left Sidebar (Fixed Profile Bar at top, Scrollable Settings in middle, Fixed Action Bar at bottom)
         sidebar_container = QWidget()
-        sidebar_container.setMinimumWidth(390)
+        sidebar_container.setMinimumWidth(280)
+        sidebar_container.setMaximumWidth(480)
         sidebar_layout = QVBoxLayout(sidebar_container)
         sidebar_layout.setContentsMargins(10, 8, 6, 8)
         sidebar_layout.setSpacing(6)
@@ -240,8 +241,14 @@ class MainWindow(QMainWindow):
         workspace_layout.addWidget(self.workspace_splitter, 1)
         self.main_splitter.addWidget(workspace_container)
 
-        # Splitter sizing: Left sidebar ~420px, Right workspace gets rest
-        self.main_splitter.setSizes([420, 860])
+        # Splitter sizing: Left sidebar ~320-380px, Right workspace gets rest
+        saved_sizes = getattr(self.config, "import_main_splitter_sizes", None)
+        if saved_sizes and len(saved_sizes) == 2 and not any(s == 0 for s in saved_sizes):
+            self.main_splitter.setSizes(saved_sizes)
+        else:
+            cur_w = max(1000, getattr(self.config, "window_width", 1280))
+            sb_w = 300 if cur_w < 1180 else 360
+            self.main_splitter.setSizes([sb_w, max(600, cur_w - sb_w)])
         self.main_splitter.setStretchFactor(0, 0)
         self.main_splitter.setStretchFactor(1, 1)
 
@@ -835,6 +842,15 @@ class MainWindow(QMainWindow):
             event.accept()
             return
         super().keyPressEvent(event)
+
+    def resizeEvent(self, event: QResizeEvent):
+        super().resizeEvent(event)
+        w = event.size().width()
+        is_compact = w < 1180
+        if hasattr(self, "header_banner") and self.header_banner:
+            self.header_banner.set_compact_mode(is_compact)
+        if hasattr(self, "transfer_tab_view") and self.transfer_tab_view:
+            self.transfer_tab_view.set_compact_mode(is_compact)
 
     def closeEvent(self, event):
         self._cancel_task()

@@ -980,6 +980,18 @@ class TransferPaneWidget(QWidget):
             self._sync_check_to_grid(path_str, item.checkState())
             self._update_selection_counter()
 
+    def set_compact_mode(self, compact: bool):
+        """Adapts toolbar controls for compact laptop screens (< 1180px)."""
+        if compact:
+            self.edit_search.setPlaceholderText("Suchen...")
+            self.btn_rename.setText("")
+            self.btn_rename.setFixedSize(26, 22)
+        else:
+            self.edit_search.setPlaceholderText("Dateiname filtern...")
+            self.btn_rename.setText("Umbenennen")
+            self.btn_rename.setMinimumSize(0, 0)
+            self.btn_rename.setMaximumSize(16777215, 16777215)
+
     def _on_grid_item_changed(self, item: QListWidgetItem):
         path_str = item.data(Qt.ItemDataRole.UserRole)
         if item.checkState() == Qt.CheckState.Checked:
@@ -1430,6 +1442,26 @@ class TransferTabView(QWidget):
             sizes = self.main_splitter.sizes()
             if len(sizes) == 3 and not any(s == 0 for s in sizes):
                 self.config.transfer_main_splitter_sizes = sizes
+
+    def set_compact_mode(self, compact: bool):
+        """Switches transfer workspace between compact laptop (< 1180px) and standard desktop layout."""
+        self.pane_source.set_compact_mode(compact)
+        self.pane_dest.set_compact_mode(compact)
+        if compact:
+            self.btn_copy_sel.setText("")
+            self.btn_move_sel.setText("")
+            self.btn_copy_all.setText("")
+            self.btn_move_all.setText("")
+            self.btn_swap.setText("")
+            self.center_panel.setFixedWidth(46)
+        else:
+            self.btn_copy_sel.setText("Kopieren")
+            self.btn_move_sel.setText("Verschieben")
+            self.btn_copy_all.setText("Alle kopieren")
+            self.btn_move_all.setText("Alle versch.")
+            self.btn_swap.setText("Tauschen")
+            self.center_panel.setMinimumWidth(110)
+            self.center_panel.setMaximumWidth(160)
 
     def refresh_defaults(self):
         """Loads default directories from configuration if not yet loaded."""

@@ -49,6 +49,7 @@ class HeaderBanner(QFrame):
         self.setObjectName("headerBanner")
         self.setMaximumHeight(42)
         self._drives: List[DriveInfo] = []
+        self._is_compact: bool = False
         self._setup_ui()
         if self.config:
             self.update_from_config(self.config)
@@ -118,9 +119,9 @@ class HeaderBanner(QFrame):
         layout.addSpacing(6)
 
         # Drive selector section
-        lbl_drive = QLabel("Speicherkarte / Laufwerk:")
-        lbl_drive.setObjectName("subtleLabel")
-        layout.addWidget(lbl_drive, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.lbl_drive = QLabel("Speicherkarte / Laufwerk:")
+        self.lbl_drive.setObjectName("subtleLabel")
+        layout.addWidget(self.lbl_drive, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.combo_drives = QComboBox()
         self.combo_drives.setObjectName("driveCombo")
@@ -345,6 +346,32 @@ class HeaderBanner(QFrame):
         self.btn_tab_culling.setChecked(tab_idx == 1)
         self.btn_tab_transfer.setChecked(tab_idx == 2)
         self.tab_changed.emit(tab_idx)
+
+    def set_compact_mode(self, compact: bool):
+        """Toggles compact responsive mode on smaller viewports (< 1180px)."""
+        if self._is_compact == compact:
+            return
+        self._is_compact = compact
+        if compact:
+            self.lbl_drive.setText("Quelle:")
+            self.btn_tab_import.setText("1. Import")
+            self.btn_tab_culling.setText("2. Sichten")
+            self.btn_tab_transfer.setText("3. Sichern")
+            for btn in [self.btn_refresh, self.btn_eject, self.btn_history, self.btn_help]:
+                btn.setText("")
+                btn.setFixedSize(28, 26)
+        else:
+            self.lbl_drive.setText("Speicherkarte / Laufwerk:")
+            self.btn_tab_import.setText("1. Importieren")
+            self.btn_tab_culling.setText("2. Sichten & Sortieren")
+            self.btn_tab_transfer.setText("3. Sichern & Archivieren")
+            self.btn_refresh.setText("Neu laden")
+            self.btn_eject.setText("Auswerfen")
+            self.btn_history.setText("Historie")
+            self.btn_help.setText("Hilfe")
+            for btn in [self.btn_refresh, self.btn_eject, self.btn_history, self.btn_help]:
+                btn.setMinimumSize(0, 0)
+                btn.setMaximumSize(16777215, 16777215)
 
     def set_drives(self, drives: List[DriveInfo]):
         """Updates the dropdown list with a given set of drives, preserving selection if possible."""
