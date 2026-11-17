@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from typing import Optional, Tuple
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QSize, Signal
 from PySide6.QtWidgets import (
     QCheckBox, QFileDialog, QFrame,
     QHBoxLayout, QLabel, QLineEdit,
@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.config import AppConfig
+from gui_qt.styles.icons import get_folder_open_icon
 from .storage_bar import StorageBarWidget
 
 
@@ -26,7 +27,7 @@ class PathSelectorWidget(QWidget):
         layout.setSpacing(10)
 
         # 1. Source Dir Section
-        lbl_source = QLabel("\U0001F4C1 Quellordner / SD-Karte:")
+        lbl_source = QLabel("Quellordner / SD-Karte:")
         lbl_source.setObjectName("sectionSubTitle")
         layout.addWidget(lbl_source)
 
@@ -37,7 +38,9 @@ class PathSelectorWidget(QWidget):
         self.edit_source.textChanged.connect(self._on_source_text_changed)
         source_row.addWidget(self.edit_source, stretch=1)
 
-        btn_browse_source = QPushButton("\U0001F4C2 Durchsuchen")
+        btn_browse_source = QPushButton("Durchsuchen")
+        btn_browse_source.setIcon(get_folder_open_icon())
+        btn_browse_source.setIconSize(QSize(14, 14))
         btn_browse_source.setObjectName("secondaryBtn")
         btn_browse_source.clicked.connect(self._browse_source)
         source_row.addWidget(btn_browse_source)
@@ -49,7 +52,7 @@ class PathSelectorWidget(QWidget):
         layout.addSpacing(4)
 
         # 2. Target Dir Section
-        lbl_target = QLabel("\U0001F3AF Zielordner Fotos:")
+        lbl_target = QLabel("Zielordner Fotos:")
         lbl_target.setObjectName("sectionSubTitle")
         layout.addWidget(lbl_target)
 
@@ -60,7 +63,9 @@ class PathSelectorWidget(QWidget):
         self.edit_target.textChanged.connect(self._on_target_text_changed)
         target_row.addWidget(self.edit_target, stretch=1)
 
-        btn_browse_target = QPushButton("\U0001F4C2 Durchsuchen")
+        btn_browse_target = QPushButton("Durchsuchen")
+        btn_browse_target.setIcon(get_folder_open_icon())
+        btn_browse_target.setIconSize(QSize(14, 14))
         btn_browse_target.setObjectName("secondaryBtn")
         btn_browse_target.clicked.connect(self._browse_target)
         target_row.addWidget(btn_browse_target)
@@ -72,7 +77,7 @@ class PathSelectorWidget(QWidget):
         layout.addSpacing(4)
 
         # 3. Dual-Backup Target Section (Parallel Backup)
-        self.chk_dual_backup = QCheckBox("\U0001F6E1 Gleichzeitig 2. Backup erstellen (NAS/Festplatte)")
+        self.chk_dual_backup = QCheckBox("Gleichzeitig 2. Backup erstellen (NAS/Festplatte)")
         self.chk_dual_backup.setToolTip("Gleichzeitige Sicherung auf ein zweites Ziel (z.B. NAS oder externe Festplatte)")
         self.chk_dual_backup.toggled.connect(self._on_dual_backup_toggled)
         layout.addWidget(self.chk_dual_backup)
@@ -85,7 +90,9 @@ class PathSelectorWidget(QWidget):
         self.edit_backup_target.textChanged.connect(self._on_backup_text_changed)
         backup_row.addWidget(self.edit_backup_target, stretch=1)
 
-        self.btn_browse_backup = QPushButton("\U0001F4C2 Durchsuchen")
+        self.btn_browse_backup = QPushButton("Durchsuchen")
+        self.btn_browse_backup.setIcon(get_folder_open_icon())
+        self.btn_browse_backup.setIconSize(QSize(14, 14))
         self.btn_browse_backup.setObjectName("secondaryBtn")
         self.btn_browse_backup.setEnabled(False)
         self.btn_browse_backup.clicked.connect(self._browse_backup)
@@ -110,7 +117,9 @@ class PathSelectorWidget(QWidget):
         self.edit_video_target.setEnabled(False)
         video_row.addWidget(self.edit_video_target, stretch=1)
 
-        self.btn_browse_video = QPushButton("\U0001F4C2 Durchsuchen")
+        self.btn_browse_video = QPushButton("Durchsuchen")
+        self.btn_browse_video.setIcon(get_folder_open_icon())
+        self.btn_browse_video.setIconSize(QSize(14, 14))
         self.btn_browse_video.setObjectName("secondaryBtn")
         self.btn_browse_video.setEnabled(False)
         self.btn_browse_video.clicked.connect(self._browse_video)

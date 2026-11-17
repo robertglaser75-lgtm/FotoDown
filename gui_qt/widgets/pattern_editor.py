@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 
 from core.config import AppConfig
 from core.naming import generate_sample_preview
+from .elided_label import ElidedLabel
 
 
 class PatternEditorWidget(QWidget):
@@ -87,9 +88,9 @@ class PatternEditorWidget(QWidget):
         preview_layout.setContentsMargins(12, 8, 12, 8)
         preview_layout.setSpacing(4)
 
-        lbl_prev_title = QLabel("🔍 Live-Vorschau der Umbenennung:")
+        lbl_prev_title = QLabel("Live-Vorschau der Umbenennung:")
         lbl_prev_title.setObjectName("previewTitle")
-        self.lbl_preview_text = QLabel("")
+        self.lbl_preview_text = ElidedLabel("")
         self.lbl_preview_text.setObjectName("previewText")
         self.lbl_preview_text.setTextInteractionFlags(self.lbl_preview_text.textInteractionFlags() | self.lbl_preview_text.textInteractionFlags().TextSelectableByMouse)
 

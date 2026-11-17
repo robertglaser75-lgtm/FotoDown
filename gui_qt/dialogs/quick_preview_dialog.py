@@ -18,6 +18,7 @@ from core.importer import ScanItem
 from core.thumbnail import extract_raw_embedded_jpeg, load_preview_image
 from gui_qt.key_navigation import DEFAULT_NAVIGATION_SCHEME, is_nav_next, is_nav_prev
 from gui_qt.styles.icons import get_clear_icon, get_folder_open_icon
+from gui_qt.widgets.elided_label import ElidedLabel
 
 
 class QuickPreviewDialog(QDialog):
@@ -51,7 +52,8 @@ class QuickPreviewDialog(QDialog):
         header = QHBoxLayout()
         header.setSpacing(12)
 
-        self.lbl_filename = QLabel("")
+        self.lbl_filename = ElidedLabel("")
+        self.lbl_filename.setMaximumWidth(450)
         self.lbl_filename.setStyleSheet("font-size: 15px; font-weight: bold; color: #38bdf8;")
         header.addWidget(self.lbl_filename)
 

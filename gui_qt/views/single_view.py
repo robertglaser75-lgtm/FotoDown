@@ -21,6 +21,7 @@ from gui_qt.key_navigation import (
     DEFAULT_NAVIGATION_SCHEME, get_nav_hint, get_nav_labels, is_nav_next, is_nav_prev
 )
 from gui_qt.styles.icons import get_fullscreen_icon, get_zoom_fit_icon, get_zoom_icon
+from gui_qt.widgets.elided_label import ElidedLabel
 
 
 class MediaSingleView(QWidget):
@@ -85,7 +86,8 @@ class MediaSingleView(QWidget):
         top_layout.addWidget(self.lbl_counter)
 
         # Storage location / folder path
-        self.lbl_path = QLabel("")
+        self.lbl_path = ElidedLabel("")
+        self.lbl_path.setMaximumWidth(280)
         self.lbl_path.setObjectName("tagChip")
         self.lbl_path.setStyleSheet("color: #94a3b8; font-size: 11px; background-color: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px;")
         top_layout.addWidget(self.lbl_path)
@@ -279,7 +281,7 @@ class MediaSingleView(QWidget):
 
         # Storage location
         parent_dir = str(item.source_path.parent)
-        self.lbl_path.setText(f"📁 {parent_dir}")
+        self.lbl_path.setText(parent_dir)
         self.lbl_path.setToolTip(f"Speicherort:\n{item.source_path}")
         self.lbl_path.setVisible(show_path)
 

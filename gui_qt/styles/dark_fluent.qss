@@ -7,6 +7,44 @@ QWidget {
     font-size: 13px;
 }
 
+/* Typography Scale Tokens */
+.microText {
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.captionText {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.bodyText {
+    font-size: 12px;
+}
+
+.subheadingText {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.titleText {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.textMuted {
+    color: #94a3b8;
+}
+
+.textAccent {
+    color: #38bdf8;
+}
+
+.textMono {
+    font-family: Consolas, "Cascadia Code", "Ubuntu Mono", monospace;
+    font-size: 11px;
+}
+
 /* Header Banner */
 #headerBanner {
     background-color: #1e293b;

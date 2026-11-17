@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from core.drive_detector import format_size
 from core.importer import ScanItem
 from core.thumbnail import extract_raw_embedded_jpeg
+from .elided_label import ElidedLabel
 
 
 class HistogramWidget(QWidget):
@@ -321,9 +322,8 @@ class ExifInspectorWidget(QFrame):
         self.content_layout.addWidget(self.box_gps)
 
         # 6. Destination & Sidecar Info
-        self.lbl_target_info = QLabel("📁 Ziel: -")
+        self.lbl_target_info = ElidedLabel("Ziel: -")
         self.lbl_target_info.setStyleSheet("font-size: 10px; color: #64748b;")
-        self.lbl_target_info.setWordWrap(True)
         self.content_layout.addWidget(self.lbl_target_info)
 
         self.content_layout.addStretch()
@@ -343,9 +343,9 @@ class ExifInspectorWidget(QFrame):
             self.lbl_exposure_chip.setText("ƒ/- | -s | ISO - | -mm")
             self.lbl_dimensions.setText("📐 Auflösung: -")
             self.lbl_datetime.setText("📅 Aufnahme: -")
-            self.lbl_gps_coords.setText("📍 GPS: Keine Geodaten")
+            self.lbl_gps_coords.setText("GPS: Keine Geodaten")
             self.btn_open_map.setVisible(False)
-            self.lbl_target_info.setText("📁 Ziel: -")
+            self.lbl_target_info.setText("Ziel: -")
             self.histogram_widget.set_image(None)
             return
 
@@ -384,7 +384,7 @@ class ExifInspectorWidget(QFrame):
 
         # Destination info
         dest_name = item.target_filename or item.source_path.name
-        self.lbl_target_info.setText(f"📁 Zielname: {dest_name}")
+        self.lbl_target_info.setText(f"Zielname: {dest_name}")
 
         # Thumbnail & Histogram
         self._load_thumbnail_and_histogram(item)
