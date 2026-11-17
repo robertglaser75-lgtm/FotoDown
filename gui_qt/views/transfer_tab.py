@@ -38,7 +38,7 @@ from gui_qt.styles.icons import (
     get_arrow_right_icon, get_check_all_icon, get_clear_icon, get_files_icon,
     get_folder_icon, get_gear_icon, get_grid_icon, get_invert_icon, get_list_icon,
     get_move_icon, get_quick_icon, get_refresh_icon, get_search_icon,
-    get_sort_icon, get_swap_icon, get_uncheck_all_icon
+    get_sort_icon, get_swap_icon, get_tag_icon, get_uncheck_all_icon
 )
 from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
 from gui_qt.widgets.paired_header import PairedHeaderView
@@ -355,7 +355,9 @@ class TransferPaneWidget(QWidget):
         self.lbl_sel_count.setStyleSheet("color: #94a3b8; font-size: 10px;")
         f_row2.addWidget(self.lbl_sel_count, 1)
 
-        self.btn_rename = QPushButton("🏷️ Umbenennen")
+        self.btn_rename = QPushButton("Umbenennen")
+        self.btn_rename.setIcon(get_tag_icon())
+        self.btn_rename.setIconSize(QSize(13, 13))
         self.btn_rename.setToolTip("Alle markierten Dateien nach Muster umbenennen (wie beim Import)")
         self.btn_rename.setStyleSheet("""
             QPushButton {

@@ -20,6 +20,7 @@ from core.xmp_sync import read_xmp_workflow_info
 from gui_qt.key_navigation import (
     DEFAULT_NAVIGATION_SCHEME, get_nav_hint, get_nav_labels, is_nav_next, is_nav_prev
 )
+from gui_qt.styles.icons import get_fullscreen_icon, get_zoom_fit_icon, get_zoom_icon
 
 
 class MediaSingleView(QWidget):
@@ -104,14 +105,16 @@ class MediaSingleView(QWidget):
         top_layout.addWidget(self.chk_selected)
 
         # Zoom Mode Toggle Button (Fit vs 100%)
-        self.btn_zoom = QPushButton("🔍 100% Zoom")
+        self.btn_zoom = QPushButton("100% Zoom")
+        self.btn_zoom.setIcon(get_zoom_icon())
         self.btn_zoom.setObjectName("chipBtn")
         self.btn_zoom.setToolTip("Zwischen 'Einpassen' und '100% Originalgröße' umschalten (Taste F)")
         self.btn_zoom.clicked.connect(self._toggle_zoom)
         top_layout.addWidget(self.btn_zoom)
 
         # Fullscreen Dialog Button
-        self.btn_fullscreen = QPushButton("⛶ Vollbild")
+        self.btn_fullscreen = QPushButton("Vollbild")
+        self.btn_fullscreen.setIcon(get_fullscreen_icon())
         self.btn_fullscreen.setObjectName("chipBtn")
         self.btn_fullscreen.setToolTip("In separater Vollbild-Vorschau öffnen (Leertaste)")
         self.btn_fullscreen.clicked.connect(self._on_fullscreen_clicked)
@@ -369,7 +372,8 @@ class MediaSingleView(QWidget):
             # 1:1 original size
             self.lbl_image.setPixmap(self._current_pixmap)
             self.lbl_image.adjustSize()
-            self.btn_zoom.setText("🔍 Einpassen")
+            self.btn_zoom.setText("Einpassen")
+            self.btn_zoom.setIcon(get_zoom_fit_icon())
         else:
             # Fit to scroll area viewport with High-DPI support
             vp_size = self.scroll_area.viewport().size()
@@ -383,7 +387,8 @@ class MediaSingleView(QWidget):
             )
             scaled.setDevicePixelRatio(dpr)
             self.lbl_image.setPixmap(scaled)
-            self.btn_zoom.setText("🔍 100% Zoom")
+            self.btn_zoom.setText("100% Zoom")
+            self.btn_zoom.setIcon(get_zoom_icon())
 
     def _toggle_zoom(self):
         self._zoom_mode = "actual" if self._zoom_mode == "fit" else "fit"

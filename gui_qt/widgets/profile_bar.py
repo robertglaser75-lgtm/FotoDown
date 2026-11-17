@@ -1,13 +1,19 @@
 """Profile / Preset selection bar widget for quick switching, saving and creating presets."""
 
 from typing import List, Optional
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox, QFrame, QHBoxLayout, QInputDialog,
     QLabel, QMessageBox, QPushButton, QSizePolicy, QWidget
 )
 
 from core.config import AppConfig
+from gui_qt.styles.icons import (
+    get_files_icon,
+    get_plus_icon,
+    get_save_icon,
+    get_trash_icon,
+)
 
 
 class ProfileBarWidget(QFrame):
@@ -26,8 +32,8 @@ class ProfileBarWidget(QFrame):
         layout.setContentsMargins(8, 6, 8, 6)
         layout.setSpacing(6)
 
-        lbl_icon = QLabel("\U0001F4CB")  # Clipboard / preset icon
-        lbl_icon.setStyleSheet("font-size: 14px;")
+        lbl_icon = QLabel()
+        lbl_icon.setPixmap(get_files_icon(size=16).pixmap(16, 16))
         layout.addWidget(lbl_icon)
 
         lbl_title = QLabel("Profil:")
@@ -41,21 +47,27 @@ class ProfileBarWidget(QFrame):
         self.combo_profiles.currentIndexChanged.connect(self._on_combo_changed)
         layout.addWidget(self.combo_profiles, stretch=1)
 
-        self.btn_save = QPushButton("💾")
+        self.btn_save = QPushButton()
+        self.btn_save.setIcon(get_save_icon())
+        self.btn_save.setIconSize(QSize(14, 14))
         self.btn_save.setObjectName("profileBtnSave")
         self.btn_save.setToolTip("Profil speichern: Aktuelle Einstellungen im gewählten Profil sichern")
         self.btn_save.setFixedSize(30, 28)
         self.btn_save.clicked.connect(self._on_save_clicked)
         layout.addWidget(self.btn_save)
 
-        self.btn_new = QPushButton("➕")
+        self.btn_new = QPushButton()
+        self.btn_new.setIcon(get_plus_icon())
+        self.btn_new.setIconSize(QSize(14, 14))
         self.btn_new.setObjectName("profileBtnNew")
         self.btn_new.setToolTip("Neues Profil: Neues Profil aus aktuellen Einstellungen anlegen")
         self.btn_new.setFixedSize(30, 28)
         self.btn_new.clicked.connect(self._on_new_clicked)
         layout.addWidget(self.btn_new)
 
-        self.btn_delete = QPushButton("🗑️")
+        self.btn_delete = QPushButton()
+        self.btn_delete.setIcon(get_trash_icon())
+        self.btn_delete.setIconSize(QSize(14, 14))
         self.btn_delete.setObjectName("profileBtnDelete")
         self.btn_delete.setToolTip("Profil löschen: Aktuelles Profil dauerhaft entfernen")
         self.btn_delete.setFixedSize(30, 28)

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from PIL import Image, ImageOps
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QIcon, QImage, QKeyEvent, QPixmap, QResizeEvent
 from PySide6.QtWidgets import (
     QCheckBox, QDialog, QFrame, QHBoxLayout, QLabel,
@@ -17,6 +17,7 @@ from core.config import AppConfig
 from core.importer import ScanItem
 from core.thumbnail import extract_raw_embedded_jpeg, load_preview_image
 from gui_qt.key_navigation import DEFAULT_NAVIGATION_SCHEME, is_nav_next, is_nav_prev
+from gui_qt.styles.icons import get_clear_icon, get_folder_open_icon
 
 
 class QuickPreviewDialog(QDialog):
@@ -70,13 +71,17 @@ class QuickPreviewDialog(QDialog):
         self.btn_next.clicked.connect(self._next_item)
         header.addWidget(self.btn_next)
 
-        self.btn_open_orig = QPushButton("📂 Original öffnen")
+        self.btn_open_orig = QPushButton("Original öffnen")
+        self.btn_open_orig.setIcon(get_folder_open_icon())
+        self.btn_open_orig.setIconSize(QSize(14, 14))
         self.btn_open_orig.setObjectName("secondaryBtn")
         self.btn_open_orig.setToolTip("Öffnet die Originaldatei im Standardprogramm des Betriebssystems")
         self.btn_open_orig.clicked.connect(self._open_current_original)
         header.addWidget(self.btn_open_orig)
 
-        btn_close = QPushButton("✕ Schließen")
+        btn_close = QPushButton("Schließen")
+        btn_close.setIcon(get_clear_icon())
+        btn_close.setIconSize(QSize(13, 13))
         btn_close.setObjectName("secondaryBtn")
         btn_close.clicked.connect(self.accept)
         header.addWidget(btn_close)

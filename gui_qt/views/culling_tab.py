@@ -33,7 +33,7 @@ from gui_qt.key_navigation import (
 from gui_qt.models.culling_model import CullingItem, execute_reject_action, scan_culling_folder
 from gui_qt.styles.icons import (
     get_collapse_panel_icon, get_expand_panel_icon, get_filmstrip_icon,
-    get_folder_icon, get_refresh_icon
+    get_folder_icon, get_refresh_icon, get_zoom_fit_icon, get_zoom_icon
 )
 from gui_qt.views.culling_filter import CullingFilterCriteria
 from gui_qt.views.culling_left_dock import CullingLeftNavigationDock
@@ -559,7 +559,8 @@ class CullingTabView(QWidget):
         layout_photo.addLayout(nav_layout)
 
         # Zoom Button
-        self.btn_zoom = QPushButton("🔍 100% Schärfelupe [F]")
+        self.btn_zoom = QPushButton("100% Schärfelupe [F]")
+        self.btn_zoom.setIcon(get_zoom_icon())
         self.btn_zoom.setStyleSheet("background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; border-radius: 4px; padding: 4px; font-size: 11px;")
         self.btn_zoom.clicked.connect(self._toggle_canvas_zoom)
         layout_photo.addWidget(self.btn_zoom)
@@ -1331,11 +1332,21 @@ class CullingTabView(QWidget):
 
     def _toggle_canvas_zoom(self):
         mode = self.canvas.toggle_zoom()
-        self.btn_zoom.setText("🔍 Einpassen [F]" if mode == "actual" else "🔍 100% Zoom [F]")
+        if mode == "actual":
+            self.btn_zoom.setText("Einpassen [F]")
+            self.btn_zoom.setIcon(get_zoom_fit_icon())
+        else:
+            self.btn_zoom.setText("100% Zoom [F]")
+            self.btn_zoom.setIcon(get_zoom_icon())
 
     def _update_zoom_btn_text(self):
         mode = self.canvas._zoom_mode
-        self.btn_zoom.setText("🔍 Einpassen [F]" if mode == "actual" else "🔍 100% Zoom [F]")
+        if mode == "actual":
+            self.btn_zoom.setText("Einpassen [F]")
+            self.btn_zoom.setIcon(get_zoom_fit_icon())
+        else:
+            self.btn_zoom.setText("100% Zoom [F]")
+            self.btn_zoom.setIcon(get_zoom_icon())
 
     def _open_fullscreen_preview(self):
         self._open_fullscreen_preview_at_index(self.current_idx)

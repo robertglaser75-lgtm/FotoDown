@@ -1,10 +1,12 @@
 """Filter and view switcher toolbar with responsive layout."""
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox, QFrame, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QSlider, QSizePolicy, QWidget
 )
+
+from gui_qt.styles.icons import get_info_icon
 
 
 class FilterBarWidget(QWidget):
@@ -97,7 +99,9 @@ class FilterBarWidget(QWidget):
         layout.addWidget(self.btn_select_new)
 
         # 6. EXIF Inspector Toggle Button
-        self.btn_toggle_exif = QPushButton("ℹ️ EXIF")
+        self.btn_toggle_exif = QPushButton("EXIF")
+        self.btn_toggle_exif.setIcon(get_info_icon())
+        self.btn_toggle_exif.setIconSize(QSize(13, 13))
         self.btn_toggle_exif.setCheckable(True)
         self.btn_toggle_exif.setObjectName("chipBtn")
         self.btn_toggle_exif.setToolTip("EXIF- & Metadaten-Inspektor ein-/ausblenden")

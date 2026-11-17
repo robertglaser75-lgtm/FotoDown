@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 from core.config import AppConfig
 from core.exif_reader import MediaMetadata, extract_metadata
 from core.naming import format_filename, sanitize_filename
+from gui_qt.styles.icons import get_search_icon, get_tag_icon
 from gui_qt.widgets.paired_header import PairedHeaderView
 
 
@@ -84,8 +85,8 @@ class BatchRenameDialog(QDialog):
         header = QHBoxLayout()
         header.setSpacing(10)
 
-        lbl_icon = QLabel("🏷️")
-        lbl_icon.setStyleSheet("font-size: 26px;")
+        lbl_icon = QLabel()
+        lbl_icon.setPixmap(get_tag_icon(size=26).pixmap(26, 26))
         header.addWidget(lbl_icon)
 
         title_vbox = QVBoxLayout()
@@ -217,7 +218,7 @@ class BatchRenameDialog(QDialog):
         layout.addWidget(cfg_frame)
 
         # 3. Live Preview Table
-        lbl_tbl_title = QLabel("🔍 Vorschau der Umbenennung:")
+        lbl_tbl_title = QLabel("Vorschau der Umbenennung:")
         lbl_tbl_title.setStyleSheet("font-weight: 600; font-size: 12px; color: #94a3b8; margin-top: 4px;")
         layout.addWidget(lbl_tbl_title)
 
