@@ -165,7 +165,7 @@ class TransferPaneWidget(QWidget):
 
         # Top Active Folder Header Card (Always visible above splitter so Tree & Files toggles remain accessible)
         folder_card = QFrame()
-        folder_card.setStyleSheet("background-color: #1e293b; border-radius: 6px; padding: 3px;")
+        folder_card.setObjectName("folderCard")
         f_card_layout = QHBoxLayout(folder_card)
         f_card_layout.setContentsMargins(6, 3, 6, 3)
         f_card_layout.setSpacing(4)
@@ -174,33 +174,23 @@ class TransferPaneWidget(QWidget):
         self.lbl_folder_header.setStyleSheet("color: #38bdf8; font-size: 11px;")
         f_card_layout.addWidget(self.lbl_folder_header, stretch=1)
 
-        toggle_btn_style = """
-            QPushButton {
-                background-color: #0f172a; border: 1px solid #334155;
-                border-radius: 4px; padding: 2px 7px; font-size: 10px; color: #94a3b8;
-            }
-            QPushButton:checked {
-                background-color: #0284c7; color: white; border-color: #38bdf8;
-            }
-        """
-
         self.btn_toggle_tree = QPushButton("Baum")
+        self.btn_toggle_tree.setObjectName("toggleNavBtn")
         self.btn_toggle_tree.setIcon(get_folder_icon("#cbd5e1", 12))
         self.btn_toggle_tree.setIconSize(QSize(12, 12))
         self.btn_toggle_tree.setToolTip("Verzeichnisbaum links ein- oder ausblenden")
         self.btn_toggle_tree.setCheckable(True)
         self.btn_toggle_tree.setChecked(True)
-        self.btn_toggle_tree.setStyleSheet(toggle_btn_style)
         self.btn_toggle_tree.clicked.connect(self._on_toggle_tree_clicked)
         f_card_layout.addWidget(self.btn_toggle_tree)
 
         self.btn_toggle_files = QPushButton("Dateien")
+        self.btn_toggle_files.setObjectName("toggleNavBtn")
         self.btn_toggle_files.setIcon(get_files_icon("#cbd5e1", 12))
         self.btn_toggle_files.setIconSize(QSize(12, 12))
         self.btn_toggle_files.setToolTip("Anzeige der Dateien in den Ordnern ein- oder ausschalten")
         self.btn_toggle_files.setCheckable(True)
         self.btn_toggle_files.setChecked(True)
-        self.btn_toggle_files.setStyleSheet(toggle_btn_style)
         self.btn_toggle_files.clicked.connect(self._on_toggle_files_clicked)
         f_card_layout.addWidget(self.btn_toggle_files)
 
@@ -275,7 +265,7 @@ class TransferPaneWidget(QWidget):
         content_layout.setSpacing(4)
 
         filter_card = QFrame()
-        filter_card.setStyleSheet("background-color: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 3px;")
+        filter_card.setObjectName("filterCard")
         filter_layout = QVBoxLayout(filter_card)
         filter_layout.setContentsMargins(5, 4, 5, 4)
         filter_layout.setSpacing(4)
@@ -315,38 +305,30 @@ class TransferPaneWidget(QWidget):
         f_row2 = QHBoxLayout()
         f_row2.setSpacing(4)
 
-        compact_tool_style = """
-            QPushButton {
-                background-color: #1e293b; border: 1px solid #334155;
-                border-radius: 3px;
-            }
-            QPushButton:hover { background-color: #334155; border-color: #38bdf8; }
-        """
-
         btn_sel_all = QPushButton()
+        btn_sel_all.setObjectName("compactToolBtn")
         btn_sel_all.setIcon(get_check_all_icon("#38bdf8", 13))
         btn_sel_all.setIconSize(QSize(13, 13))
         btn_sel_all.setFixedSize(26, 22)
         btn_sel_all.setToolTip("Alle sichtbaren Dateien markieren")
-        btn_sel_all.setStyleSheet(compact_tool_style)
         btn_sel_all.clicked.connect(self.select_all)
         f_row2.addWidget(btn_sel_all)
 
         btn_sel_none = QPushButton()
+        btn_sel_none.setObjectName("compactToolBtn")
         btn_sel_none.setIcon(get_uncheck_all_icon("#94a3b8", 13))
         btn_sel_none.setIconSize(QSize(13, 13))
         btn_sel_none.setFixedSize(26, 22)
         btn_sel_none.setToolTip("Auswahl aufheben")
-        btn_sel_none.setStyleSheet(compact_tool_style)
         btn_sel_none.clicked.connect(self.select_none)
         f_row2.addWidget(btn_sel_none)
 
         btn_sel_inv = QPushButton()
+        btn_sel_inv.setObjectName("compactToolBtn")
         btn_sel_inv.setIcon(get_invert_icon("#cbd5e1", 13))
         btn_sel_inv.setIconSize(QSize(13, 13))
         btn_sel_inv.setFixedSize(26, 22)
         btn_sel_inv.setToolTip("Auswahl umkehren")
-        btn_sel_inv.setStyleSheet(compact_tool_style)
         btn_sel_inv.clicked.connect(self.invert_selection)
         f_row2.addWidget(btn_sel_inv)
 
@@ -356,16 +338,10 @@ class TransferPaneWidget(QWidget):
         f_row2.addWidget(self.lbl_sel_count, 1)
 
         self.btn_rename = QPushButton("Umbenennen")
+        self.btn_rename.setObjectName("btnRenameTransfer")
         self.btn_rename.setIcon(get_tag_icon())
         self.btn_rename.setIconSize(QSize(13, 13))
         self.btn_rename.setToolTip("Alle markierten Dateien nach Muster umbenennen (wie beim Import)")
-        self.btn_rename.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; border: 1px solid #334155;
-                border-radius: 3px; padding: 2px 6px; font-size: 10px; color: #38bdf8; font-weight: 600;
-            }
-            QPushButton:hover { background-color: #0284c7; color: white; border-color: #38bdf8; }
-        """)
         self.btn_rename.clicked.connect(self._open_rename_dialog)
         f_row2.addWidget(self.btn_rename)
 
@@ -380,20 +356,13 @@ class TransferPaneWidget(QWidget):
         f_row2.addWidget(self.combo_sort)
 
         self.btn_sort_dir = QPushButton()
+        self.btn_sort_dir.setObjectName("compactToolBtn")
         self.btn_sort_dir.setIcon(get_sort_icon(False, "#cbd5e1", 13))
         self.btn_sort_dir.setIconSize(QSize(13, 13))
         self.btn_sort_dir.setFixedSize(26, 22)
         self.btn_sort_dir.setCheckable(True)
         self.btn_sort_dir.setChecked(False)
         self.btn_sort_dir.setToolTip("Sortierung: Aufsteigend (Klicken für Absteigend)")
-        self.btn_sort_dir.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; border: 1px solid #334155; border-radius: 3px;
-            }
-            QPushButton:checked {
-                background-color: #0284c7; border-color: #38bdf8;
-            }
-        """)
         self.btn_sort_dir.clicked.connect(self._on_sort_dir_toggled)
         f_row2.addWidget(self.btn_sort_dir)
 
@@ -445,24 +414,6 @@ class TransferPaneWidget(QWidget):
         self.list_grid.setMovement(QListWidget.Movement.Static)
         self.list_grid.setSpacing(8)
         self.list_grid.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
-        self.list_grid.setStyleSheet("""
-            QListWidget {
-                background-color: #0b0f19;
-                border: 1px solid #1e293b;
-                border-radius: 4px;
-            }
-            QListWidget::item {
-                background-color: #1e293b;
-                border: 1px solid #334155;
-                border-radius: 6px;
-                padding: 4px;
-                color: #e2e8f0;
-            }
-            QListWidget::item:selected {
-                background-color: #0284c7;
-                border: 1px solid #38bdf8;
-            }
-        """)
         self.list_grid.itemChanged.connect(self._on_grid_item_changed)
         self.list_grid.itemSelectionChanged.connect(self._on_grid_selection_changed)
         self.list_grid.itemDoubleClicked.connect(self._on_grid_item_double_clicked)
@@ -938,7 +889,9 @@ class TransferPaneWidget(QWidget):
 
     def _get_placeholder_icon(self) -> QIcon:
         pix = QPixmap(140, 140)
-        pix.fill(QColor("#1e293b"))
+        from gui_qt.styles.theme import theme_manager
+        is_light = (theme_manager.effective_theme == "light")
+        pix.fill(QColor("#e2e8f0" if is_light else "#1e293b"))
         return QIcon(pix)
 
     def _request_visible_thumbnails(self):
@@ -1210,9 +1163,8 @@ class TransferTabView(QWidget):
 
         # Center Column: Action Controls and Progress (compact width for laptop displays)
         self.center_panel = QFrame()
-        self.center_panel.setObjectName("cardFrame")
+        self.center_panel.setObjectName("centerActionPanel")
         self.center_panel.setFixedWidth(156)
-        self.center_panel.setStyleSheet("background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 8px;")
 
         center_layout = QVBoxLayout(self.center_panel)
         center_layout.setContentsMargins(6, 12, 6, 12)
@@ -1238,18 +1190,6 @@ class TransferTabView(QWidget):
         """)
 
         reconcile_menu = QMenu(self.btn_reconcile)
-        reconcile_menu.setStyleSheet("""
-            QMenu {
-                background-color: #1e293b; color: #f1f5f9; border: 1px solid #334155;
-                border-radius: 6px; padding: 4px;
-            }
-            QMenu::item {
-                padding: 6px 14px; border-radius: 4px; font-size: 11px;
-            }
-            QMenu::item:selected {
-                background-color: #0284c7; color: #ffffff;
-            }
-        """)
 
         act_missing_jpg = reconcile_menu.addAction("Fehlende JPGs markieren")
         act_missing_jpg.setIcon(get_search_icon("#38bdf8", 12))
@@ -1363,10 +1303,10 @@ class TransferTabView(QWidget):
 
         # Swap sides button
         self.btn_swap = QPushButton("Tauschen")
+        self.btn_swap.setObjectName("compactToolBtn")
         self.btn_swap.setIcon(get_swap_icon("#94a3b8", 13))
         self.btn_swap.setIconSize(QSize(13, 13))
         self.btn_swap.setToolTip("Tauscht die Ordner von Quelle und Ziel")
-        self.btn_swap.setStyleSheet("background-color: #1e293b; color: #94a3b8; font-size: 10px; padding: 4px; border: 1px solid #334155;")
         self.btn_swap.clicked.connect(self._swap_folders)
         center_layout.addWidget(self.btn_swap)
 
@@ -1374,7 +1314,7 @@ class TransferTabView(QWidget):
 
         # Progress / Status Section (Visible during transfer)
         self.progress_frame = QFrame()
-        self.progress_frame.setStyleSheet("background-color: #1e293b; border-radius: 6px; padding: 6px;")
+        self.progress_frame.setObjectName("transferProgressFrame")
         self.progress_frame.setVisible(False)
         p_layout = QVBoxLayout(self.progress_frame)
         p_layout.setContentsMargins(4, 4, 4, 4)

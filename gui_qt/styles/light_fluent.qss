@@ -418,11 +418,25 @@ QHeaderView::section {
 }
 
 /* List / Gallery View */
-QListView {
+QListView, QListWidget {
     background-color: #ffffff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
     border-radius: 6px;
     color: #0f172a;
+}
+
+QListView::item, QListWidget::item {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 4px;
+    color: #0f172a;
+}
+
+QListView::item:selected, QListWidget::item:selected {
+    background-color: #e0f2fe;
+    border: 1px solid #0284c7;
+    color: #0369a1;
 }
 
 /* ScrollBars */
@@ -640,5 +654,281 @@ QTabBar::tab:selected {
 
 QTabBar::tab:hover:!selected {
     background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+/* Left Dock Tabs Pane & Collapsed Strip */
+#cullingLeftDockTabs::pane {
+    border: none;
+    background-color: #f8fafc;
+}
+
+#cullingLeftDockStrip {
+    background-color: #f8fafc;
+    border-right: 1px solid #cbd5e1;
+}
+
+QPushButton#btnStripExpand {
+    background-color: #e0f2fe;
+    border: 1px solid #0284c7;
+    border-radius: 4px;
+}
+QPushButton#btnStripExpand:hover {
+    background-color: #bae6fd;
+}
+
+QPushButton#btnStripNav {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+QPushButton#btnStripNav:hover {
+    background-color: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+/* Tree Header Card & Tools */
+#treeHeaderCard {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QLabel#treeTitleLabel {
+    font-size: 11px;
+    font-weight: bold;
+    color: #475569;
+}
+
+QLabel#treeRootPathLabel {
+    color: #475569;
+    font-size: 10px;
+}
+
+QPushButton#treeToolBtn {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+}
+QPushButton#treeToolBtn:hover {
+    background-color: #e2e8f0;
+    border-color: #0284c7;
+}
+
+QPushButton#btnChangeRoot {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #0284c7;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}
+QPushButton#btnChangeRoot:hover {
+    background-color: #0284c7;
+    color: #ffffff;
+}
+
+/* Filter Head Frame & Filter Cards */
+#filterHeadFrame {
+    background-color: #ffffff;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+QLabel#filterHeaderTitle {
+    font-size: 11px;
+    font-weight: bold;
+    color: #0f172a;
+    letter-spacing: 0.5px;
+}
+
+#filterScrollArea {
+    background-color: #f8fafc;
+    border: none;
+}
+
+#filterSectionCard {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+#filterStatsCard {
+    background-color: #e0f2fe;
+    border: 1px solid #38bdf8;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#btnFilterReset {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 10px;
+    font-weight: 500;
+}
+QPushButton#btnFilterReset:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+/* Transfer Tab Cards & Center Panel */
+#folderCard {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 3px;
+}
+
+#filterCard {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 3px;
+}
+
+#centerActionPanel {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}
+
+#transferProgressFrame {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#compactToolBtn {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+}
+QPushButton#compactToolBtn:hover {
+    background-color: #e2e8f0;
+    border-color: #0284c7;
+}
+
+QPushButton#toggleNavBtn {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 10px;
+    color: #475569;
+}
+QPushButton#toggleNavBtn:checked {
+    background-color: #0284c7;
+    color: white;
+    border-color: #0284c7;
+}
+
+QPushButton#btnRenameTransfer {
+    background-color: #e0f2fe;
+    border: 1px solid #0284c7;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 10px;
+    color: #0369a1;
+    font-weight: 600;
+}
+QPushButton#btnRenameTransfer:hover {
+    background-color: #0284c7;
+    color: white;
+}
+
+/* Empty State Frame */
+#emptyStateFrame {
+    background-color: #ffffff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+}
+#emptyStateTitle {
+    font-size: 20px;
+    font-weight: bold;
+    color: #0f172a;
+}
+#emptyStateDesc {
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* Single View Header & Footer */
+#singleViewHeader, #singleViewFooter {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+#singleViewHeader QLabel, #singleViewFooter QLabel {
+    color: #334155;
+}
+#singleViewHeader QCheckBox {
+    font-weight: 600;
+    font-size: 12px;
+    color: #0f172a;
+}
+
+QScrollArea#photoCanvasArea {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}
+
+QLabel#tagChip {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #334155;
+    font-size: 11px;
+}
+
+QPushButton#chipBtn {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 3px 8px;
+    color: #334155;
+    font-size: 11px;
+}
+QPushButton#chipBtn:hover {
+    background-color: #e2e8f0;
+    border-color: #0284c7;
+    color: #0f172a;
+}
+
+/* EXIF Inspector Section Boxes */
+#renameConfigCard {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}
+
+#exifSectionBox {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+#exifPreviewFrame {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+#exifExposureChip {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    font-weight: bold;
+    font-size: 12px;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+#exifFilenameLabel {
+    font-weight: 600;
+    font-size: 12px;
     color: #0f172a;
 }

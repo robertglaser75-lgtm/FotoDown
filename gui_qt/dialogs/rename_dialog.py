@@ -107,13 +107,7 @@ class BatchRenameDialog(QDialog):
 
         # 2. Pattern Configuration Card
         cfg_frame = QFrame()
-        cfg_frame.setStyleSheet("""
-            QFrame {
-                background-color: #0f172a;
-                border: 1px solid #1e293b;
-                border-radius: 8px;
-            }
-        """)
+        cfg_frame.setObjectName("renameConfigCard")
         cfg_layout = QVBoxLayout(cfg_frame)
         cfg_layout.setContentsMargins(12, 10, 12, 10)
         cfg_layout.setSpacing(8)
@@ -123,7 +117,7 @@ class BatchRenameDialog(QDialog):
         row_pat.setSpacing(10)
 
         lbl_pat = QLabel("Dateinamen-Muster:")
-        lbl_pat.setStyleSheet("font-weight: 600; font-size: 12px; color: #f8fafc;")
+        lbl_pat.setStyleSheet("font-weight: 600; font-size: 12px;")
         row_pat.addWidget(lbl_pat)
 
         initial_pat = (
@@ -133,32 +127,16 @@ class BatchRenameDialog(QDialog):
         )
         self.edit_pattern = QLineEdit(initial_pat)
         self.edit_pattern.setPlaceholderText("{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}")
-        self.edit_pattern.setStyleSheet("""
-            QLineEdit {
-                background-color: #1e293b;
-                border: 1px solid #334155;
-                border-radius: 4px;
-                padding: 4px 8px;
-                color: #38bdf8;
-                font-family: monospace;
-                font-weight: 600;
-                font-size: 12px;
-            }
-            QLineEdit:focus {
-                border: 1px solid #38bdf8;
-            }
-        """)
         self.edit_pattern.textChanged.connect(self._update_preview)
         row_pat.addWidget(self.edit_pattern, 1)
 
         lbl_start = QLabel("Startnummer:")
-        lbl_start.setStyleSheet("color: #cbd5e1; font-size: 11px;")
+        lbl_start.setStyleSheet("font-size: 11px;")
         row_pat.addWidget(lbl_start)
 
         self.spin_start_num = QSpinBox()
         self.spin_start_num.setRange(1, 999999)
         self.spin_start_num.setValue(1)
-        self.spin_start_num.setStyleSheet("background-color: #1e293b; color: white; padding: 2px 6px; border: 1px solid #334155; border-radius: 4px;")
         self.spin_start_num.valueChanged.connect(self._update_preview)
         row_pat.addWidget(self.spin_start_num)
 
@@ -174,24 +152,8 @@ class BatchRenameDialog(QDialog):
         chips_grid.setContentsMargins(0, 0, 0, 0)
         for i, (tag, tip) in enumerate(self.TAGS):
             btn = QPushButton(tag)
-            btn.setObjectName("tagChip")
+            btn.setObjectName("chipBtn")
             btn.setToolTip(tip)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #1e293b;
-                    border: 1px solid #334155;
-                    border-radius: 3px;
-                    padding: 3px 6px;
-                    color: #cbd5e1;
-                    font-size: 10px;
-                    font-family: monospace;
-                }
-                QPushButton:hover {
-                    background-color: #0284c7;
-                    border-color: #38bdf8;
-                    color: white;
-                }
-            """)
             btn.clicked.connect(lambda chk=False, t=tag: self._insert_tag(t))
             chips_grid.addWidget(btn, i // 5, i % 5)
 
@@ -203,13 +165,11 @@ class BatchRenameDialog(QDialog):
 
         self.chk_sync_companions = QCheckBox("Zugehörige Begleitdateien (.xmp, RAW/JPG) synchron umbenennen")
         self.chk_sync_companions.setChecked(True)
-        self.chk_sync_companions.setStyleSheet("color: #cbd5e1; font-size: 11px;")
         self.chk_sync_companions.toggled.connect(self._update_preview)
         opts_row.addWidget(self.chk_sync_companions)
 
         self.chk_collision_safe = QCheckBox("Kollisionsschutz (_1, _2 bei Namenskonflikten anhängen)")
         self.chk_collision_safe.setChecked(True)
-        self.chk_collision_safe.setStyleSheet("color: #cbd5e1; font-size: 11px;")
         self.chk_collision_safe.toggled.connect(self._update_preview)
         opts_row.addWidget(self.chk_collision_safe)
 

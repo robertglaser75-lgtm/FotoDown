@@ -90,18 +90,22 @@ class HistogramWidget(QWidget):
         h = self.height()
 
         # Background
-        painter.fillRect(0, 0, w, h, QColor("#090d16"))
-        painter.setPen(QPen(QColor("#1e293b"), 1))
+        from gui_qt.styles.theme import theme_manager
+        is_light = (theme_manager.effective_theme == "light")
+        bg_col = QColor("#f8fafc" if is_light else "#090d16")
+        border_col = QColor("#cbd5e1" if is_light else "#1e293b")
+        painter.fillRect(0, 0, w, h, bg_col)
+        painter.setPen(QPen(border_col, 1))
         painter.drawRect(0, 0, w - 1, h - 1)
 
         if not self._r_bins:
-            painter.setPen(QColor("#475569"))
+            painter.setPen(QColor("#64748b" if is_light else "#475569"))
             painter.setFont(QFont("Segoe UI", 9))
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Keine Histogrammdaten")
             return
 
         # Grid lines (quarters)
-        painter.setPen(QPen(QColor("#1e293b"), 1, Qt.PenStyle.DotLine))
+        painter.setPen(QPen(border_col, 1, Qt.PenStyle.DotLine))
         for i in range(1, 4):
             x = int(w * i / 4)
             painter.drawLine(x, 1, x, h - 2)
@@ -188,13 +192,7 @@ class ExifInspectorWidget(QFrame):
 
         # 1. Preview Box
         self.preview_frame = QFrame()
-        self.preview_frame.setStyleSheet("""
-            QFrame {
-                background-color: #0b1120;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-            }
-        """)
+        self.preview_frame.setObjectName("exifPreviewFrame")
         pf_layout = QVBoxLayout(self.preview_frame)
         pf_layout.setContentsMargins(4, 4, 4, 4)
         self.lbl_thumbnail = QLabel()
@@ -208,8 +206,8 @@ class ExifInspectorWidget(QFrame):
 
         # 2. File basic info
         self.lbl_filename = QLabel("-")
+        self.lbl_filename.setObjectName("exifFilenameLabel")
         self.lbl_filename.setWordWrap(True)
-        self.lbl_filename.setStyleSheet("font-weight: 600; font-size: 12px; color: #f1f5f9;")
         self.content_layout.addWidget(self.lbl_filename)
 
         # Status badge row
@@ -232,20 +230,13 @@ class ExifInspectorWidget(QFrame):
 
         # 3. Technical Exposure Box (Chips)
         self.box_shooting = QFrame()
-        self.box_shooting.setStyleSheet("""
-            QFrame {
-                background: #0f172a;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                padding: 6px;
-            }
-        """)
+        self.box_shooting.setObjectName("exifSectionBox")
         bs_layout = QVBoxLayout(self.box_shooting)
         bs_layout.setContentsMargins(6, 6, 6, 6)
         bs_layout.setSpacing(4)
 
         self.lbl_camera = QLabel("📷 Kamera: -")
-        self.lbl_camera.setStyleSheet("font-weight: 600; font-size: 11px; color: #e2e8f0;")
+        self.lbl_camera.setStyleSheet("font-weight: 600; font-size: 11px;")
         bs_layout.addWidget(self.lbl_camera)
 
         self.lbl_lens = QLabel("🔍 Objektiv: -")
@@ -253,14 +244,7 @@ class ExifInspectorWidget(QFrame):
         bs_layout.addWidget(self.lbl_lens)
 
         self.lbl_exposure_chip = QLabel("ƒ/- | -s | ISO - | -mm")
-        self.lbl_exposure_chip.setStyleSheet("""
-            background-color: #1e293b;
-            color: #38bdf8;
-            font-weight: bold;
-            font-size: 12px;
-            border-radius: 4px;
-            padding: 4px 8px;
-        """)
+        self.lbl_exposure_chip.setObjectName("exifExposureChip")
         self.lbl_exposure_chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
         bs_layout.addWidget(self.lbl_exposure_chip)
 
@@ -284,14 +268,7 @@ class ExifInspectorWidget(QFrame):
 
         # 5. GPS Section
         self.box_gps = QFrame()
-        self.box_gps.setStyleSheet("""
-            QFrame {
-                background: #0f172a;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                padding: 4px;
-            }
-        """)
+        self.box_gps.setObjectName("exifSectionBox")
         gps_layout = QVBoxLayout(self.box_gps)
         gps_layout.setContentsMargins(6, 6, 6, 6)
         gps_layout.setSpacing(4)
@@ -301,21 +278,7 @@ class ExifInspectorWidget(QFrame):
         gps_layout.addWidget(self.lbl_gps_coords)
 
         self.btn_open_map = QPushButton("In OpenStreetMap öffnen ↗")
-        self.btn_open_map.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b;
-                color: #38bdf8;
-                border: 1px solid #334155;
-                border-radius: 4px;
-                padding: 4px 8px;
-                font-size: 11px;
-                font-weight: 600;
-            }
-            QPushButton:hover {
-                background-color: #0284c7;
-                color: white;
-            }
-        """)
+        self.btn_open_map.setObjectName("chipBtn")
         self.btn_open_map.setVisible(False)
         self.btn_open_map.clicked.connect(self._open_map)
         gps_layout.addWidget(self.btn_open_map)

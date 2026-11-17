@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.32.0")
+        self.assertEqual(__version__, "0.32.1")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -3114,6 +3114,54 @@ class TestAllSettingsPersistence(unittest.TestCase):
             self.assertFalse(sc1.exists())
             self.assertFalse(f2.exists())
             dlg.close()
+
+    def test_light_mode_tree_and_panel_adaptivity(self):
+        from gui_qt.styles.theme import theme_manager
+        from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+        from gui_qt.views.culling_left_dock import CullingLeftNavigationDock
+        from gui_qt.widgets.empty_state import EmptyStateWidget
+        from gui_qt.styles.icons import get_camera_icon
+
+        cfg = AppConfig()
+
+        # 1. Light Mode Verification
+        theme_manager.apply_theme("light")
+        self.assertEqual(theme_manager.effective_theme, "light")
+
+        tree = CullingDirectoryTreeWidget(cfg)
+        # Verify tree_view has NO hardcoded dark inline style
+        self.assertNotIn("#090d16", tree.tree_view.styleSheet())
+        self.assertNotIn("#0f172a", tree.tree_view.styleSheet())
+
+        # Check total / raw / jpg item colors for Light mode
+        c_tot, c_raw, c_jpg = tree._get_item_colors(10, 5, 5)
+        self.assertEqual(c_tot.name(), "#0f172a")  # Dark slate for contrast on white
+        self.assertEqual(c_raw.name(), "#be185d")  # Deep rose for contrast on white
+        self.assertEqual(c_jpg.name(), "#0284c7")  # Deep sky blue for contrast on white
+
+        # 2. Dark Mode Verification
+        theme_manager.apply_theme("dark")
+        self.assertEqual(theme_manager.effective_theme, "dark")
+        c_tot_d, c_raw_d, c_jpg_d = tree._get_item_colors(10, 5, 5)
+        self.assertEqual(c_tot_d.name(), "#f8fafc")  # White/light for contrast on dark
+        self.assertEqual(c_raw_d.name(), "#f472b6")  # Light pink on dark
+        self.assertEqual(c_jpg_d.name(), "#38bdf8")  # Sky blue on dark
+
+        # 3. Dock & Empty State inline styles clean check
+        dock = CullingLeftNavigationDock(cfg)
+        self.assertNotIn("#090d16", dock.collapsed_strip.styleSheet())
+        self.assertNotIn("#090d16", dock.tab_widget.styleSheet())
+
+        empty = EmptyStateWidget()
+        self.assertNotIn("#0b1120", empty.styleSheet())
+
+        # 4. Vector camera icon check
+        cam_icon = get_camera_icon("#0284c7", 32)
+        self.assertFalse(cam_icon.isNull())
+
+        tree.close()
+        dock.close()
+        empty.close()
 
 
 if __name__ == "__main__":

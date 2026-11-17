@@ -92,13 +92,7 @@ class QuickPreviewDialog(QDialog):
 
         # 2. Main Image Preview Area
         self.preview_frame = QFrame()
-        self.preview_frame.setStyleSheet("""
-            QFrame {
-                background-color: #0b1120;
-                border-radius: 8px;
-                border: 1px solid #1e293b;
-            }
-        """)
+        self.preview_frame.setObjectName("photoCanvasArea")
         pf_layout = QVBoxLayout(self.preview_frame)
         pf_layout.setContentsMargins(8, 8, 8, 8)
 
@@ -115,7 +109,7 @@ class QuickPreviewDialog(QDialog):
         bottom_bar.setSpacing(12)
 
         self.chk_selected = QCheckBox("Ausgewählt [S]")
-        self.chk_selected.setStyleSheet("font-weight: 600; font-size: 13px; color: #f8fafc;")
+        self.chk_selected.setStyleSheet("font-weight: 600; font-size: 13px;")
         self.chk_selected.toggled.connect(self._on_selection_toggled)
         bottom_bar.addWidget(self.chk_selected)
 

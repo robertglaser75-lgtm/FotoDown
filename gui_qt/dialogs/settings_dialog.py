@@ -69,26 +69,12 @@ class SettingsDialog(QDialog):
 
         self.btn_reset_defaults = QPushButton("Standardwerte")
         self.btn_reset_defaults.setToolTip("Setzt die Optionen der Einzelansicht auf Standard zurück")
-        self.btn_reset_defaults.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
-                border-radius: 4px; padding: 6px 14px; font-size: 11px;
-            }
-            QPushButton:hover { background-color: #334155; color: white; }
-        """)
         self.btn_reset_defaults.clicked.connect(self._reset_single_view_defaults)
         btn_layout.addWidget(self.btn_reset_defaults)
 
         btn_layout.addStretch()
 
         self.btn_cancel = QPushButton("Abbrechen")
-        self.btn_cancel.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;
-                border-radius: 4px; padding: 6px 16px; font-weight: 500;
-            }
-            QPushButton:hover { background-color: #334155; color: white; }
-        """)
         self.btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(self.btn_cancel)
 
@@ -249,12 +235,6 @@ class SettingsDialog(QDialog):
         nav_row.addWidget(lbl_nav)
 
         self.combo_nav_scheme = QComboBox()
-        self.combo_nav_scheme.setStyleSheet("""
-            QComboBox {
-                background-color: #1e293b; color: #f8fafc; border: 1px solid #334155;
-                border-radius: 4px; padding: 4px 8px; min-width: 280px;
-            }
-        """)
         for s_id, s_data in NAVIGATION_SCHEMES.items():
             self.combo_nav_scheme.addItem(s_data["name"], s_id)
         self.combo_nav_scheme.currentIndexChanged.connect(self._update_nav_hint)
@@ -267,7 +247,7 @@ class SettingsDialog(QDialog):
         nav_vbox.addWidget(self.lbl_nav_hint)
 
         self.chk_nav_mouse_wheel = QCheckBox("Mausrad zum Weiterschalten nutzen (in Normalansicht ohne Zoom)")
-        self.chk_nav_mouse_wheel.setStyleSheet("color: #cbd5e1; font-size: 11px;")
+        self.chk_nav_mouse_wheel.setStyleSheet("font-size: 11px;")
         nav_vbox.addWidget(self.chk_nav_mouse_wheel)
 
         layout.addWidget(box_nav)
@@ -300,19 +280,23 @@ class SettingsDialog(QDialog):
         self.lbl_preview_title_row.setText(title_text)
 
         # 2. Chips
+        from gui_qt.styles.theme import theme_manager
+        is_light = (theme_manager.effective_theme == "light")
+        c_style = "background:#e2e8f0; color:#0f172a;" if is_light else "background:#1e293b; color:#cbd5e1;"
+
         chips = []
         if self.chk_sv_path.isChecked():
-            chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>📁 D:\\Fotos\\2026\\04_Familie</span>")
+            chips.append(f"<span style='{c_style} padding:2px 6px; border-radius:3px;'>📁 D:\\Fotos\\2026\\04_Familie</span>")
         if self.chk_sv_ratings.isChecked():
             chips.append("<span style='background:#b45309; color:#fef3c7; padding:2px 6px; border-radius:3px; font-weight:bold;'>★★★★ [P] 📸 SOOC ok</span>")
         if self.chk_sv_cam_lens.isChecked():
-            chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>📷 OM-1 • 12-40mm F2.8</span>")
+            chips.append(f"<span style='{c_style} padding:2px 6px; border-radius:3px;'>📷 OM-1 • 12-40mm F2.8</span>")
         if self.chk_sv_exposure.isChecked():
-            chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>ƒ/2.8 | 1/500s | ISO 200</span>")
+            chips.append(f"<span style='{c_style} padding:2px 6px; border-radius:3px;'>ƒ/2.8 | 1/500s | ISO 200</span>")
         if self.chk_sv_date.isChecked():
-            chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>📅 15.04.2026 14:32</span>")
+            chips.append(f"<span style='{c_style} padding:2px 6px; border-radius:3px;'>📅 15.04.2026 14:32</span>")
         if self.chk_sv_filesize.isChecked():
-            chips.append("<span style='background:#1e293b; padding:2px 6px; border-radius:3px;'>💾 24.2 MB (RAW) • 20.4 MP</span>")
+            chips.append(f"<span style='{c_style} padding:2px 6px; border-radius:3px;'>💾 24.2 MB (RAW) • 20.4 MP</span>")
 
         if chips:
             self.lbl_preview_chips_row.setText(" &nbsp; ".join(chips))

@@ -25,8 +25,10 @@ from core.config import AppConfig
 from gui_qt.models.culling_model import count_folder_images
 from gui_qt.styles.icons import (
     get_collapse_panel_icon, get_columns_icon, get_folder_icon,
-    get_minus_icon, get_plus_icon, get_refresh_icon, get_sort_icon
+    get_minus_icon, get_plus_icon, get_refresh_icon, get_sort_icon,
+    get_icon_color
 )
+from gui_qt.styles.theme import theme_manager
 from gui_qt.widgets.paired_header import PairedHeaderView
 
 
@@ -58,6 +60,7 @@ class CullingDirectoryTreeWidget(QWidget):
         self._sort_descending: bool = getattr(self.config, "tree_sort_descending", False)
         self._init_ui()
         self._init_default_root()
+        theme_manager.theme_changed.connect(self._on_theme_changed)
 
     def _init_ui(self):
         layout = QVBoxLayout(self)
@@ -66,14 +69,7 @@ class CullingDirectoryTreeWidget(QWidget):
 
         # Header Card: Title, Einstiegspunkt, and Action Buttons
         card_header = QFrame()
-        card_header.setStyleSheet("""
-            QFrame {
-                background-color: #0f172a;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                padding: 6px;
-            }
-        """)
+        card_header.setObjectName("treeHeaderCard")
         h_layout = QVBoxLayout(card_header)
         h_layout.setContentsMargins(6, 6, 6, 6)
         h_layout.setSpacing(6)
@@ -81,28 +77,21 @@ class CullingDirectoryTreeWidget(QWidget):
         title_row = QHBoxLayout()
         title_row.setSpacing(2)
         lbl_title = QLabel(self.title_text)
-        lbl_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        lbl_title.setObjectName("treeTitleLabel")
         title_row.addWidget(lbl_title, stretch=1)
 
-        icon_btn_style = """
-            QPushButton {
-                background-color: #1e293b; border: 1px solid #334155;
-                border-radius: 3px;
-            }
-            QPushButton:hover { background-color: #334155; border-color: #38bdf8; }
-        """
-
         self.btn_columns = QPushButton()
-        self.btn_columns.setIcon(get_columns_icon("#cbd5e1", 13))
+        self.btn_columns.setObjectName("treeToolBtn")
+        self.btn_columns.setIcon(get_columns_icon(get_icon_color("normal"), 13))
         self.btn_columns.setIconSize(QSize(13, 13))
         self.btn_columns.setFixedSize(24, 22)
         self.btn_columns.setToolTip("Spalten ein-/ausblenden (Bilder, RAW, JPG)")
-        self.btn_columns.setStyleSheet(icon_btn_style)
         self.btn_columns.clicked.connect(self._show_columns_menu)
         title_row.addWidget(self.btn_columns)
 
         self.btn_sort = QPushButton()
-        self.btn_sort.setIcon(get_sort_icon(self._sort_descending, "#cbd5e1", 13))
+        self.btn_sort.setObjectName("treeToolBtn")
+        self.btn_sort.setIcon(get_sort_icon(self._sort_descending, get_icon_color("normal"), 13))
         self.btn_sort.setIconSize(QSize(13, 13))
         self.btn_sort.setFixedSize(24, 22)
         self.btn_sort.setToolTip(
@@ -110,43 +99,42 @@ class CullingDirectoryTreeWidget(QWidget):
             if self._sort_descending
             else "Ordner-Sortierung: Aufsteigend (A–Z) – Klicken für Absteigend"
         )
-        self.btn_sort.setStyleSheet(icon_btn_style)
         self.btn_sort.clicked.connect(self._toggle_sort_order)
         title_row.addWidget(self.btn_sort)
 
         self.btn_refresh = QPushButton()
-        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 13))
+        self.btn_refresh.setObjectName("treeToolBtn")
+        self.btn_refresh.setIcon(get_refresh_icon(get_icon_color("normal"), 13))
         self.btn_refresh.setIconSize(QSize(13, 13))
         self.btn_refresh.setFixedSize(24, 22)
         self.btn_refresh.setToolTip("Verzeichnisbaum aktualisieren")
-        self.btn_refresh.setStyleSheet(icon_btn_style)
         self.btn_refresh.clicked.connect(self.refresh)
         title_row.addWidget(self.btn_refresh)
 
         self.btn_expand_all = QPushButton()
-        self.btn_expand_all.setIcon(get_plus_icon("#cbd5e1", 13))
+        self.btn_expand_all.setObjectName("treeToolBtn")
+        self.btn_expand_all.setIcon(get_plus_icon(get_icon_color("normal"), 13))
         self.btn_expand_all.setIconSize(QSize(13, 13))
         self.btn_expand_all.setFixedSize(24, 22)
         self.btn_expand_all.setToolTip("Unterordner ausklappen")
-        self.btn_expand_all.setStyleSheet(icon_btn_style)
         self.btn_expand_all.clicked.connect(self._expand_two_levels)
         title_row.addWidget(self.btn_expand_all)
 
         self.btn_collapse_all = QPushButton()
-        self.btn_collapse_all.setIcon(get_minus_icon("#cbd5e1", 13))
+        self.btn_collapse_all.setObjectName("treeToolBtn")
+        self.btn_collapse_all.setIcon(get_minus_icon(get_icon_color("normal"), 13))
         self.btn_collapse_all.setIconSize(QSize(13, 13))
         self.btn_collapse_all.setFixedSize(24, 22)
         self.btn_collapse_all.setToolTip("Verzeichnisbaum einklappen (Alle Ordner schließen)")
-        self.btn_collapse_all.setStyleSheet(icon_btn_style)
         self.btn_collapse_all.clicked.connect(self.tree_view.collapseAll if hasattr(self, 'tree_view') else lambda: None)
         title_row.addWidget(self.btn_collapse_all)
 
         self.btn_collapse_panel = QPushButton()
-        self.btn_collapse_panel.setIcon(get_collapse_panel_icon("#cbd5e1", 13))
+        self.btn_collapse_panel.setObjectName("treeToolBtn")
+        self.btn_collapse_panel.setIcon(get_collapse_panel_icon(get_icon_color("normal"), 13))
         self.btn_collapse_panel.setIconSize(QSize(13, 13))
         self.btn_collapse_panel.setFixedSize(24, 22)
         self.btn_collapse_panel.setToolTip("Verzeichnisbaum-Leiste einklappen [V]")
-        self.btn_collapse_panel.setStyleSheet(icon_btn_style)
         self.btn_collapse_panel.setVisible(self.show_collapse_btn)
         self.btn_collapse_panel.clicked.connect(self.collapse_panel_requested.emit)
         title_row.addWidget(self.btn_collapse_panel)
@@ -158,21 +146,15 @@ class CullingDirectoryTreeWidget(QWidget):
         path_box.setSpacing(4)
 
         self.btn_change_root = QPushButton("Einstiegspunkt...")
-        self.btn_change_root.setIcon(get_folder_icon("#38bdf8", 13))
+        self.btn_change_root.setObjectName("btnChangeRoot")
+        self.btn_change_root.setIcon(get_folder_icon(get_icon_color("accent"), 13))
         self.btn_change_root.setIconSize(QSize(13, 13))
         self.btn_change_root.setToolTip("Neuen Einstiegspunkt (Hauptordner) für die Navigation auswählen")
-        self.btn_change_root.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #38bdf8; border: 1px solid #0284c7;
-                border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 600;
-            }
-            QPushButton:hover { background-color: #0369a1; color: white; }
-        """)
         self.btn_change_root.clicked.connect(self._on_choose_root_clicked)
         path_box.addWidget(self.btn_change_root)
 
         self.lbl_root_path = QLabel("")
-        self.lbl_root_path.setStyleSheet("color: #94a3b8; font-size: 10px;")
+        self.lbl_root_path.setObjectName("treeRootPathLabel")
         self.lbl_root_path.setWordWrap(True)
         self.lbl_root_path.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.lbl_root_path.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -186,6 +168,7 @@ class CullingDirectoryTreeWidget(QWidget):
         self.model.setHorizontalHeaderLabels(["Ordner", "Bilder", "RAW", "JPG"])
 
         self.tree_view = QTreeView()
+        self.tree_view.setObjectName("directoryTreeView")
         self.tree_view.setModel(self.model)
         self.tree_view.setUniformRowHeights(True)
         self.tree_view.setAnimated(True)
@@ -212,38 +195,6 @@ class CullingDirectoryTreeWidget(QWidget):
         header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         header.customContextMenuRequested.connect(lambda pos: self._show_columns_menu(header.mapToGlobal(pos)))
         self._apply_column_visibility()
-
-        self.tree_view.setStyleSheet("""
-            QTreeView {
-                background-color: #090d16;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                color: #e2e8f0;
-                font-size: 11px;
-                outline: 0;
-            }
-            QTreeView::item {
-                padding: 4px 2px;
-                border-radius: 3px;
-            }
-            QTreeView::item:hover {
-                background-color: #1e293b;
-            }
-            QTreeView::item:selected {
-                background-color: #1e3a8a;
-                color: #ffffff;
-            }
-            QHeaderView::section {
-                background-color: #0f172a;
-                color: #94a3b8;
-                padding: 4px 6px;
-                border: none;
-                border-right: 1px solid #1e293b;
-                border-bottom: 1px solid #1e293b;
-                font-size: 10px;
-                font-weight: bold;
-            }
-        """)
 
         layout.addWidget(self.tree_view, stretch=1)
 
@@ -386,6 +337,56 @@ class CullingDirectoryTreeWidget(QWidget):
         root_idx = self.model.indexFromItem(root_item)
         self.tree_view.expand(root_idx)
 
+    def _get_item_colors(self, total: int, raw: int, jpg: int):
+        """Returns theme-compliant foreground colors for folder photo counts."""
+        is_light = (theme_manager.effective_theme == "light")
+        if is_light:
+            c_tot = "#0f172a" if total > 0 else "#94a3b8"
+            c_raw = "#be185d" if raw > 0 else "#94a3b8"
+            c_jpg = "#0284c7" if jpg > 0 else "#94a3b8"
+        else:
+            c_tot = "#f8fafc" if total > 0 else "#475569"
+            c_raw = "#f472b6" if raw > 0 else "#475569"
+            c_jpg = "#38bdf8" if jpg > 0 else "#475569"
+        return QColor(c_tot), QColor(c_raw), QColor(c_jpg)
+
+    def _on_theme_changed(self, theme_name: str):
+        """Refreshes button icons and item colors when the theme switches."""
+        self.btn_columns.setIcon(get_columns_icon(get_icon_color("normal"), 13))
+        self.btn_sort.setIcon(get_sort_icon(self._sort_descending, get_icon_color("normal"), 13))
+        self.btn_refresh.setIcon(get_refresh_icon(get_icon_color("normal"), 13))
+        self.btn_expand_all.setIcon(get_plus_icon(get_icon_color("normal"), 13))
+        self.btn_collapse_all.setIcon(get_minus_icon(get_icon_color("normal"), 13))
+        self.btn_collapse_panel.setIcon(get_collapse_panel_icon(get_icon_color("normal"), 13))
+        self.btn_change_root.setIcon(get_folder_icon(get_icon_color("accent"), 13))
+        self._update_model_colors(self.model.invisibleRootItem())
+
+    def _update_model_colors(self, parent_item: QStandardItem):
+        """Recursively updates foreground colors for all items in the model."""
+        if not parent_item:
+            return
+        row_count = parent_item.rowCount()
+        for r in range(row_count):
+            c0 = parent_item.child(r, 0)
+            c1 = parent_item.child(r, 1)
+            c2 = parent_item.child(r, 2)
+            c3 = parent_item.child(r, 3)
+            if c0:
+                c0.setIcon(get_folder_icon(get_icon_color("accent"), 14))
+            if c1 and c2 and c3:
+                try:
+                    tot = int(c1.text())
+                    raw = int(c2.text())
+                    jpg = int(c3.text())
+                    col_tot, col_raw, col_jpg = self._get_item_colors(tot, raw, jpg)
+                    c1.setForeground(col_tot)
+                    c2.setForeground(col_raw)
+                    c3.setForeground(col_jpg)
+                except ValueError:
+                    pass
+            if c0 and c0.hasChildren():
+                self._update_model_colors(c0)
+
     def _build_folder_row(self, folder: Path, is_root: bool = False) -> List[QStandardItem]:
         """Creates the 4 items for a folder row: (Ordner, Bilder, RAW, JPG)."""
         total, raw, jpg = count_folder_images(folder)
@@ -398,15 +399,17 @@ class CullingDirectoryTreeWidget(QWidget):
         else:
             folder_name = folder.name if folder.name else str(folder)
         item_name = QStandardItem(folder_name)
-        item_name.setIcon(get_folder_icon("#38bdf8", 14))
+        item_name.setIcon(get_folder_icon(get_icon_color("accent"), 14))
         item_name.setData(str(folder.resolve()), Qt.ItemDataRole.UserRole)
         item_name.setToolTip(f"{folder.resolve()}\nBilder: {total} | RAW: {raw} | JPG: {jpg}")
         item_name.setEditable(False)
 
+        col_tot, col_raw, col_jpg = self._get_item_colors(total, raw, jpg)
+
         item_total = QStandardItem(str(total) if total > 0 else "0")
         item_total.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         item_total.setEditable(False)
-        item_total.setForeground(QColor("#f8fafc" if total > 0 else "#475569"))
+        item_total.setForeground(col_tot)
         if total > 0:
             f = item_total.font()
             f.setBold(True)
@@ -415,7 +418,7 @@ class CullingDirectoryTreeWidget(QWidget):
         item_raw = QStandardItem(str(raw) if raw > 0 else "0")
         item_raw.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         item_raw.setEditable(False)
-        item_raw.setForeground(QColor("#f472b6" if raw > 0 else "#475569"))
+        item_raw.setForeground(col_raw)
         if raw > 0:
             f = item_raw.font()
             f.setBold(True)
@@ -424,7 +427,7 @@ class CullingDirectoryTreeWidget(QWidget):
         item_jpg = QStandardItem(str(jpg) if jpg > 0 else "0")
         item_jpg.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         item_jpg.setEditable(False)
-        item_jpg.setForeground(QColor("#38bdf8" if jpg > 0 else "#475569"))
+        item_jpg.setForeground(col_jpg)
         if jpg > 0:
             f = item_jpg.font()
             f.setBold(True)
@@ -579,18 +582,6 @@ class CullingDirectoryTreeWidget(QWidget):
         folder_p = Path(folder_str)
 
         menu = QMenu(self)
-        menu.setStyleSheet("""
-            QMenu {
-                background-color: #0f172a;
-                color: #e2e8f0;
-                border: 1px solid #334155;
-                border-radius: 4px;
-                padding: 4px;
-            }
-            QMenu::item:selected {
-                background-color: #1e3a8a;
-            }
-        """)
 
         act_open = menu.addAction("🔍 Diesen Ordner anzeigen")
         act_set_root = menu.addAction("📂 Als neuen Einstiegspunkt setzen")
@@ -613,12 +604,13 @@ class CullingDirectoryTreeWidget(QWidget):
             r_item = parent.child(row, 2) if hasattr(parent, 'child') else self.model.item(row, 2)
             j_item = parent.child(row, 3) if hasattr(parent, 'child') else self.model.item(row, 3)
 
+            col_tot, col_raw, col_jpg = self._get_item_colors(total, raw, jpg)
             if t_item:
                 t_item.setText(str(total) if total > 0 else "0")
-                t_item.setForeground(QColor("#f8fafc" if total > 0 else "#475569"))
+                t_item.setForeground(col_tot)
             if r_item:
                 r_item.setText(str(raw) if raw > 0 else "0")
-                r_item.setForeground(QColor("#f472b6" if raw > 0 else "#475569"))
+                r_item.setForeground(col_raw)
             if j_item:
                 j_item.setText(str(jpg) if jpg > 0 else "0")
-                j_item.setForeground(QColor("#38bdf8" if jpg > 0 else "#475569"))
+                j_item.setForeground(col_jpg)

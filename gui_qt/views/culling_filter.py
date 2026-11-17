@@ -171,48 +171,31 @@ class CullingFilterWidget(QWidget):
         # Header bar with Collapse button & Reset button
         # -------------------------------------------------------------
         head_frame = QFrame()
-        head_frame.setStyleSheet("""
-            QFrame {
-                background-color: #0b1120;
-                border-bottom: 1px solid #1e293b;
-            }
-        """)
+        head_frame.setObjectName("filterHeadFrame")
         head_layout = QHBoxLayout(head_frame)
         head_layout.setContentsMargins(8, 6, 8, 6)
         head_layout.setSpacing(6)
 
         lbl_icon = QLabel()
-        lbl_icon.setPixmap(get_filter_icon("#38bdf8", 16).pixmap(16, 16))
+        lbl_icon.setPixmap(get_filter_icon(None, 16).pixmap(16, 16))
         head_layout.addWidget(lbl_icon)
 
         lbl_title = QLabel("BILDER-FILTER")
-        lbl_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px;")
+        lbl_title.setObjectName("filterHeaderTitle")
         head_layout.addWidget(lbl_title, stretch=1)
 
         self.btn_reset = QPushButton("✕ Zurücksetzen")
+        self.btn_reset.setObjectName("btnFilterReset")
         self.btn_reset.setToolTip("Alle aktiven Filter aufheben")
-        self.btn_reset.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
-                border-radius: 4px; padding: 2px 7px; font-size: 10px; font-weight: 500;
-            }
-            QPushButton:hover { background-color: #334155; color: #f8fafc; }
-        """)
         self.btn_reset.clicked.connect(self.reset_filters)
         head_layout.addWidget(self.btn_reset)
 
         self.btn_collapse = QPushButton()
-        self.btn_collapse.setIcon(get_collapse_panel_icon("#94a3b8", 14))
+        self.btn_collapse.setObjectName("btnStripNav")
+        self.btn_collapse.setIcon(get_collapse_panel_icon(None, 14))
         self.btn_collapse.setIconSize(QSize(14, 14))
         self.btn_collapse.setFixedSize(24, 24)
         self.btn_collapse.setToolTip("Seitenleiste nach links einklappen [V]")
-        self.btn_collapse.setStyleSheet("""
-            QPushButton {
-                background-color: transparent; border: 1px solid transparent;
-                border-radius: 4px;
-            }
-            QPushButton:hover { background-color: #1e293b; border-color: #334155; }
-        """)
         self.btn_collapse.clicked.connect(self.collapse_panel_requested.emit)
         head_layout.addWidget(self.btn_collapse)
 
@@ -222,49 +205,23 @@ class CullingFilterWidget(QWidget):
         # Scrollable Filter Controls
         # -------------------------------------------------------------
         scroll = QScrollArea()
+        scroll.setObjectName("filterScrollArea")
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setStyleSheet("background-color: #090d16;")
 
         content = QWidget()
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(6, 8, 6, 8)
         content_layout.setSpacing(10)
 
-        card_style = """
-            QFrame {
-                background-color: #0f172a;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                padding: 6px;
-            }
-        """
         label_head_style = "font-size: 10px; font-weight: bold; color: #94a3b8; text-transform: uppercase;"
-        combo_style = """
-            QComboBox {
-                background-color: #1e293b;
-                color: #f8fafc;
-                border: 1px solid #334155;
-                border-radius: 4px;
-                padding: 4px 6px;
-                font-size: 11px;
-            }
-            QComboBox:hover { border-color: #38bdf8; }
-            QComboBox::drop-down { border: none; }
-            QComboBox QAbstractItemView {
-                background-color: #0f172a;
-                color: #f8fafc;
-                selection-background-color: #0369a1;
-                border: 1px solid #334155;
-            }
-        """
 
         # -------------------------------------------------------------
         # 1. DATEITYP (RAW oder JPEG)
         # -------------------------------------------------------------
         card_type = QFrame()
-        card_type.setStyleSheet(card_style)
+        card_type.setObjectName("filterSectionCard")
         lt_type = QVBoxLayout(card_type)
         lt_type.setContentsMargins(6, 6, 6, 6)
         lt_type.setSpacing(4)
@@ -274,7 +231,6 @@ class CullingFilterWidget(QWidget):
         lt_type.addWidget(lbl_type)
 
         self.cmb_file_type = QComboBox()
-        self.cmb_file_type.setStyleSheet(combo_style)
         self.cmb_file_type.addItem("Alle Formate", "ALL")
         self.cmb_file_type.addItem("Nur RAW (inkl. RAW+JPG)", "RAW_ANY")
         self.cmb_file_type.addItem("Nur JPEG (inkl. RAW+JPG)", "JPEG_ANY")
@@ -290,7 +246,7 @@ class CullingFilterWidget(QWidget):
         # 2. TAG / BEWERTUNG & STATUS
         # -------------------------------------------------------------
         card_tags = QFrame()
-        card_tags.setStyleSheet(card_style)
+        card_tags.setObjectName("filterSectionCard")
         lt_tags = QVBoxLayout(card_tags)
         lt_tags.setContentsMargins(6, 6, 6, 6)
         lt_tags.setSpacing(6)
@@ -301,7 +257,6 @@ class CullingFilterWidget(QWidget):
 
         # Rating ComboBox
         self.cmb_rating = QComboBox()
-        self.cmb_rating.setStyleSheet(combo_style)
         self.cmb_rating.addItem("Alle Bewertungen", "ALL")
         self.cmb_rating.addItem("★ 1+ Stern(e)", "MIN_1")
         self.cmb_rating.addItem("★★ 2+ Sterne", "MIN_2")
@@ -314,7 +269,6 @@ class CullingFilterWidget(QWidget):
 
         # Status ComboBox (Picked, Rejected)
         self.cmb_status = QComboBox()
-        self.cmb_status.setStyleSheet(combo_style)
         self.cmb_status.addItem("Alle Status", "ALL")
         self.cmb_status.addItem("✔ Nur Behalten [P]", "PICKED")
         self.cmb_status.addItem("✖ Nur Abgelehnt [X]", "REJECTED")
@@ -324,7 +278,6 @@ class CullingFilterWidget(QWidget):
 
         # Color Label ComboBox
         self.cmb_color = QComboBox()
-        self.cmb_color.setStyleSheet(combo_style)
         self.cmb_color.addItem("Alle Farblabels", "ALL")
         self.cmb_color.addItem("🔴 Rot", "Red")
         self.cmb_color.addItem("🟡 Gelb", "Yellow")
@@ -341,7 +294,7 @@ class CullingFilterWidget(QWidget):
         # 3. WORKFLOW-STAND (Qualität passt / Zu bearbeiten / Bearbeitet)
         # -------------------------------------------------------------
         card_wf = QFrame()
-        card_wf.setStyleSheet(card_style)
+        card_wf.setObjectName("filterSectionCard")
         lt_wf = QVBoxLayout(card_wf)
         lt_wf.setContentsMargins(6, 6, 6, 6)
         lt_wf.setSpacing(4)
@@ -351,7 +304,6 @@ class CullingFilterWidget(QWidget):
         lt_wf.addWidget(lbl_wf)
 
         self.cmb_workflow_status = QComboBox()
-        self.cmb_workflow_status.setStyleSheet(combo_style)
         self.cmb_workflow_status.addItem("Alle Workflow-Stände", "ALL")
         self.cmb_workflow_status.addItem("⚪ Ungeprüft", "UNCHECKED")
         self.cmb_workflow_status.addItem("📸 Qualität passt (SOOC)", "SOOC_OK")
@@ -367,7 +319,7 @@ class CullingFilterWidget(QWidget):
         # 4. KAMERA (Camera)
         # -------------------------------------------------------------
         card_cam = QFrame()
-        card_cam.setStyleSheet(card_style)
+        card_cam.setObjectName("filterSectionCard")
         lt_cam = QVBoxLayout(card_cam)
         lt_cam.setContentsMargins(6, 6, 6, 6)
         lt_cam.setSpacing(4)
@@ -377,7 +329,6 @@ class CullingFilterWidget(QWidget):
         lt_cam.addWidget(lbl_cam)
 
         self.cmb_camera = QComboBox()
-        self.cmb_camera.setStyleSheet(combo_style)
         self.cmb_camera.addItem("Alle Kameras", "ALL")
         self.cmb_camera.currentIndexChanged.connect(self._emit_change)
         lt_cam.addWidget(self.cmb_camera)
@@ -388,7 +339,7 @@ class CullingFilterWidget(QWidget):
         # 4. ERWEITERTE EXIF-FILTER (Objektiv, ISO, Suche)
         # -------------------------------------------------------------
         card_exif = QFrame()
-        card_exif.setStyleSheet(card_style)
+        card_exif.setObjectName("filterSectionCard")
         lt_exif = QVBoxLayout(card_exif)
         lt_exif.setContentsMargins(6, 6, 6, 6)
         lt_exif.setSpacing(6)
@@ -400,30 +351,17 @@ class CullingFilterWidget(QWidget):
         # Search field
         self.txt_search = QLineEdit()
         self.txt_search.setPlaceholderText("Dateiname / Suche...")
-        self.txt_search.setStyleSheet("""
-            QLineEdit {
-                background-color: #1e293b;
-                color: #f8fafc;
-                border: 1px solid #334155;
-                border-radius: 4px;
-                padding: 4px 6px;
-                font-size: 11px;
-            }
-            QLineEdit:focus { border-color: #38bdf8; }
-        """)
         self.txt_search.textChanged.connect(self._emit_change)
         lt_exif.addWidget(self.txt_search)
 
         # Lens ComboBox
         self.cmb_lens = QComboBox()
-        self.cmb_lens.setStyleSheet(combo_style)
         self.cmb_lens.addItem("Alle Objektive", "ALL")
         self.cmb_lens.currentIndexChanged.connect(self._emit_change)
         lt_exif.addWidget(self.cmb_lens)
 
         # ISO Range ComboBox
         self.cmb_iso = QComboBox()
-        self.cmb_iso.setStyleSheet(combo_style)
         self.cmb_iso.addItem("Alle ISO-Werte", "ALL")
         self.cmb_iso.addItem("ISO ≤ 400 (Niedrig)", "LOW")
         self.cmb_iso.addItem("ISO 400 - 1600 (Mittel)", "MID")
@@ -438,14 +376,7 @@ class CullingFilterWidget(QWidget):
         # 5. ERGEBNIS-STATUS
         # -------------------------------------------------------------
         card_stats = QFrame()
-        card_stats.setStyleSheet("""
-            QFrame {
-                background-color: #0b1329;
-                border: 1px solid #1e3a8a;
-                border-radius: 6px;
-                padding: 6px;
-            }
-        """)
+        card_stats.setObjectName("filterStatsCard")
         lt_stats = QVBoxLayout(card_stats)
         lt_stats.setContentsMargins(6, 6, 6, 6)
         lt_stats.setSpacing(2)

@@ -50,14 +50,6 @@ class MediaSingleView(QWidget):
         # 1. Navigation & Control Bar (Top)
         top_bar = QFrame()
         top_bar.setObjectName("singleViewHeader")
-        top_bar.setStyleSheet("""
-            #singleViewHeader {
-                background-color: #0f172a;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                padding: 4px 8px;
-            }
-        """)
         top_layout = QHBoxLayout(top_bar)
         top_layout.setContentsMargins(4, 2, 4, 2)
         top_layout.setSpacing(8)
@@ -89,20 +81,17 @@ class MediaSingleView(QWidget):
         self.lbl_path = ElidedLabel("")
         self.lbl_path.setMaximumWidth(280)
         self.lbl_path.setObjectName("tagChip")
-        self.lbl_path.setStyleSheet("color: #94a3b8; font-size: 11px; background-color: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px;")
         top_layout.addWidget(self.lbl_path)
 
         # Sterne & Bewertungen
         self.lbl_ratings = QLabel("")
         self.lbl_ratings.setObjectName("tagChip")
-        self.lbl_ratings.setStyleSheet("color: #fbbf24; font-size: 11px; font-weight: bold; background-color: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px;")
         top_layout.addWidget(self.lbl_ratings)
 
         top_layout.addStretch()
 
         # Selection Checkbox
         self.chk_selected = QCheckBox("Für Import ausgewählt [S]")
-        self.chk_selected.setStyleSheet("font-weight: 600; font-size: 12px; color: #f8fafc;")
         self.chk_selected.toggled.connect(self._on_selection_toggled)
         top_layout.addWidget(self.chk_selected)
 
@@ -126,17 +115,11 @@ class MediaSingleView(QWidget):
 
         # 2. Main Scrollable Image Viewport
         self.scroll_area = QScrollArea()
+        self.scroll_area.setObjectName("photoCanvasArea")
         self.scroll_area.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.scroll_area.viewport().setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroll_area.setStyleSheet("""
-            QScrollArea {
-                background-color: #0b1120;
-                border: 1px solid #1e293b;
-                border-radius: 8px;
-            }
-        """)
 
         self.img_container = QWidget()
         self.img_container_layout = QVBoxLayout(self.img_container)
@@ -156,14 +139,6 @@ class MediaSingleView(QWidget):
         # 3. Bottom Metadata Info Bar
         bottom_bar = QFrame()
         bottom_bar.setObjectName("singleViewFooter")
-        bottom_bar.setStyleSheet("""
-            #singleViewFooter {
-                background-color: #0f172a;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                padding: 4px 8px;
-            }
-        """)
         bottom_layout = QHBoxLayout(bottom_bar)
         bottom_layout.setContentsMargins(6, 4, 6, 4)
         bottom_layout.setSpacing(10)
@@ -302,7 +277,10 @@ class MediaSingleView(QWidget):
             self.lbl_ratings.setStyleSheet("color: #fef08a; background-color: #854d0e; border: 1px solid #ca8a04; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold;")
         else:
             self.lbl_ratings.setText("0★")
-            self.lbl_ratings.setStyleSheet("color: #94a3b8; background-color: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px; font-size: 11px;")
+            from gui_qt.styles.theme import theme_manager
+            is_light = (theme_manager.effective_theme == "light")
+            bg = "#f1f5f9; border: 1px solid #cbd5e1; color: #64748b;" if is_light else "#1e293b; border: 1px solid #334155; color: #94a3b8;"
+            self.lbl_ratings.setStyleSheet(f"background-color: {bg} border-radius: 4px; padding: 2px 6px; font-size: 11px;")
         self.lbl_ratings.setVisible(show_ratings)
 
         # Selection checkbox

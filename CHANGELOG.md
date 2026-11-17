@@ -3,6 +3,19 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.1] - 2026-11-17
+
+### Behoben
+- **Helles Farbschema (Fluent Light) für Verzeichnisbaum, Seitenleiste und Panels vollständig harmonisiert:**
+  - **Verzeichnisbaum (`gui_qt/views/culling_tree.py`):** Bisherige starre Inline-Hintergründe (`#090d16` und `#0f172a`) entfernt; der Verzeichnisbaum erbt nun dynamisch den sauberen hellen Hintergrund (`#ffffff`) und die Kopfzeile (`#f1f5f9`) aus `light_fluent.qss`.
+  - **Dynamische Text- und Icon-Farben im Baum:** Die Zähler (Bilder gesamt, RAW, JPG) passen sich nun dynamisch an das Farbschema an: Im Light Mode dunkle, kontraststarke Schrift (`#0f172a`, `#be185d`, `#0284c7`) statt unsichtbarem Weiß (`#f8fafc`). Ordner-Icons und Toolbar-Buttons aktualisieren sich bei Schemaumschaltung ohne Neustart.
+  - **Einklappbare Seitenleiste (`gui_qt/views/culling_left_dock.py`):** Entfernen harter Dunkelstile aus dem 36px-Streifen und dem Tab-Widget; beide passen sich nativ an das Hell- und Dunkel-Stylesheet an (`#cullingLeftDockStrip`, `#cullingLeftDockTabs`).
+  - **Filter-Panel (`gui_qt/views/culling_filter.py`):** Kopfzeile, Filterkarten und Dropdown-Menüs von starren Inline-Dunkelstilen befreit; Filterkarten erscheinen im Light Mode nun als weiße Karten mit dezentem Rahmen (`#cbd5e1`).
+  - **Sichern & Archivieren (`gui_qt/views/transfer_tab.py`):** Ordner-Karten (`#folderCard`), Filterleiste (`#filterCard`), Mittelsäule (`#centerActionPanel`) und Thumbnail-Gitter erben nun das globale Farbschema; Platzhalter-Thumbnails verwenden im Light Mode hellgrauen Hintergrund (`#e2e8f0`).
+  - **EXIF-Inspektor & Histogramm (`gui_qt/widgets/exif_inspector.py`):** Dynamischer heller Hintergrund (`#f8fafc`) und Rasterlinien für das Histogramm im Light Mode; Vorschaukarten und Metadaten-Chips adaptiv gestaltet.
+  - **Empty-State-Widget (`gui_qt/widgets/empty_state.py`):** Weißer Kartenhintergrund im Light Mode und neues Vektor-Kamera-Icon (`get_camera_icon()`) anstelle roher Emojis.
+  - **Dialoge (`gui_qt/dialogs/settings_dialog.py`, `gui_qt/dialogs/rename_dialog.py`, `gui_qt/dialogs/quick_preview_dialog.py`):** Entfernen dunkler Inline-Hintergründe von Konfigurationskarten, Buttons und Chips; einheitliche Lesbarkeit bei hellen Hintergründen garantiert.
+
 ## [0.32.0] - 2026-11-17
 
 ### Hinzugefügt & Verbessert

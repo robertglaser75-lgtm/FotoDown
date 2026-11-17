@@ -601,6 +601,43 @@ def get_search_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
+def get_camera_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
+    """Renders a modern photo camera vector icon."""
+    c = color or get_icon_color("accent")
+    pix = QPixmap(size, size)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    stroke = max(1.5, size * 0.08)
+    pen = QPen(QColor(c), stroke, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    p.setPen(pen)
+
+    # Body
+    body_x = size * 0.12
+    body_y = size * 0.32
+    body_w = size * 0.76
+    body_h = size * 0.54
+    p.drawRoundedRect(QRectF(body_x, body_y, body_w, body_h), size * 0.1, size * 0.1)
+
+    # Top viewfinder bump
+    top_path = QPainterPath()
+    top_path.moveTo(size * 0.32, body_y)
+    top_path.lineTo(size * 0.38, size * 0.20)
+    top_path.lineTo(size * 0.62, size * 0.20)
+    top_path.lineTo(size * 0.68, body_y)
+    p.drawPath(top_path)
+
+    # Lens circle
+    cx = size * 0.50
+    cy = body_y + body_h * 0.50
+    r = size * 0.18
+    p.drawEllipse(QPointF(cx, cy), r, r)
+
+    p.end()
+    return QIcon(pix)
+
+
 def get_import_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a modern download / import tray vector icon."""
     c = color or get_icon_color("accent")
