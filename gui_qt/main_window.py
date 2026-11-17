@@ -1,5 +1,6 @@
 """Main application window uniting all GUI widgets and core business logic."""
 
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -351,7 +352,7 @@ class MainWindow(QMainWindow):
         self.thumb_signals.thumbnail_ready.connect(self._on_thumbnail_ready)
 
     def _init_drive_watcher(self):
-        if self.config.auto_detect_drives and not self._drive_watcher:
+        if self.config.auto_detect_drives and not self._drive_watcher and not os.environ.get("FOTODOWN_HEADLESS_TEST"):
             self._drive_watcher = DriveWatcherThread(interval_sec=2.0, parent=self)
             self._drive_watcher.drive_inserted.connect(self._on_drive_inserted)
             self._drive_watcher.drive_removed.connect(self._on_drive_removed)

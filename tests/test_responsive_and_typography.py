@@ -76,6 +76,7 @@ class TestHeaderBannerCompactMode(unittest.TestCase):
         banner.set_compact_mode(False)
         self.assertEqual(banner.lbl_drive.text(), "Speicherkarte / Laufwerk:")
         self.assertEqual(banner.btn_tab_import.text(), "1. Importieren")
+        banner.close()
 
 
 class TestTransferTabCompactMode(unittest.TestCase):
@@ -109,6 +110,7 @@ class TestTransferTabCompactMode(unittest.TestCase):
         tab.set_compact_mode(False)
         self.assertEqual(tab.btn_copy_sel.text(), "Kopieren")
         self.assertEqual(tab.pane_source.edit_search.placeholderText(), "Dateiname filtern...")
+        tab.close()
 
 
 class TestTypographyTokens(unittest.TestCase):
