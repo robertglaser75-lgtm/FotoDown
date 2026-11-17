@@ -1,4 +1,4 @@
-"""Culling and Review View (Tab 2 of FotoDown).
+"""Culling and Review View (Tab 2 of Vitrina).
 
 Features:
 - Responsive full-screen / zoomable image canvas with 100% detail check.

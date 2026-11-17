@@ -38,12 +38,19 @@ def run_gui():
     from .styles.theme import theme_manager
     theme_manager.apply_theme("dark", app)
 
-    # Set Window Icon
-    for icon_name in ["vitrina.png", "icon.png", "icon_256.png", "icon_64.png", "vitrina.ico", "icon.ico", "fotodown.ico"]:
-        icon_path = Path("assets") / icon_name
-        if icon_path.exists():
-            app.setWindowIcon(QIcon(str(icon_path)))
+    # Set Multi-Resolution Window Icon
+    app_icon = QIcon()
+    for size_name in ["icon_16.png", "icon_32.png", "icon_48.png", "icon_64.png", "icon_128.png", "icon_256.png", "icon_512.png", "vitrina.png"]:
+        p = Path("assets") / size_name
+        if p.exists():
+            app_icon.addFile(str(p))
+    for ico_name in ["vitrina.ico", "icon.ico", "fotodown.ico"]:
+        p = Path("assets") / ico_name
+        if p.exists():
+            app_icon.addFile(str(p))
             break
+    if not app_icon.isNull():
+        app.setWindowIcon(app_icon)
 
     # Show Splash Screen
     splash = VitrinaSplashScreen()

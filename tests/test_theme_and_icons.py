@@ -1,4 +1,4 @@
-"""Unit tests for FotoDown vector icons and theme management (Dark / Light Fluent)."""
+"""Unit tests for Vitrina vector icons and theme management (Dark / Light Fluent)."""
 
 import os
 from pathlib import Path

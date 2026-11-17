@@ -80,6 +80,7 @@ echo -e "${GREEN}[OK]${NC} Skripte sind ausführbar."
 echo -e "${BLUE}[4/4]${NC} Erstelle Desktop-Eintrag für Anwendungsmenü..."
 APP_DIR="$HOME/.local/share/applications"
 mkdir -p "$APP_DIR"
+rm -f "$APP_DIR/fotodown.desktop" 2>/dev/null || true
 
 ICON_PATH="$SCRIPT_DIR/assets/vitrina.png"
 if [ ! -f "$ICON_PATH" ]; then

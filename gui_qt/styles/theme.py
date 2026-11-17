@@ -1,4 +1,4 @@
-"""Theme manager and dynamic stylesheet loader for FotoDown.
+"""Theme manager and dynamic stylesheet loader for Vitrina.
 
 Provides seamless switching between Dark Fluent, Light Fluent, and Auto (System) themes
 with high contrast, synchronized vector icons, and cross-platform compatibility.

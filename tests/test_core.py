@@ -1,5 +1,5 @@
 from core.drive_detector import eject_drive
-"""Unit tests for FotoDown core modules."""
+"""Unit tests for Vitrina core modules."""
 
 from datetime import datetime
 import os

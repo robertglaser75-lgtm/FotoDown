@@ -301,7 +301,7 @@ class QuickPreviewDialog(QDialog):
 
     def _open_original_external(self, target_path: Path):
         """Automatically opens the original file with the system default viewer."""
-        if not os.environ.get("FOTODOWN_HEADLESS_TEST"):
+        if not (os.environ.get("VITRINA_HEADLESS_TEST") or os.environ.get("FOTODOWN_HEADLESS_TEST")):
             from PySide6.QtCore import QUrl
             from PySide6.QtGui import QDesktopServices
             try:
@@ -326,7 +326,7 @@ class QuickPreviewDialog(QDialog):
             return
         info = self._extract_item_info(self.items[self.current_idx])
         p = info.get("target_path")
-        if p and p.exists() and not os.environ.get("FOTODOWN_HEADLESS_TEST"):
+        if p and p.exists() and not (os.environ.get("VITRINA_HEADLESS_TEST") or os.environ.get("FOTODOWN_HEADLESS_TEST")):
             from PySide6.QtCore import QUrl
             from PySide6.QtGui import QDesktopServices
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(p.resolve())))

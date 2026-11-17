@@ -3,6 +3,17 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.1] - 2026-11-17
+
+### Hinzugefügt
+- **Vollendung der Desktop- und Icon-Umstellung auf Vitrina:**
+  - Desktop-Starter `Vitrina.lnk` mit dem neuen 3D-Glas-Vitrinen-Icon und `pythonw.exe`-Direktaufruf ohne störendes Konsolenfenster auf dem Desktop eingerichtet; altes `FotoDown.lnk` automatisch bereinigt.
+  - Vollständige Suite von Multi-Resolution-Icon-Assets (16, 32, 48, 64, 128, 256, 512 px) generiert und in `%LOCALAPPDATA%\Vitrina\vitrina.ico` lokal für sofortige Verfügbarkeit gesichert.
+  - Multi-Resolution `QIcon`-Unterstützung in `MainWindow` und `gui_qt/app.py` für gestochen scharfe Darstellung in Taskleiste, Titelleiste und Alt-Tab bei beliebigen High-DPI-Skalierungen.
+  - Standard-Zielordner in `AppConfig` auf `Vitrina_Imports` und `Vitrina_Videos` umgestellt.
+  - Tkinter-Fallback-GUI (`gui/app.py`), Hilfetexte und Docstrings konsistent auf Vitrina finalisiert.
+  - Installationsskripte (`install_windows.bat`, `install_linux.sh`) um automatische Bereinigung alter `FotoDown`-Starter erweitert.
+
 ## [0.33.0] - 2026-11-17
 
 ### Hinzugefügt

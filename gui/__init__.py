@@ -1,1 +1,1 @@
-"""GUI package for FotoDown."""
+"""GUI package for Vitrina."""

@@ -73,6 +73,14 @@ set "ICON_PATH=%~dp0assets\vitrina.ico"
 if not exist "%ICON_PATH%" set "ICON_PATH=%~dp0assets\icon.ico"
 set "DESKTOP_DIR=%USERPROFILE%\Desktop"
 
+:: Icon in lokales AppData-Verzeichnis sichern für unterbrechungsfreie Anzeige
+if not exist "%LOCALAPPDATA%\Vitrina" mkdir "%LOCALAPPDATA%\Vitrina" 2>nul
+if exist "%ICON_PATH%" copy /y "%ICON_PATH%" "%LOCALAPPDATA%\Vitrina\vitrina.ico" >nul 2>nul
+if exist "%LOCALAPPDATA%\Vitrina\vitrina.ico" set "ICON_PATH=%LOCALAPPDATA%\Vitrina\vitrina.ico"
+
+:: Altes FotoDown-Shortcut entfernen
+if exist "%DESKTOP_DIR%\FotoDown.lnk" del /f /q "%DESKTOP_DIR%\FotoDown.lnk" 2>nul
+
 powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%DESKTOP_DIR%\Vitrina.lnk'); $s.TargetPath = '%BAT_PATH%'; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%ICON_PATH%,0'; $s.Description = 'Vitrina - Foto-Importeur & EXIF-Manager'; $s.Save()"
 
 if exist "%DESKTOP_DIR%\Vitrina.lnk" (

@@ -1,1 +1,1 @@
-﻿"""FotoDown Qt GUI Package."""
+﻿"""Vitrina Qt GUI Package."""

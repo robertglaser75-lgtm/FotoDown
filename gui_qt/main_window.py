@@ -105,11 +105,18 @@ class MainWindow(QMainWindow):
             self.showMaximized()
 
     def _set_app_icon(self):
-        for icon_name in ["vitrina.png", "icon.png", "icon_256.png", "icon_64.png", "vitrina.ico", "icon.ico", "fotodown.ico"]:
-            p = Path("assets") / icon_name
+        icon = QIcon()
+        for size_name in ["icon_16.png", "icon_32.png", "icon_48.png", "icon_64.png", "icon_128.png", "icon_256.png", "icon_512.png", "vitrina.png"]:
+            p = Path("assets") / size_name
             if p.exists():
-                self.setWindowIcon(QIcon(str(p)))
+                icon.addFile(str(p))
+        for ico_name in ["vitrina.ico", "icon.ico", "fotodown.ico"]:
+            p = Path("assets") / ico_name
+            if p.exists():
+                icon.addFile(str(p))
                 break
+        if not icon.isNull():
+            self.setWindowIcon(icon)
 
     def _setup_ui(self):
         central_widget = QWidget()
@@ -354,7 +361,8 @@ class MainWindow(QMainWindow):
         self.thumb_signals.thumbnail_ready.connect(self._on_thumbnail_ready)
 
     def _init_drive_watcher(self):
-        if self.config.auto_detect_drives and not self._drive_watcher and not os.environ.get("FOTODOWN_HEADLESS_TEST"):
+        is_headless = os.environ.get("VITRINA_HEADLESS_TEST") or os.environ.get("FOTODOWN_HEADLESS_TEST")
+        if self.config.auto_detect_drives and not self._drive_watcher and not is_headless:
             self._drive_watcher = DriveWatcherThread(interval_sec=2.0, parent=self)
             self._drive_watcher.drive_inserted.connect(self._on_drive_inserted)
             self._drive_watcher.drive_removed.connect(self._on_drive_removed)

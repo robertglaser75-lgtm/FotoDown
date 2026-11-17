@@ -1,4 +1,4 @@
-"""Keyboard navigation definitions and helpers for image switching in FotoDown."""
+"""Keyboard navigation definitions and helpers for image switching in Vitrina."""
 
 from typing import Dict, Set, Tuple
 from PySide6.QtCore import Qt

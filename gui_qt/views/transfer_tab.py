@@ -1,4 +1,4 @@
-"""Dual-Pane Transfer & Archiving View (Tab 3 of FotoDown).
+"""Dual-Pane Transfer & Archiving View (Tab 3 of Vitrina).
 
 Enables seamless transfer, copying, and moving of photos between
 the local working station (PC/Laptop) and network storage (NAS / Family Album).

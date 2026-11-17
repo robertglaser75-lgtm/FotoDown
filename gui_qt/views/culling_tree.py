@@ -1,4 +1,4 @@
-"""Directory Tree Widget for FotoDown (Tab 2: Sichten & Sortieren).
+"""Directory Tree Widget for Vitrina (Tab 2: Sichten & Sortieren).
 
 Displays an interactive folder tree starting from a configurable entry point (Einstiegspunkt).
 For each directory, shows:

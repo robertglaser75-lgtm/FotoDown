@@ -48,10 +48,12 @@ def set_high_dpi():
 
 
 def apply_window_icon(window: ctk.CTk | ctk.CTkToplevel):
-    """Sets window icon from assets or Downloads/fotodown.jpg."""
+    """Sets window icon from assets or Downloads/vitrina-icon.jpg."""
     icon_paths = [
+        Path("assets/vitrina.png"),
         Path("assets/icon_64.png"),
         Path("assets/icon.png"),
+        Path(r"C:\Users\rober\Downloads\vitrina-icon.jpg"),
         Path(r"C:\Users\rober\Downloads\fotodown.jpg"),
     ]
     for p in icon_paths:
@@ -161,7 +163,7 @@ class HelpWindow(ctk.CTkToplevel):
 
         lbl_title = ctk.CTkLabel(
             header_f,
-            text="FotoDown",
+            text="Vitrina",
             font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"),
             text_color="#38bdf8"
         )
@@ -196,7 +198,7 @@ class HelpWindow(ctk.CTkToplevel):
         scroll_content.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 12))
 
         guide_text = (
-            "📖 FotoDown - Anleitung & Funktionsübersicht\n\n"
+            "📖 Vitrina - Anleitung & Funktionsübersicht\n\n"
             "1. 📂 Quelle & Zielordner wählen:\n"
             "   • Eingesteckte SD-Karten oder DCIM-Ordner werden automatisch erkannt.\n"
             "   • Zielordner für Fotos festlegen. Optional kann ein eigener Video-Zielordner aktiviert werden.\n\n"
@@ -209,7 +211,7 @@ class HelpWindow(ctk.CTkToplevel):
             "   • Automatische Echte RAW-Vorschau (Thumbnails) für Sony ARW, Canon CR2/CR3, Nikon NEF, DNG u.v.m.\n\n"
             "4. ⬇️ Download & Duplikatschutz:\n"
             "   • Nur gewünschte Fotos auswählen oder per Klick auf '✨ Nur Neue auswählen'.\n"
-            "   • Fotos herunterladen: FotoDown merkt sich alle importierten Fotos in der Historie und verhindert doppelte Downloads.\n\n"
+            "   • Fotos herunterladen: Vitrina merkt sich alle importierten Fotos in der Historie und verhindert doppelte Downloads.\n\n"
             "5. ⏏️ Karte / Ordner aushängen:\n"
             "   • Nach dem Import auf '⏏️ Karte / Ordner aushängen' klicken, um die SD-Karte sicher freizugeben und auszuwerfen.\n\n"
             "──────────────────────────────────────────────────────────\n"
@@ -361,7 +363,7 @@ class HistoryWindow(ctk.CTkToplevel):
             messagebox.showinfo("Erfolg", "Historie wurde erfolgreich geleert.", parent=self)
 
 
-class FotoDownApp:
+class VitrinaApp:
     TYPE_ORG_OPTIONS = {
         "same": "Alle Fotos gemeinsam in einem Ordner speichern",
         "subfolders": "Getrennte Unterordner für JPG und RAW (z.B. .../JPG/ und .../RAW/)",
@@ -455,7 +457,11 @@ class FotoDownApp:
         title_box.pack(side=tk.LEFT, padx=14, pady=10)
 
         # App Icon
-        icon_img = load_ctk_image("assets/icon_64.png", size=(42, 42)) or load_ctk_image("assets/icon.png", size=(42, 42))
+        icon_img = (
+            load_ctk_image("assets/vitrina.png", size=(42, 42))
+            or load_ctk_image("assets/icon_64.png", size=(42, 42))
+            or load_ctk_image("assets/icon.png", size=(42, 42))
+        )
         if icon_img:
             lbl_icon = ctk.CTkLabel(title_box, image=icon_img, text="")
             lbl_icon.pack(side=tk.LEFT, padx=(0, 12))
@@ -465,7 +471,7 @@ class FotoDownApp:
 
         ctk.CTkLabel(
             text_box,
-            text="FotoDown",
+            text="Vitrina",
             font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
             text_color="#38bdf8"
         ).pack(anchor=tk.W)
@@ -1836,10 +1842,13 @@ class FotoDownApp:
             messagebox.showwarning("Aushängen fehlgeschlagen", msg)
 
 
+FotoDownApp = VitrinaApp
+
+
 def run_gui():
     set_high_dpi()
     root = ctk.CTk()
-    app = FotoDownApp(root)
+    app = VitrinaApp(root)
     root.mainloop()
 
 

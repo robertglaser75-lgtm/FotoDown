@@ -88,9 +88,9 @@ DEFAULT_PROFILES: Dict[str, dict] = {
 @dataclass
 class AppConfig:
     source_dir: str = ""
-    target_dir: str = str(Path.home() / "Pictures" / "FotoDown_Imports")
+    target_dir: str = str(Path.home() / "Pictures" / "Vitrina_Imports")
     separate_video_dir: bool = False
-    video_target_dir: str = str(Path.home() / "Videos" / "FotoDown_Videos")
+    video_target_dir: str = str(Path.home() / "Videos" / "Vitrina_Videos")
     enable_dual_backup: bool = False
     backup_target_dir: str = ""
     verify_checksums: bool = True

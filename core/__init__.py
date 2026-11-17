@@ -1,4 +1,4 @@
-﻿"""FotoDown core package."""
+﻿"""Vitrina core package."""
 
 from .version import __version__
 

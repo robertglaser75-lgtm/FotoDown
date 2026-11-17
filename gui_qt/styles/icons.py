@@ -1,4 +1,4 @@
-"""Programmatic vector icon generators for FotoDown.
+"""Programmatic vector icon generators for Vitrina.
 
 Guarantees 100% reliable, font-independent rendering on all platforms (Windows, Linux, macOS)
 without missing glyphs, tofu boxes, or platform emoji differences.

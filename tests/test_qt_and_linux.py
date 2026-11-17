@@ -37,6 +37,7 @@ from gui_qt.views.single_view import MediaSingleView
 from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
 from gui_qt.workers.thumb_worker import ThumbnailSignals, ThumbnailTask
 
+os.environ["VITRINA_HEADLESS_TEST"] = "1"
 os.environ["FOTODOWN_HEADLESS_TEST"] = "1"
 _app = QApplication.instance() or (
     QApplication([]) if os.environ.get("DISPLAY") else QApplication(["-platform", "offscreen"])
@@ -47,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.0")
+        self.assertEqual(__version__, "0.33.1")
 
 
 class TestDiskSpace(unittest.TestCase):
