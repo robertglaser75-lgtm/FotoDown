@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QFileDialog, QFrame,
     QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
@@ -13,6 +13,12 @@ from PySide6.QtWidgets import (
 from core.config import AppConfig
 from gui_qt.key_navigation import (
     DEFAULT_NAVIGATION_SCHEME, NAVIGATION_SCHEMES, get_nav_hint
+)
+from gui_qt.styles.icons import (
+    get_culling_icon, get_folder_icon, get_gear_icon, get_import_icon, get_tag_icon
+)
+from gui_qt.styles.theme import (
+    THEME_DARK, THEME_LIGHT, THEME_SYSTEM, theme_manager
 )
 
 
@@ -38,48 +44,20 @@ class SettingsDialog(QDialog):
         main_layout.setSpacing(12)
 
         # Header Title
-        lbl_head = QLabel("⚙️ Programmeinstellungen")
+        lbl_head = QLabel("Programmeinstellungen")
         lbl_head.setStyleSheet("font-size: 16px; font-weight: bold; color: #38bdf8;")
         main_layout.addWidget(lbl_head)
 
         # Tabs container
         self.tabs = QTabWidget()
-        self.tabs.setStyleSheet("""
-            QTabWidget::pane {
-                border: 1px solid #334155;
-                background-color: #0b1120;
-                border-radius: 6px;
-                padding: 10px;
-            }
-            QTabBar::tab {
-                background-color: #1e293b;
-                color: #94a3b8;
-                border: 1px solid #334155;
-                border-bottom: none;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-                padding: 6px 14px;
-                margin-right: 2px;
-                font-weight: 600;
-                font-size: 11px;
-            }
-            QTabBar::tab:selected {
-                background-color: #0284c7;
-                color: #ffffff;
-                border-color: #38bdf8;
-            }
-            QTabBar::tab:hover:!selected {
-                background-color: #334155;
-                color: #f8fafc;
-            }
-        """)
+        self.tabs.setIconSize(QSize(16, 16))
 
         # Add tabs
-        self.tabs.addTab(self._create_single_view_tab(), "👁️ Einzelansicht")
-        self.tabs.addTab(self._create_import_tab(), "📥 Import & Organisation")
-        self.tabs.addTab(self._create_nas_album_tab(), "🏠 NAS & Familienalbum")
-        self.tabs.addTab(self._create_external_editors_tab(), "🎨 Externe Editoren")
-        self.tabs.addTab(self._create_iptc_tab(), "✍️ IPTC & Copyright")
+        self.tabs.addTab(self._create_single_view_tab(), get_culling_icon(), "Einzelansicht & Farbschema")
+        self.tabs.addTab(self._create_import_tab(), get_import_icon(), "Import & Organisation")
+        self.tabs.addTab(self._create_nas_album_tab(), get_folder_icon(), "NAS & Familienalbum")
+        self.tabs.addTab(self._create_external_editors_tab(), get_gear_icon(), "Externe Editoren")
+        self.tabs.addTab(self._create_iptc_tab(), get_tag_icon(), "IPTC & Copyright")
 
         main_layout.addWidget(self.tabs, stretch=1)
 
@@ -142,6 +120,31 @@ class SettingsDialog(QDialog):
         lbl_desc.setStyleSheet("color: #cbd5e1; font-size: 12px; line-height: 1.4;")
         lbl_desc.setWordWrap(True)
         layout.addWidget(lbl_desc)
+
+        # Farbschema & Theme Box
+        box_theme = QGroupBox("Farbschema & Erscheinungsbild")
+        box_theme.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid #1e293b;
+                border-radius: 6px;
+                margin-top: 6px;
+                padding-top: 14px;
+                font-weight: bold;
+                color: #38bdf8;
+            }
+        """)
+        theme_row = QHBoxLayout(box_theme)
+        theme_row.setContentsMargins(12, 10, 12, 10)
+        lbl_theme = QLabel("Erscheinungsbild / Modus:")
+        lbl_theme.setStyleSheet("font-weight: 600;")
+        theme_row.addWidget(lbl_theme)
+
+        self.combo_theme = QComboBox()
+        self.combo_theme.addItem("Dunkel (Fluent Dark)", THEME_DARK)
+        self.combo_theme.addItem("Hell (Fluent Light)", THEME_LIGHT)
+        self.combo_theme.addItem("Automatisch (Wie Betriebssystem)", THEME_SYSTEM)
+        theme_row.addWidget(self.combo_theme, 1)
+        layout.addWidget(box_theme)
 
         box_fields = QGroupBox("Sichtbare Informationen")
         box_fields.setStyleSheet("""
@@ -562,6 +565,11 @@ class SettingsDialog(QDialog):
     def load_from_config(self):
         c = self.config
 
+        # 0. Farbschema & Theme
+        curr_theme = getattr(c, "theme", THEME_DARK)
+        idx_theme = self.combo_theme.findData(curr_theme)
+        self.combo_theme.setCurrentIndex(max(0, idx_theme))
+
         # 1. Einzelansicht
         self.chk_sv_filename.setChecked(c.single_view_show_filename)
         self.chk_sv_extension.setChecked(c.single_view_show_extension)
@@ -608,6 +616,11 @@ class SettingsDialog(QDialog):
 
     def save_to_config(self):
         c = self.config
+
+        # 0. Farbschema & Theme
+        selected_theme = self.combo_theme.currentData() or THEME_DARK
+        c.theme = selected_theme
+        theme_manager.apply_theme(selected_theme, config=c)
 
         # 1. Einzelansicht
         c.single_view_show_filename = self.chk_sv_filename.isChecked()

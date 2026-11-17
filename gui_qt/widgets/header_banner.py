@@ -13,7 +13,24 @@ from core.config import AppConfig
 from core.drive_detector import detect_drives, DriveInfo, eject_drive
 from core.version import __version__
 from gui_qt.key_navigation import DEFAULT_NAVIGATION_SCHEME, NAVIGATION_SCHEMES
-from gui_qt.styles.icons import get_gear_icon
+from gui_qt.styles.icons import (
+    get_archive_icon,
+    get_culling_icon,
+    get_eject_icon,
+    get_fullscreen_icon,
+    get_gear_icon,
+    get_help_icon,
+    get_history_icon,
+    get_import_icon,
+    get_refresh_icon,
+    get_theme_icon,
+)
+from gui_qt.styles.theme import (
+    THEME_DARK,
+    THEME_LIGHT,
+    THEME_SYSTEM,
+    theme_manager,
+)
 
 
 class HeaderBanner(QFrame):
@@ -35,6 +52,7 @@ class HeaderBanner(QFrame):
         self._setup_ui()
         if self.config:
             self.update_from_config(self.config)
+        theme_manager.theme_changed.connect(lambda _: self.refresh_icons())
         self.refresh_drives()
 
     def _setup_ui(self):
@@ -65,31 +83,28 @@ class HeaderBanner(QFrame):
 
         # Main Workflow Tabs (1. Importieren | 2. Sichten & Sortieren | 3. Sichern & Archivieren)
         tabs_box = QHBoxLayout()
-        tabs_box.setSpacing(2)
-        tab_btn_style = """
-            QPushButton {
-                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
-                border-radius: 4px; padding: 4px 10px; font-weight: 600; font-size: 11px;
-            }
-            QPushButton:checked {
-                background-color: #0284c7; color: white; border: 1px solid #38bdf8;
-            }
-        """
+        tabs_box.setSpacing(4)
 
-        self.btn_tab_import = QPushButton("📥 1. Importieren")
+        self.btn_tab_import = QPushButton("1. Importieren")
+        self.btn_tab_import.setObjectName("headerTabBtn")
+        self.btn_tab_import.setIcon(get_import_icon())
+        self.btn_tab_import.setIconSize(QSize(16, 16))
         self.btn_tab_import.setCheckable(True)
         self.btn_tab_import.setChecked(True)
-        self.btn_tab_import.setStyleSheet(tab_btn_style)
 
-        self.btn_tab_culling = QPushButton("👁️ 2. Sichten & Sortieren")
+        self.btn_tab_culling = QPushButton("2. Sichten & Sortieren")
+        self.btn_tab_culling.setObjectName("headerTabBtn")
+        self.btn_tab_culling.setIcon(get_culling_icon())
+        self.btn_tab_culling.setIconSize(QSize(16, 16))
         self.btn_tab_culling.setCheckable(True)
         self.btn_tab_culling.setChecked(False)
-        self.btn_tab_culling.setStyleSheet(tab_btn_style)
 
-        self.btn_tab_transfer = QPushButton("💾 3. Sichern & Archivieren")
+        self.btn_tab_transfer = QPushButton("3. Sichern & Archivieren")
+        self.btn_tab_transfer.setObjectName("headerTabBtn")
+        self.btn_tab_transfer.setIcon(get_archive_icon())
+        self.btn_tab_transfer.setIconSize(QSize(16, 16))
         self.btn_tab_transfer.setCheckable(True)
         self.btn_tab_transfer.setChecked(False)
-        self.btn_tab_transfer.setStyleSheet(tab_btn_style)
 
         self.btn_tab_import.clicked.connect(lambda: self.switch_tab(0))
         self.btn_tab_culling.clicked.connect(lambda: self.switch_tab(1))
@@ -113,14 +128,18 @@ class HeaderBanner(QFrame):
         self.combo_drives.currentIndexChanged.connect(self._on_drive_changed)
         layout.addWidget(self.combo_drives, stretch=1)
 
-        self.btn_refresh = QPushButton("\u21BB Neu laden")
+        self.btn_refresh = QPushButton("Neu laden")
         self.btn_refresh.setObjectName("secondaryBtn")
+        self.btn_refresh.setIcon(get_refresh_icon())
+        self.btn_refresh.setIconSize(QSize(14, 14))
         self.btn_refresh.setToolTip("Laufwerke und Speicherkarten erneut scannen")
         self.btn_refresh.clicked.connect(self.refresh_drives)
         layout.addWidget(self.btn_refresh, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        self.btn_eject = QPushButton("\u23CF Auswerfen")
+        self.btn_eject = QPushButton("Auswerfen")
         self.btn_eject.setObjectName("secondaryBtn")
+        self.btn_eject.setIcon(get_eject_icon())
+        self.btn_eject.setIconSize(QSize(14, 14))
         self.btn_eject.setToolTip("Ausgewähltes Wechsellaufwerk sicher entfernen")
         self.btn_eject.clicked.connect(self._on_eject_clicked)
         layout.addWidget(self.btn_eject, 0, Qt.AlignmentFlag.AlignVCenter)
@@ -128,20 +147,24 @@ class HeaderBanner(QFrame):
         layout.addSpacing(10)
 
         # History & Help buttons
-        self.btn_history = QPushButton("\U0001F4DC Historie")
+        self.btn_history = QPushButton("Historie")
         self.btn_history.setObjectName("secondaryBtn")
+        self.btn_history.setIcon(get_history_icon())
+        self.btn_history.setIconSize(QSize(14, 14))
         self.btn_history.clicked.connect(self.open_history.emit)
         layout.addWidget(self.btn_history, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        self.btn_help = QPushButton("? Hilfe")
+        self.btn_help = QPushButton("Hilfe")
         self.btn_help.setObjectName("secondaryBtn")
+        self.btn_help.setIcon(get_help_icon())
+        self.btn_help.setIconSize(QSize(14, 14))
         self.btn_help.clicked.connect(self.open_help.emit)
         layout.addWidget(self.btn_help, 0, Qt.AlignmentFlag.AlignVCenter)
 
         # Settings Button with Gear Icon & Configuration Dropdown Menu
         self.btn_settings = QPushButton()
         self.btn_settings.setObjectName("secondaryBtn")
-        self.btn_settings.setIcon(get_gear_icon("#cbd5e1", 16))
+        self.btn_settings.setIcon(get_gear_icon())
         self.btn_settings.setIconSize(QSize(16, 16))
         self.btn_settings.setFixedSize(32, 26)
         self.btn_settings.setToolTip("Konfigurationsmenü & Einstellungen öffnen")
@@ -153,8 +176,35 @@ class HeaderBanner(QFrame):
         act_all.setIcon(get_gear_icon("#38bdf8", 14))
         act_all.triggered.connect(lambda: self.open_settings.emit(0))
 
-        act_fs = self.settings_menu.addAction("⛶ Vollbildmodus (F11)")
+        act_fs = self.settings_menu.addAction("Vollbildmodus (F11)")
+        act_fs.setIcon(get_fullscreen_icon())
         act_fs.triggered.connect(self.toggle_fullscreen_requested.emit)
+
+        self.settings_menu.addSeparator()
+
+        lbl_theme = self.settings_menu.addAction("── Farbschema / Theme ──")
+        lbl_theme.setEnabled(False)
+
+        self.theme_action_group = QActionGroup(self)
+        self.theme_action_group.setExclusive(True)
+
+        self.act_theme_dark = self.settings_menu.addAction("Dunkel (Fluent Dark)")
+        self.act_theme_dark.setIcon(get_theme_icon("dark"))
+        self.act_theme_dark.setCheckable(True)
+        self.theme_action_group.addAction(self.act_theme_dark)
+        self.act_theme_dark.triggered.connect(lambda: self._on_theme_selected(THEME_DARK))
+
+        self.act_theme_light = self.settings_menu.addAction("Hell (Fluent Light)")
+        self.act_theme_light.setIcon(get_theme_icon("light"))
+        self.act_theme_light.setCheckable(True)
+        self.theme_action_group.addAction(self.act_theme_light)
+        self.act_theme_light.triggered.connect(lambda: self._on_theme_selected(THEME_LIGHT))
+
+        self.act_theme_system = self.settings_menu.addAction("Automatisch (System)")
+        self.act_theme_system.setIcon(get_theme_icon("system"))
+        self.act_theme_system.setCheckable(True)
+        self.theme_action_group.addAction(self.act_theme_system)
+        self.act_theme_system.triggered.connect(lambda: self._on_theme_selected(THEME_SYSTEM))
 
         self.settings_menu.addSeparator()
 
@@ -243,6 +293,40 @@ class HeaderBanner(QFrame):
             self.nav_actions[curr_scheme].blockSignals(True)
             self.nav_actions[curr_scheme].setChecked(True)
             self.nav_actions[curr_scheme].blockSignals(False)
+
+        curr_theme = getattr(config, "theme", THEME_DARK)
+        self.act_theme_dark.blockSignals(True)
+        self.act_theme_light.blockSignals(True)
+        self.act_theme_system.blockSignals(True)
+        if curr_theme == THEME_LIGHT:
+            self.act_theme_light.setChecked(True)
+        elif curr_theme == THEME_SYSTEM:
+            self.act_theme_system.setChecked(True)
+        else:
+            self.act_theme_dark.setChecked(True)
+        self.act_theme_dark.blockSignals(False)
+        self.act_theme_light.blockSignals(False)
+        self.act_theme_system.blockSignals(False)
+
+    def _on_theme_selected(self, theme_mode: str):
+        theme_manager.apply_theme(theme_mode, config=self.config)
+        if self.config:
+            self.config.save()
+        self.refresh_icons()
+
+    def refresh_icons(self):
+        """Refreshes all vector icons according to the active theme palette."""
+        self.btn_tab_import.setIcon(get_import_icon())
+        self.btn_tab_culling.setIcon(get_culling_icon())
+        self.btn_tab_transfer.setIcon(get_archive_icon())
+        self.btn_refresh.setIcon(get_refresh_icon())
+        self.btn_eject.setIcon(get_eject_icon())
+        self.btn_history.setIcon(get_history_icon())
+        self.btn_help.setIcon(get_help_icon())
+        self.btn_settings.setIcon(get_gear_icon())
+        self.act_theme_dark.setIcon(get_theme_icon("dark"))
+        self.act_theme_light.setIcon(get_theme_icon("light"))
+        self.act_theme_system.setIcon(get_theme_icon("system"))
 
     def _on_menu_nav_selected(self, scheme_id: str):
         if self.config:

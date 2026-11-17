@@ -34,14 +34,9 @@ def run_gui():
     app.setApplicationVersion(__version__)
     app.setOrganizationName("RobertGlaser")
 
-    # Load and apply dark fluent stylesheet
-    qss_path = Path(__file__).resolve().parent / "styles" / "dark_fluent.qss"
-    if qss_path.exists():
-        try:
-            with open(qss_path, "r", encoding="utf-8") as f:
-                app.setStyleSheet(f.read())
-        except Exception:
-            pass
+    # Initialize theme engine with default dark theme (MainWindow synchronizes with config)
+    from .styles.theme import theme_manager
+    theme_manager.apply_theme("dark", app)
 
     # Set Window Icon
     for icon_name in ["icon.png", "icon_64.png", "fotodown.ico", "icon.ico"]:

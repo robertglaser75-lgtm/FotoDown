@@ -132,6 +132,7 @@ class AppConfig:
     transfer_target_last_folder: str = ""
     transfer_reconcile_method: str = "filename"  # "filename", "exif", "sha256"
     # Fenster & Layout-Zustände (Persistente UI-Wiederherstellung)
+    theme: str = "dark"  # "dark", "light", "system"
     window_width: int = 1280
     window_height: int = 850
     window_maximized: bool = False

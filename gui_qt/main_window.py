@@ -45,6 +45,7 @@ from .dialogs.history_dialog import HistoryDialog
 from .dialogs.help_dialog import HelpDialog
 from .dialogs.quick_preview_dialog import QuickPreviewDialog
 from .dialogs.settings_dialog import SettingsDialog
+from .styles.theme import theme_manager
 
 
 class MainWindow(QMainWindow):
@@ -61,6 +62,7 @@ class MainWindow(QMainWindow):
         # Core logic setup
         self._is_loading_config = False
         self.config = AppConfig.load()
+        theme_manager.apply_theme(getattr(self.config, "theme", "dark"), config=self.config)
         w = max(1000, getattr(self.config, "window_width", 1280))
         h = max(680, getattr(self.config, "window_height", 850))
         self.resize(w, h)
