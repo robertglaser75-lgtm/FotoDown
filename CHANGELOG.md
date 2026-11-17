@@ -3,6 +3,24 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.0] - 2026-11-17
+
+### Hinzugefügt & Verbessert
+- **Responsive Breakpoints & Laptop-Kompaktmodus ([`gui_qt/main_window.py`](gui_qt/main_window.py), [`gui_qt/widgets/header_banner.py`](gui_qt/widgets/header_banner.py), [`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
+  - Automatischer **Kompaktmodus** auf kleineren Bildschirmen und Fenstern (`< 1180px`, z. B. 1366x768 oder 1080p @ 125–150% Skalierung):
+    - **Header:** Verkürzte Quellordner-Beschriftung (*„Quelle:“* statt *„Speicherkarte / Laufwerk:“*), prägnante Tab-Titel (*„1. Import“*, *„2. Sichten“*, *„3. Sichern“*) und platzsparende Icon-Buttons für Neu laden, Auswerfen, Historie und Hilfe sparen über 220px horizontalen Platz.
+    - **Tab 1 (Importieren):** Schlankere Sidebar-Mindestbreite (von 390px auf 280px herabgesetzt) und dynamische Splitter-Startbreite (300px auf Laptops), wodurch dem Foto-Arbeitsbereich deutlich mehr Raum bleibt.
+    - **Tab 3 (Sichern & Archivieren):** Kompakte Aktionsspalte (Schrumpfung von 110px auf 46px mit zentrierten Vektor-Icon-Buttons) und verkürzte Suchplatzhalter (*„Suchen...“*) verhindern Überlauf und horizontales Scrollen auf 1280px-Laptops.
+- **Typografie-Standardisierung & Tokens ([`gui_qt/styles/dark_fluent.qss`](gui_qt/styles/dark_fluent.qss), [`gui_qt/styles/light_fluent.qss`](gui_qt/styles/light_fluent.qss)):**
+  - Einführung einer 5-stufigen, modularen Typografie-Skala (`.microText` 10px, `.captionText` 11px, `.bodyText` 12px, `.subheadingText` 14px, `.titleText` 16px) sowie `.textMuted`, `.textAccent` und `.textMono`.
+  - Konsistente Anwendung in Dark- und Light-Stylesheets.
+- **Automatisches Text-Eliding ([`gui_qt/widgets/elided_label.py`](gui_qt/widgets/elided_label.py)):**
+  - Neues wiederverwendbares Widget `ElidedLabel`: Kürzt überlange Dateipfade und Namen automatisch in der Mitte (`Qt.TextElideMode.ElideMiddle`), behält Dateiendungen sichtbar und zeigt den vollständigen Pfad im Tooltip.
+  - Integriert in `MediaSingleView`, `PatternEditorWidget`, `ExifInspectorWidget` und `QuickPreviewDialog`.
+- **Ultrawide-Ergonomie (21:9 & 32:9 Monitore):**
+  - Begrenzung der Sidebar-Maximalbreite auf 480px in Tab 1, damit Formulare und Namensmuster auf Breitbildmonitoren nicht unlesbar auseinandergezogen werden.
+  - Maximale Begrenzungen für Dialoge (`SettingsDialog` max 950x850, `BatchRenameDialog` max 1200x850), um ermüdende Augenbewegungen auf Ultrawide-Monitoren zu vermeiden.
+
 ## [0.31.0] - 2026-11-17
 
 ### Hinzugefügt & Verbessert

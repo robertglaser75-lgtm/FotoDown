@@ -46,6 +46,10 @@ Lauffähig unter **Windows** und **Linux**.
     - Schnelle Filterung nach Workflow-Stand (z.B. nur noch „Zu bearbeiten“ anzeigen).
     - Filter nach Dateityp (RAW / JPEG), Bewertung (Sterne, Pick, Reject, Farblabels), Kamera, Objektiv, ISO-Bereich und Volltextsuche.
   - **Konfigurierbares Reject-Handling:** Aussortierte Bilder wahlweise in `_Abgelehnt/` verschieben, löschen oder nur kennzeichnen.
+- 💻 **Adaptive Breakpoints (Laptop-Optimierung & Ultrawide-Ergonomie):**
+  - **Automatischer Kompaktmodus (< 1180px):** Schlankere Sidebar (280px Mindestbreite), platzsparende Icon-Toolbars im Header und kompakte Transfer-Aktionsleiste (46px) verhindern horizontales Scrollen auf 1366x768 / 1080p @ 125% Laptops.
+  - **Ultrawide-Ergonomie (21:9 & 32:9):** Maximale ergonomische Begrenzungen für Sidebar und Formulare (480px) verhindern ermüdende Überdehnungen, während Bild-Canvas und Filterdocks die volle Bildschirmbreite ausreizen.
+  - **Automatisches Text-Eliding (`ElidedLabel`):** Überlange Pfade werden sauber in der Mitte gekürzt, ohne Layouts zu zerreißen; vollständiger Pfad bleibt stets per Tooltip einsehbar.
 - 🎨 **Modernes Zwei-Farbschema (Dark Fluent & Light Fluent) & Vektor-Icons:**
   - **100% Durchgängige Vektor-Icons:** Vollständiger Verzicht auf instabile Plattform-Emojis. Alle Buttons, Tabs und Werkzeuge nutzen scharfe, skalierbare QPainter-Vektor-Icons (plattformstabil für Windows & Linux ohne fehlende Glyphen).
   - **Umschaltbares Farbschema:** Wahl zwischen *Dunkel (Fluent Dark)*, *Hell (Fluent Light)* und *Automatisch (System)*.
