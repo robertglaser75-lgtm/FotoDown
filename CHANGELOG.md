@@ -3,6 +3,18 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.3] - 2026-11-17
+
+### Verbessert
+- **Dezente, zeilenweise abwechselnde Hintergrundfarben (Zebra-Striping) für Tabellen und Verzeichnisbäume:**
+  - **Verzeichnisbäume (`gui_qt/views/culling_tree.py`, `gui_qt/views/tree_view.py`):**
+    - `setAlternatingRowColors(True)` im zentralen Verzeichnisbaum aktiviert, sodass die Baumansicht im Sichten-Tab sowie in beiden Hälften von „Sichern & Archivieren“ nun zeilenweise abwechselnde Hintergrundtöne erhält.
+  - **Listen- und Tabellenansichten (`gui_qt/views/table_view.py`, `gui_qt/views/transfer_tab.py`, `gui_qt/dialogs/history_dialog.py`, `gui_qt/dialogs/rename_dialog.py`):**
+    - Durchgängig aufeinander abgestimmte Zebra-Farben für alle Datei-, Übertragungs- und Vorschautabellen.
+  - **Optimierte Farbwerte in den Themes (`light_fluent.qss`, `dark_fluent.qss`):**
+    - **Heller Modus:** Sanfter Wechsel zwischen Basis-Weiß (`#ffffff`) und feinem Schiefergrau (`alternate-background-color: #f1f5f9;`), ergänzt durch dezente Hover- (`#e2e8f0`) und Selection-Zustände (`#bae6fd`).
+    - **Dunkler Modus:** Feine Kontrastierung zwischen tiefem Dunkelblau (`#090d16`) und weichem Nachtblau (`alternate-background-color: #162032;`), mit passenden Hover-Effekten (`#1e293b`).
+
 ## [0.32.2] - 2026-11-17
 
 ### Behoben & Verbessert

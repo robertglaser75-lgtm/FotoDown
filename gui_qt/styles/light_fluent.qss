@@ -398,17 +398,27 @@ QProgressBar::chunk {
 /* Table View */
 QTableView, QTreeView {
     background-color: #ffffff;
-    alternate-background-color: #f8fafc;
+    alternate-background-color: #f1f5f9;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
-    gridline-color: #f1f5f9;
-    selection-background-color: #e0f2fe;
+    gridline-color: #e2e8f0;
+    selection-background-color: #bae6fd;
     selection-color: #0369a1;
     color: #0f172a;
 }
 
 QTableView::item, QTreeView::item {
-    padding: 6px;
+    padding: 5px 6px;
+}
+
+QTableView::item:hover, QTreeView::item:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+QTableView::item:selected, QTreeView::item:selected {
+    background-color: #bae6fd;
+    color: #0369a1;
 }
 
 QHeaderView::section {

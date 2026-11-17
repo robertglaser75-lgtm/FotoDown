@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.32.2")
+        self.assertEqual(__version__, "0.32.3")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -3223,6 +3223,46 @@ class TestAllSettingsPersistence(unittest.TestCase):
         self.assertNotIn("#1e293b", culling.btn_next.styleSheet())
         self.assertNotIn("#1e293b", culling.btn_zoom.styleSheet())
         culling.close()
+
+    def test_alternating_row_colors_and_styles(self):
+        """Verifies alternating zebra striping colors in directory trees, table views, and QSS."""
+        from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+        from gui_qt.views.table_view import MediaTableView
+        from gui_qt.views.tree_view import MediaTreeView
+        from gui_qt.views.transfer_tab import TransferPaneWidget
+
+        app = QApplication.instance() or QApplication(sys.argv)
+        cfg = AppConfig()
+
+        # 1. Directory Tree View in Culling (and Transfer)
+        tree_w = CullingDirectoryTreeWidget(cfg)
+        self.assertTrue(tree_w.tree_view.alternatingRowColors(), "CullingDirectoryTreeWidget must have alternatingRowColors enabled")
+        tree_w.close()
+
+        # 2. MediaTableView (Import Tab)
+        table_v = MediaTableView()
+        self.assertTrue(table_v.alternatingRowColors(), "MediaTableView must have alternatingRowColors enabled")
+        table_v.close()
+
+        # 3. MediaTreeView (Import Tab)
+        target_t = MediaTreeView()
+        self.assertTrue(target_t.tree.alternatingRowColors(), "MediaTreeView must have alternatingRowColors enabled")
+        target_t.close()
+
+        # 4. TransferPaneWidget Table (Transfer Tab source & target)
+        pane_w = TransferPaneWidget(title="Quelle", is_source=True, config=cfg)
+        self.assertTrue(pane_w.table_view.alternatingRowColors(), "TransferPaneWidget table must have alternatingRowColors enabled")
+        self.assertTrue(pane_w.tree_widget.tree_view.alternatingRowColors(), "TransferPaneWidget tree must have alternatingRowColors enabled")
+        pane_w.close()
+
+        # 5. Check QSS definitions for alternating zebra colors
+        light_path = Path(__file__).parent.parent / "gui_qt" / "styles" / "light_fluent.qss"
+        dark_path = Path(__file__).parent.parent / "gui_qt" / "styles" / "dark_fluent.qss"
+        light_qss = light_path.read_text(encoding="utf-8")
+        dark_qss = dark_path.read_text(encoding="utf-8")
+
+        self.assertIn("alternate-background-color: #f1f5f9;", light_qss)
+        self.assertIn("alternate-background-color: #162032;", dark_qss)
 
 
 if __name__ == "__main__":

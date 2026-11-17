@@ -170,6 +170,7 @@ class CullingDirectoryTreeWidget(QWidget):
         self.tree_view = QTreeView()
         self.tree_view.setObjectName("directoryTreeView")
         self.tree_view.setModel(self.model)
+        self.tree_view.setAlternatingRowColors(True)
         self.tree_view.setUniformRowHeights(True)
         self.tree_view.setAnimated(True)
         self.tree_view.setSortingEnabled(False)
