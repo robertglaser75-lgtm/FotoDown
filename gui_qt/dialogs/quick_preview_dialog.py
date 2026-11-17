@@ -160,7 +160,7 @@ class QuickPreviewDialog(QDialog):
 
     def _load_image_preview(self, item: ScanItem):
         target_path = item.companion_path if (item.is_pair and item.companion_path and item.companion_path.exists()) else item.source_path
-        pil_img = load_preview_image(target_path, max_dim=2560)
+        pil_img = load_preview_image(target_path, max_dim=3840)
 
         if pil_img:
             try:
@@ -183,12 +183,16 @@ class QuickPreviewDialog(QDialog):
         if not self._current_pixmap or self._current_pixmap.isNull():
             return
         avail_size = self.preview_frame.size() - self.preview_frame.contentsMargins().toSize()
+        dpr = self.devicePixelRatioF() if hasattr(self, "devicePixelRatioF") else 1.0
+        target_w = max(10, int((avail_size.width() - 16) * dpr))
+        target_h = max(10, int((avail_size.height() - 16) * dpr))
         scaled = self._current_pixmap.scaled(
-            avail_size.width() - 16,
-            avail_size.height() - 16,
+            target_w,
+            target_h,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )
+        scaled.setDevicePixelRatio(dpr)
         self.lbl_image.setPixmap(scaled)
 
     def resizeEvent(self, event: QResizeEvent):

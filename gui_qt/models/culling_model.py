@@ -136,39 +136,80 @@ def count_folder_images(folder: Path) -> Tuple[int, int, int]:
 def check_exported_file(
     primary_path: Path,
     family_album_dir: Optional[str] = None,
-    date_taken: Optional[datetime] = None
+    date_taken: Optional[datetime] = None,
+    existing_filenames: Optional[Set[str]] = None,
+    existing_subdirs: Optional[Set[str]] = None,
+    month_cache: Optional[Dict[Path, Set[str]]] = None
 ) -> Optional[Path]:
     """Checks whether an edited or exported version of this photo exists."""
     stem = primary_path.stem
+    stem_lower = stem.lower()
     folder = primary_path.parent
 
-    # 1. Check local Darktable export folders or edit suffixes
-    candidates = [
-        folder / f"{stem}_edit.jpg",
-        folder / f"{stem}_dt.jpg",
-        folder / f"{stem}_export.jpg",
-        folder / "darktable_exported" / f"{stem}.jpg",
-        folder / "darktable_exported" / f"{stem}.jpeg",
-        folder / "export" / f"{stem}.jpg",
-        folder / "export" / f"{stem}.jpeg",
+    # 1. Fast check for local edit suffixes via in-memory set if provided
+    local_edit_names = [
+        f"{stem}_edit.jpg",
+        f"{stem}_dt.jpg",
+        f"{stem}_export.jpg",
     ]
-    for c in candidates:
-        if c.exists():
-            return c
+    for name in local_edit_names:
+        if existing_filenames is not None:
+            if name.lower() in existing_filenames:
+                return folder / name
+        else:
+            cand = folder / name
+            if cand.exists():
+                return cand
 
-    # 2. Check in configured Familienalbum folder: 0001_Unsere_Fotos/{YYYY}/{MM}
+    # Subfolder checks (darktable_exported / export) only if subfolder exists
+    subfolders_to_check = []
+    if existing_subdirs is not None:
+        if "darktable_exported" in existing_subdirs:
+            subfolders_to_check.append("darktable_exported")
+        if "export" in existing_subdirs:
+            subfolders_to_check.append("export")
+    else:
+        subfolders_to_check = ["darktable_exported", "export"]
+
+    for sub in subfolders_to_check:
+        for ext in (".jpg", ".jpeg"):
+            cand = folder / sub / f"{stem}{ext}"
+            if cand.exists():
+                return cand
+
+    # 2. Check in configured Familienalbum folder with in-memory caching: 0001_Unsere_Fotos/{YYYY}/{MM}
     if family_album_dir and date_taken:
         fa_root = Path(family_album_dir)
         if fa_root.exists():
             month_folder = fa_root / f"{date_taken.year:04d}" / f"{date_taken.month:02d}"
-            if month_folder.exists():
-                for comp_ext in (".jpg", ".jpeg", ".JPG", ".JPEG"):
-                    target = month_folder / f"{stem}{comp_ext}"
-                    if target.exists():
-                        return target
-                    target_edit = month_folder / f"{stem}_edit{comp_ext}"
-                    if target_edit.exists():
-                        return target_edit
+            # Cache directory entries of month folder to avoid repetitive NAS network roundtrips
+            if month_cache is not None:
+                if month_folder not in month_cache:
+                    if month_folder.exists():
+                        try:
+                            month_cache[month_folder] = {e.name.lower() for e in os.scandir(month_folder) if e.is_file()}
+                        except OSError:
+                            month_cache[month_folder] = set()
+                    else:
+                        month_cache[month_folder] = set()
+
+                m_files = month_cache[month_folder]
+                for comp_ext in (".jpg", ".jpeg"):
+                    target_name = f"{stem_lower}{comp_ext}"
+                    if target_name in m_files:
+                        return month_folder / f"{stem}{comp_ext}"
+                    target_edit_name = f"{stem_lower}_edit{comp_ext}"
+                    if target_edit_name in m_files:
+                        return month_folder / f"{stem}_edit{comp_ext}"
+            else:
+                if month_folder.exists():
+                    for comp_ext in (".jpg", ".jpeg", ".JPG", ".JPEG"):
+                        target = month_folder / f"{stem}{comp_ext}"
+                        if target.exists():
+                            return target
+                        target_edit = month_folder / f"{stem}_edit{comp_ext}"
+                        if target_edit.exists():
+                            return target_edit
 
     return None
 
@@ -216,6 +257,11 @@ def scan_culling_folder(
     if total_units == 0:
         return []
 
+    # Fast in-memory lookup sets to eliminate redundant filesystem / NAS checks
+    existing_filenames = {e.name.lower() for e in entries if e.is_file()}
+    existing_subdirs = {e.name.lower() for e in entries if e.is_dir()}
+    month_cache: Dict[Path, Set[str]] = {}
+
     items: List[CullingItem] = []
     processed_stems = set()
     current_count = 0
@@ -241,7 +287,14 @@ def scan_culling_folder(
 
         meta = extract_metadata(companion_p if companion_p else raw_p)
         dt = meta.date_taken if meta else None
-        exp_p = check_exported_file(raw_p, family_album_dir, dt)
+        exp_p = check_exported_file(
+            raw_p,
+            family_album_dir,
+            dt,
+            existing_filenames=existing_filenames,
+            existing_subdirs=existing_subdirs,
+            month_cache=month_cache
+        )
 
         # Automatic status detection
         final_status = wf.workflow_status
@@ -279,7 +332,14 @@ def scan_culling_folder(
         wf = read_xmp_workflow_info(jpg_p)
         meta = extract_metadata(jpg_p)
         dt = meta.date_taken if meta else None
-        exp_p = check_exported_file(jpg_p, family_album_dir, dt)
+        exp_p = check_exported_file(
+            jpg_p,
+            family_album_dir,
+            dt,
+            existing_filenames=existing_filenames,
+            existing_subdirs=existing_subdirs,
+            month_cache=month_cache
+        )
 
         final_status = wf.workflow_status
         is_exported = False

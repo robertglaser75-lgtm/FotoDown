@@ -3,6 +3,25 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.25.0] - 2026-11-17
+
+### Hinzugefügt & Verbessert
+- **Massiver Performance- & Darstellungs-Boost bei Vorschauen und Culling:**
+  - **7,5-mal schnellere Thumbnail-Konvertierung ([`gui_qt/workers/thumb_worker.py`](gui_qt/workers/thumb_worker.py)):**
+    - Ersatz der CPU-intensiven PNG-Zwischencodierung im RAM durch direkte, verlustfreie Speicherübergabe (`QImage(raw_bytes, ...)`).
+  - **Vollständig asynchrones Multithreading im Filmstrip ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py)):**
+    - Filmstrip-Miniaturbilder werden nun parallel über Hintergrund-Threads (`QThreadPool.globalInstance()`) geladen. Der Haupt-GUI-Thread bleibt zu 100 % flüssig und frei von Rucklern.
+  - **LRU-Speichercache & Lookahead-Prefetching ([`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/views/single_view.py`](gui_qt/views/single_view.py)):**
+    - Hochauflösende Vorschau-Pixmaps werden im RAM gecacht. Hin- und Herwechseln zwischen Fotos (z. B. zum Schärfevergleich mit `A`/`D`) erfolgt verzögerungsfrei in **0 ms ohne erneuten Festplattenzugriff**.
+    - Während ein Foto betrachtet wird, lädt ein Hintergrund-Worker benachbarte Bilder ($N+1$, $N-1$, $N+2$) im Voraus in den Cache, sodass das nächste Bild beim Tastendruck sofort bereitsteht.
+  - **Skalierungs-Caching in Galerie-Karten ([`gui_qt/views/delegates.py`](gui_qt/views/delegates.py)):**
+    - Vermeidet teure Neuberechnungen von `SmoothTransformation` bei jedem einzelnen Scroll-Frame der Galerie.
+  - **High-DPI-Schärfe & 4K-UHD-Vorschauqualität ([`core/thumbnail.py`](core/thumbnail.py), [`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/views/single_view.py`](gui_qt/views/single_view.py)):**
+    - Berücksichtigung von `devicePixelRatioF()` verhindert Interpolationsunschärfen auf 4K-, UHD- und 125%/150%-skalierten Bildschirmen.
+    - Anhebung der maximalen Vorschaudimension von 2560px auf 3840px (4K) für deutlich höhere Detailtreue. Volle native Auflösung ohne Skalierung bei `max_dim <= 0`.
+  - **In-Memory-Beschleunigung beim Ordnerscan ([`gui_qt/models/culling_model.py`](gui_qt/models/culling_model.py)):**
+    - Tausende redundante `os.path.exists()`-Netzwerkzugriffe auf NAS- und Dateisysteme werden durch In-Memory-Sets und Monatsordner-Caching ersetzt.
+
 ## [0.24.0] - 2026-11-15
 
 ### Hinzugefügt & Verbessert

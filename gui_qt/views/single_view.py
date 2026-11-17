@@ -1,5 +1,6 @@
 """Single photo / full-size image view widget integrated in the workspace."""
 
+from collections import OrderedDict
 from pathlib import Path
 from typing import List, Optional
 from PIL import Image
@@ -33,6 +34,8 @@ class MediaSingleView(QWidget):
         self.current_idx: int = -1
         self._current_pixmap: Optional[QPixmap] = None
         self._zoom_mode: str = "fit"  # "fit" or "actual" (100%)
+        self._preview_cache: OrderedDict[str, QPixmap] = OrderedDict()
+        self._max_cache_size: int = 24
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._setup_ui()
@@ -323,10 +326,18 @@ class MediaSingleView(QWidget):
 
         self.lbl_meta_status.setText(f"Status: {item.status}")
 
-        # Load image preview
+        # Load image preview (from memory cache or disk)
         target_path = item.companion_path if (item.is_pair and item.companion_path and item.companion_path.exists()) else item.source_path
-        pil_img = load_preview_image(target_path, max_dim=2560)
+        target_key = str(target_path)
 
+        if target_key in self._preview_cache:
+            self._current_pixmap = self._preview_cache[target_key]
+            self._preview_cache.move_to_end(target_key)
+            self._update_display()
+            self.item_focused.emit(item)
+            return
+
+        pil_img = load_preview_image(target_path, max_dim=3840)
         if pil_img:
             try:
                 if pil_img.mode != "RGB":
@@ -334,6 +345,11 @@ class MediaSingleView(QWidget):
                 data = pil_img.tobytes("raw", "RGB")
                 qimg = QImage(data, pil_img.width, pil_img.height, pil_img.width * 3, QImage.Format.Format_RGB888)
                 self._current_pixmap = QPixmap.fromImage(qimg)
+                self._preview_cache[target_key] = self._current_pixmap
+                self._preview_cache.move_to_end(target_key)
+                while len(self._preview_cache) > self._max_cache_size:
+                    self._preview_cache.popitem(last=False)
+
                 self._update_display()
                 self.item_focused.emit(item)
                 return
@@ -355,15 +371,17 @@ class MediaSingleView(QWidget):
             self.lbl_image.adjustSize()
             self.btn_zoom.setText("🔍 Einpassen")
         else:
-            # Fit to scroll area viewport
+            # Fit to scroll area viewport with High-DPI support
             vp_size = self.scroll_area.viewport().size()
-            target_w = max(100, vp_size.width() - 20)
-            target_h = max(100, vp_size.height() - 20)
+            dpr = self.devicePixelRatioF() if hasattr(self, "devicePixelRatioF") else 1.0
+            target_w = max(100, int((vp_size.width() - 20) * dpr))
+            target_h = max(100, int((vp_size.height() - 20) * dpr))
             scaled = self._current_pixmap.scaled(
                 target_w, target_h,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
+            scaled.setDevicePixelRatio(dpr)
             self.lbl_image.setPixmap(scaled)
             self.btn_zoom.setText("🔍 100% Zoom")
 

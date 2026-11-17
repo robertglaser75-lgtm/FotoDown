@@ -1,6 +1,6 @@
 """Item delegate to draw modern virtualized photo cards in Gallery view."""
 
-from typing import Dict
+from typing import Dict, Tuple
 from PySide6.QtCore import QRect, QSize, Qt, Signal, QObject
 from PySide6.QtGui import (
     QBrush, QColor, QFont, QFontMetrics, QPainter,
@@ -25,6 +25,7 @@ class GalleryDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.pixmap_cache: Dict[str, QPixmap] = {}
+        self._scaled_cache: Dict[Tuple[str, int, int], QPixmap] = {}
         self.card_size = QSize(self.DEFAULT_CARD_SIZE)
         self.thumb_size = QSize(self.DEFAULT_THUMB_SIZE)
 
@@ -34,9 +35,14 @@ class GalleryDelegate(QStyledItemDelegate):
         thumb_h = int(thumb_w * 0.72)
         self.thumb_size = QSize(thumb_w, thumb_h)
         self.card_size = QSize(thumb_w + 20, thumb_h + 80)
+        self._scaled_cache.clear()
 
     def set_pixmap(self, path_str: str, pixmap: QPixmap):
         self.pixmap_cache[path_str] = pixmap
+        # Remove previous scaled entry for this path
+        keys_to_del = [k for k in self._scaled_cache if k[0] == path_str]
+        for k in keys_to_del:
+            del self._scaled_cache[k]
 
     def sizeHint(self, option: QStyleOptionViewItem, index) -> QSize:
         return self.card_size
@@ -105,11 +111,16 @@ class GalleryDelegate(QStyledItemDelegate):
         pix = self.pixmap_cache.get(path_str)
 
         if pix and not pix.isNull():
-            scaled = pix.scaled(
-                thumb_rect.size(),
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            )
+            cache_key = (path_str, self.thumb_size.width(), self.thumb_size.height())
+            scaled = self._scaled_cache.get(cache_key)
+            if scaled is None:
+                scaled = pix.scaled(
+                    thumb_rect.size(),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+                self._scaled_cache[cache_key] = scaled
+
             if scaled.width() > 0 and scaled.height() > 0:
                 target_draw = QRect(
                     thumb_rect.left() + (thumb_rect.width() - scaled.width()) // 2,

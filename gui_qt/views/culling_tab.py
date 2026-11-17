@@ -10,11 +10,12 @@ Features:
 - Configurable rejection execution (move to _Abgelehnt/ or trash).
 """
 
+from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 from PIL import Image
 
-from PySide6.QtCore import Qt, Signal, QSize, QTimer, QEasingCurve, QPropertyAnimation
+from PySide6.QtCore import Qt, Signal, QSize, QTimer, QEasingCurve, QPropertyAnimation, QThreadPool
 from PySide6.QtGui import QColor, QFont, QImage, QKeyEvent, QPainter, QPainterPath, QPen, QPixmap, QWheelEvent
 from PySide6.QtWidgets import (
     QButtonGroup, QComboBox, QFileDialog, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel,
@@ -39,6 +40,7 @@ from gui_qt.views.culling_left_dock import CullingLeftNavigationDock
 from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
 from gui_qt.widgets.collapsible_box import CollapsibleBox
 from gui_qt.workers.culling_worker import CullingScanWorker
+from gui_qt.workers.thumb_worker import PreviewSignals, PreviewTask, ThumbnailSignals, ThumbnailTask
 
 
 class CullingCanvasWidget(QScrollArea):
@@ -128,11 +130,15 @@ class CullingCanvasWidget(QScrollArea):
             self.lbl_image.adjustSize()
         else:
             vp_size = self.viewport().size()
+            dpr = self.devicePixelRatioF() if hasattr(self, "devicePixelRatioF") else 1.0
+            target_w = max(10, int(vp_size.width() * dpr))
+            target_h = max(10, int(vp_size.height() * dpr))
             scaled = self._pixmap.scaled(
-                vp_size,
+                target_w, target_h,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
+            scaled.setDevicePixelRatio(dpr)
             self.lbl_image.setPixmap(scaled)
             self.lbl_image.resize(vp_size)
 
@@ -199,7 +205,30 @@ class FilmstripBar(QScrollArea):
 
         self._item_cards: List[QFrame] = []
         self._thumb_cache: Dict[str, QPixmap] = {}
+        self._thumb_label_map: Dict[str, List[QLabel]] = {}
+        self._pending_thumb_tasks: Set[str] = set()
+        self._thumb_signals = ThumbnailSignals()
+        self._thumb_signals.thumbnail_ready.connect(self._on_thumbnail_ready)
         self.current_idx: int = -1
+
+    def _on_thumbnail_ready(self, path_str: str, qimage: QImage):
+        self._pending_thumb_tasks.discard(path_str)
+        if qimage and not qimage.isNull():
+            dpr = self.devicePixelRatioF() if hasattr(self, "devicePixelRatioF") else 1.0
+            target_w = max(10, int(84 * dpr))
+            target_h = max(10, int(56 * dpr))
+            pix = QPixmap.fromImage(qimage).scaled(
+                target_w, target_h,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+            pix.setDevicePixelRatio(dpr)
+            self._thumb_cache[path_str] = pix
+            for lbl in self._thumb_label_map.pop(path_str, []):
+                try:
+                    lbl.setPixmap(pix)
+                except RuntimeError:
+                    pass
 
     def set_items(self, items: List[CullingItem], current_idx: int = 0):
         # Clear existing
@@ -208,6 +237,7 @@ class FilmstripBar(QScrollArea):
             if w:
                 w.deleteLater()
         self._item_cards.clear()
+        self._thumb_label_map.clear()
 
         for idx, it in enumerate(items):
             card = self._create_card(it, idx)
@@ -275,12 +305,21 @@ class FilmstripBar(QScrollArea):
         lbl_thumb.setStyleSheet("background-color: #0b1120; border-radius: 4px;")
         layout.addWidget(lbl_thumb)
 
-        # Load or generate thumbnail
+        # Load or generate thumbnail asynchronously in thread pool
         p_str = str(it.current_display_path)
         if p_str in self._thumb_cache:
             lbl_thumb.setPixmap(self._thumb_cache[p_str])
         else:
-            QTimer.singleShot(idx * 20, lambda path=it.current_display_path, lbl=lbl_thumb, pstr=p_str: self._async_load_thumb(path, lbl, pstr))
+            self._thumb_label_map.setdefault(p_str, []).append(lbl_thumb)
+            if p_str not in self._pending_thumb_tasks:
+                self._pending_thumb_tasks.add(p_str)
+                task = ThumbnailTask(
+                    path=it.current_display_path,
+                    key_path=p_str,
+                    signals=self._thumb_signals,
+                    max_size=(168, 112)
+                )
+                QThreadPool.globalInstance().start(task)
 
         lbl_name = QLabel(it.primary_path.stem[:12])
         lbl_name.setStyleSheet("font-size: 9px; color: #cbd5e1; font-weight: 500;")
@@ -305,21 +344,6 @@ class FilmstripBar(QScrollArea):
         card.mousePressEvent = lambda e, i=idx: self.item_clicked.emit(i)
         return card
 
-    def _async_load_thumb(self, path: Path, lbl: QLabel, key: str):
-        try:
-            pil_thumb = generate_thumbnail(path, max_size=(160, 110))
-            if pil_thumb:
-                if pil_thumb.mode != "RGB":
-                    pil_thumb = pil_thumb.convert("RGB")
-                data = pil_thumb.tobytes("raw", "RGB")
-                qimg = QImage(data, pil_thumb.width, pil_thumb.height, pil_thumb.width * 3, QImage.Format.Format_RGB888)
-                pix = QPixmap.fromImage(qimg).scaled(84, 56, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                self._thumb_cache[key] = pix
-                if lbl:
-                    lbl.setPixmap(pix)
-        except Exception:
-            pass
-
 
 class CullingTabView(QWidget):
     """Main view of Tab 2: Sichten & Sortieren."""
@@ -336,6 +360,14 @@ class CullingTabView(QWidget):
         self._scan_worker: Optional[CullingScanWorker] = None
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
+        # High-speed LRU preview cache & lookahead preloading
+        self._preview_cache: OrderedDict[str, QPixmap] = OrderedDict()
+        self._max_preview_cache_size: int = 24
+        self._preview_signals = PreviewSignals()
+        self._preview_signals.preview_ready.connect(self._on_preview_ready)
+        self._prefetched_paths: Set[str] = set()
+
         self._setup_ui()
 
     def _setup_ui(self):
@@ -901,6 +933,8 @@ class CullingTabView(QWidget):
 
     def _on_scan_finished(self, items: List[CullingItem]):
         self.items = items
+        self._preview_cache.clear()
+        self._prefetched_paths.clear()
         self.scan_progress_bar.setValue(100)
         self.lbl_scan_status.setText(f"Lese Fotos ein: {len(items)} Fotos gefunden – lade Vorschau...")
         self.lbl_stats.setText(f"{len(items)} Fotos gefunden – lade Vorschau...")
@@ -1135,18 +1169,69 @@ class CullingTabView(QWidget):
         else:
             self.btn_reject.setStyleSheet("background-color: #7f1d1d; color: #fca5a5; border: 1px solid #b91c1c; border-radius: 4px; font-weight: 600;")
 
-        # Load Preview Image
+        # Load Preview Image (LRU memory cache, low-res instant placeholder, lookahead prefetching)
         disp_path = it.current_display_path
-        pil_img = load_preview_image(disp_path, max_dim=2560)
-        if pil_img:
-            if pil_img.mode != "RGB":
-                pil_img = pil_img.convert("RGB")
-            data = pil_img.tobytes("raw", "RGB")
-            qimg = QImage(data, pil_img.width, pil_img.height, pil_img.width * 3, QImage.Format.Format_RGB888)
-            pix = QPixmap.fromImage(qimg)
+        disp_key = str(disp_path)
+
+        if disp_key in self._preview_cache:
+            pix = self._preview_cache[disp_key]
+            self._preview_cache.move_to_end(disp_key)
             self.canvas.set_pixmap(pix, keep_zoom=False)
         else:
-            self.canvas.set_pixmap(None)
+            # Show filmstrip thumbnail immediately as low-res placeholder so canvas is never blank
+            if hasattr(self, "filmstrip") and disp_key in self.filmstrip._thumb_cache:
+                low_res = self.filmstrip._thumb_cache[disp_key]
+                self.canvas.set_pixmap(low_res, keep_zoom=False)
+
+            pil_img = load_preview_image(disp_path, max_dim=3840)
+            if pil_img:
+                if pil_img.mode != "RGB":
+                    pil_img = pil_img.convert("RGB")
+                data = pil_img.tobytes("raw", "RGB")
+                qimg = QImage(data, pil_img.width, pil_img.height, pil_img.width * 3, QImage.Format.Format_RGB888)
+                pix = QPixmap.fromImage(qimg)
+                self._add_to_preview_cache(disp_key, pix)
+                self.canvas.set_pixmap(pix, keep_zoom=False)
+            else:
+                self.canvas.set_pixmap(None)
+
+        # Trigger background lookahead prefetching for adjacent images
+        self._prefetch_adjacent_previews(self.current_idx)
+
+    def _add_to_preview_cache(self, key: str, pix: QPixmap):
+        self._preview_cache[key] = pix
+        self._preview_cache.move_to_end(key)
+        while len(self._preview_cache) > self._max_preview_cache_size:
+            self._preview_cache.popitem(last=False)
+
+    def _prefetch_adjacent_previews(self, current_idx: int):
+        if not self.filtered_items:
+            return
+        # Prefetch next 2 items and previous 1 item
+        for offset in (1, -1, 2):
+            idx = current_idx + offset
+            if 0 <= idx < len(self.filtered_items):
+                target_it = self.filtered_items[idx]
+                p_str = str(target_it.current_display_path)
+                if p_str not in self._preview_cache and p_str not in self._prefetched_paths:
+                    self._prefetched_paths.add(p_str)
+                    task = PreviewTask(
+                        path=target_it.current_display_path,
+                        key_path=p_str,
+                        signals=self._preview_signals,
+                        max_dim=3840
+                    )
+                    QThreadPool.globalInstance().start(task)
+
+    def _on_preview_ready(self, path_str: str, qimage: QImage):
+        self._prefetched_paths.discard(path_str)
+        if qimage and not qimage.isNull():
+            pix = QPixmap.fromImage(qimage)
+            self._add_to_preview_cache(path_str, pix)
+            if 0 <= self.current_idx < len(self.filtered_items):
+                cur_p = str(self.filtered_items[self.current_idx].current_display_path)
+                if cur_p == path_str:
+                    self.canvas.set_pixmap(pix, keep_zoom=True)
 
     def set_current_rating(self, stars: int):
         if not self.filtered_items or not (0 <= self.current_idx < len(self.filtered_items)):

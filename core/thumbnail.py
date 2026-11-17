@@ -352,8 +352,12 @@ def generate_thumbnail(path: Path, max_size: Tuple[int, int] = (320, 320)) -> Op
         return None
 
 
-def load_preview_image(path: Path, max_dim: int = 2560) -> Optional[Image.Image]:
-    """Loads a high-resolution preview image for single-view or quick-look."""
+def load_preview_image(path: Path, max_dim: int = 3840) -> Optional[Image.Image]:
+    """Loads a high-resolution preview image for single-view or quick-look.
+    
+    If max_dim <= 0, returns full native resolution without downsampling.
+    Default max_dim is 3840 (4K UHD) for crisp detail on high-DPI displays.
+    """
     ext = path.suffix.lower()
     if ext in VIDEO_EXTENSIONS:
         return None
@@ -366,14 +370,14 @@ def load_preview_image(path: Path, max_dim: int = 2560) -> Optional[Image.Image]
         try:
             with Image.open(path) as img:
                 pil_img = ImageOps.exif_transpose(img)
-                if max(pil_img.width, pil_img.height) > max_dim:
+                if max_dim > 0 and max(pil_img.width, pil_img.height) > max_dim:
                     pil_img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
                 return pil_img.copy()
         except Exception:
             return None
 
     try:
-        if max(pil_img.width, pil_img.height) > max_dim:
+        if max_dim > 0 and max(pil_img.width, pil_img.height) > max_dim:
             pil_img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
         return pil_img
     except Exception:

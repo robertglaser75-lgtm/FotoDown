@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.24.0")
+        self.assertEqual(__version__, "0.25.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -2313,6 +2313,103 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
         dlg.deleteLater()
         _app.processEvents()
 
+    def test_thumbnail_and_preview_tasks(self):
+        """Verifies fast ThumbnailTask and PreviewTask background execution and signals."""
+        import tempfile
+        from pathlib import Path
+        from PIL import Image
+        from PySide6.QtCore import QThreadPool
+        from PySide6.QtGui import QImage
+        from gui_qt.workers.thumb_worker import ThumbnailSignals, ThumbnailTask, PreviewSignals, PreviewTask
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            img_path = tmp / "test_photo.jpg"
+            img = Image.new("RGB", (600, 400), color="purple")
+            img.save(img_path)
+
+            # Test ThumbnailTask
+            thumb_result = {}
+            t_signals = ThumbnailSignals()
+            t_signals.thumbnail_ready.connect(lambda k, qimg: thumb_result.update({"key": k, "qimg": qimg}))
+
+            t_task = ThumbnailTask(path=img_path, key_path=str(img_path), signals=t_signals, max_size=(160, 120))
+            QThreadPool.globalInstance().start(t_task)
+            QThreadPool.globalInstance().waitForDone(2000)
+            _app.processEvents()
+
+            self.assertIn("key", thumb_result)
+            self.assertEqual(thumb_result["key"], str(img_path))
+            self.assertIsInstance(thumb_result["qimg"], QImage)
+            self.assertFalse(thumb_result["qimg"].isNull())
+            self.assertLessEqual(thumb_result["qimg"].width(), 160)
+
+            # Test PreviewTask
+            preview_result = {}
+            p_signals = PreviewSignals()
+            p_signals.preview_ready.connect(lambda k, qimg: preview_result.update({"key": k, "qimg": qimg}))
+
+            p_task = PreviewTask(path=img_path, key_path=str(img_path), signals=p_signals, max_dim=3840)
+            QThreadPool.globalInstance().start(p_task)
+            QThreadPool.globalInstance().waitForDone(2000)
+            _app.processEvents()
+
+            self.assertIn("key", preview_result)
+            self.assertEqual(preview_result["key"], str(img_path))
+            self.assertIsInstance(preview_result["qimg"], QImage)
+            self.assertFalse(preview_result["qimg"].isNull())
+
+    def test_check_exported_file_in_memory_optimization(self):
+        """Verifies in-memory set and month_cache acceleration in check_exported_file."""
+        import tempfile
+        from datetime import datetime
+        from pathlib import Path
+        from gui_qt.models.culling_model import check_exported_file
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            photo = tmp / "DSC_0001.JPG"
+            photo.write_text("dummy")
+
+            # Local edit file exists
+            edit_file = tmp / "DSC_0001_edit.jpg"
+            edit_file.write_text("edit")
+
+            existing_files = {photo.name.lower(), edit_file.name.lower()}
+            existing_subdirs = set()
+
+            res = check_exported_file(
+                photo,
+                existing_filenames=existing_files,
+                existing_subdirs=existing_subdirs
+            )
+            self.assertIsNotNone(res)
+            self.assertEqual(res.name, "DSC_0001_edit.jpg")
+
+            # Test month cache with family album dir
+            fa_dir = tmp / "Familienalbum"
+            month_dir = fa_dir / "2026" / "05"
+            month_dir.mkdir(parents=True)
+            fa_export = month_dir / "DSC_0002.jpg"
+            fa_export.write_text("fa")
+
+            photo2 = tmp / "DSC_0002.JPG"
+            photo2.write_text("dummy")
+
+            month_cache = {}
+            dt = datetime(2026, 5, 10, 12, 0, 0)
+            res2 = check_exported_file(
+                photo2,
+                family_album_dir=str(fa_dir),
+                date_taken=dt,
+                existing_filenames={photo2.name.lower()},
+                existing_subdirs=set(),
+                month_cache=month_cache
+            )
+            self.assertIsNotNone(res2)
+            self.assertEqual(res2.name, "DSC_0002.jpg")
+            self.assertIn(month_dir, month_cache)
+
     def test_culling_directory_tree_entry_point_full_path(self):
         """Verifies that the full path is displayed at the entry point (header label and tree root node)."""
         import tempfile
@@ -2542,6 +2639,103 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
         dlg.close()
         dlg.deleteLater()
         _app.processEvents()
+
+    def test_thumbnail_and_preview_tasks(self):
+        """Verifies fast ThumbnailTask and PreviewTask background execution and signals."""
+        import tempfile
+        from pathlib import Path
+        from PIL import Image
+        from PySide6.QtCore import QThreadPool
+        from PySide6.QtGui import QImage
+        from gui_qt.workers.thumb_worker import ThumbnailSignals, ThumbnailTask, PreviewSignals, PreviewTask
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            img_path = tmp / "test_photo.jpg"
+            img = Image.new("RGB", (600, 400), color="purple")
+            img.save(img_path)
+
+            # Test ThumbnailTask
+            thumb_result = {}
+            t_signals = ThumbnailSignals()
+            t_signals.thumbnail_ready.connect(lambda k, qimg: thumb_result.update({"key": k, "qimg": qimg}))
+
+            t_task = ThumbnailTask(path=img_path, key_path=str(img_path), signals=t_signals, max_size=(160, 120))
+            QThreadPool.globalInstance().start(t_task)
+            QThreadPool.globalInstance().waitForDone(2000)
+            _app.processEvents()
+
+            self.assertIn("key", thumb_result)
+            self.assertEqual(thumb_result["key"], str(img_path))
+            self.assertIsInstance(thumb_result["qimg"], QImage)
+            self.assertFalse(thumb_result["qimg"].isNull())
+            self.assertLessEqual(thumb_result["qimg"].width(), 160)
+
+            # Test PreviewTask
+            preview_result = {}
+            p_signals = PreviewSignals()
+            p_signals.preview_ready.connect(lambda k, qimg: preview_result.update({"key": k, "qimg": qimg}))
+
+            p_task = PreviewTask(path=img_path, key_path=str(img_path), signals=p_signals, max_dim=3840)
+            QThreadPool.globalInstance().start(p_task)
+            QThreadPool.globalInstance().waitForDone(2000)
+            _app.processEvents()
+
+            self.assertIn("key", preview_result)
+            self.assertEqual(preview_result["key"], str(img_path))
+            self.assertIsInstance(preview_result["qimg"], QImage)
+            self.assertFalse(preview_result["qimg"].isNull())
+
+    def test_check_exported_file_in_memory_optimization(self):
+        """Verifies in-memory set and month_cache acceleration in check_exported_file."""
+        import tempfile
+        from datetime import datetime
+        from pathlib import Path
+        from gui_qt.models.culling_model import check_exported_file
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            photo = tmp / "DSC_0001.JPG"
+            photo.write_text("dummy")
+
+            # Local edit file exists
+            edit_file = tmp / "DSC_0001_edit.jpg"
+            edit_file.write_text("edit")
+
+            existing_files = {photo.name.lower(), edit_file.name.lower()}
+            existing_subdirs = set()
+
+            res = check_exported_file(
+                photo,
+                existing_filenames=existing_files,
+                existing_subdirs=existing_subdirs
+            )
+            self.assertIsNotNone(res)
+            self.assertEqual(res.name, "DSC_0001_edit.jpg")
+
+            # Test month cache with family album dir
+            fa_dir = tmp / "Familienalbum"
+            month_dir = fa_dir / "2026" / "05"
+            month_dir.mkdir(parents=True)
+            fa_export = month_dir / "DSC_0002.jpg"
+            fa_export.write_text("fa")
+
+            photo2 = tmp / "DSC_0002.JPG"
+            photo2.write_text("dummy")
+
+            month_cache = {}
+            dt = datetime(2026, 5, 10, 12, 0, 0)
+            res2 = check_exported_file(
+                photo2,
+                family_album_dir=str(fa_dir),
+                date_taken=dt,
+                existing_filenames={photo2.name.lower()},
+                existing_subdirs=set(),
+                month_cache=month_cache
+            )
+            self.assertIsNotNone(res2)
+            self.assertEqual(res2.name, "DSC_0002.jpg")
+            self.assertIn(month_dir, month_cache)
 
 
 if __name__ == "__main__":
