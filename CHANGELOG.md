@@ -3,6 +3,15 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.27.0] - 2026-11-17
+
+### Hinzugefügt & Verbessert
+- **Dauerhafte Speicherung & Wiederherstellung aller Einstiegspunkte ([`core/config.py`](core/config.py), [`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py), [`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
+  - Alle gewählten Einstiegspunkte (Root-Verzeichnisse) der Navigationsbäume in *2. Sichten & Sortieren* (`culling_root_folder`) sowie in *3. Sichern & Archivieren* für Quelle (`transfer_source_dir`) und Ziel/NAS (`transfer_target_dir`) werden nun persistent gespeichert und beim nächsten Programmstart garantiert als Einstiegspunkt wiederhergestellt.
+  - Fehler behoben, bei dem ein statischer `default_root`-Fallback konfigurierte Einstiegspunkte überschrieben hat.
+  - Zuletzt geöffnete Ordner für Quelle (`transfer_source_last_folder`) und Ziel (`transfer_target_last_folder`) werden ebenfalls gespeichert und beim Wechseln der Tabs oder erneutem Öffnen direkt geladen.
+  - Direkte Synchronisation: Wird ein neuer Einstiegspunkt im Verzeichnisbaum gewählt, wird er sofort in der Konfiguration persistiert und bei Bedarf im Arbeitsbereich geöffnet.
+
 ## [0.26.0] - 2026-11-17
 
 ### Hinzugefügt & Verbessert

@@ -350,8 +350,15 @@ class MainWindow(QMainWindow):
         if tab_idx == 1:
             # Switching to Culling tab: if no folder loaded yet, load target_dir or last folder
             if not self.culling_tab_view.current_folder:
-                target_to_load = Path(self.config.culling_last_folder) if (self.config.culling_last_folder and Path(self.config.culling_last_folder).exists()) else Path(self.config.target_dir)
-                if target_to_load.exists():
+                target_to_load = None
+                if self.config.culling_last_folder and Path(self.config.culling_last_folder).exists():
+                    target_to_load = Path(self.config.culling_last_folder)
+                elif self.config.culling_root_folder and Path(self.config.culling_root_folder).exists():
+                    target_to_load = Path(self.config.culling_root_folder)
+                elif self.config.target_dir and Path(self.config.target_dir).exists():
+                    target_to_load = Path(self.config.target_dir)
+
+                if target_to_load and target_to_load.exists():
                     self.culling_tab_view.load_folder(target_to_load)
             self.culling_tab_view.setFocus()
             self.status_bar.showMessage("Sichten & Sortieren aktiv: Tasten [1-5] Sterne, [P] Behalten, [X] Ablehnen, [J/R] RAW/JPG.", 5000)

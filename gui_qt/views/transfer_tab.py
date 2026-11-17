@@ -246,6 +246,11 @@ class TransferPaneWidget(QWidget):
                 default_root = Path(self.config.nas_archive_dir)
             elif self.config.family_album_dir and Path(self.config.family_album_dir).exists():
                 default_root = Path(self.config.family_album_dir)
+        else:
+            if self.config.culling_root_folder and Path(self.config.culling_root_folder).exists():
+                default_root = Path(self.config.culling_root_folder)
+            elif self.config.target_dir and Path(self.config.target_dir).exists():
+                default_root = Path(self.config.target_dir)
 
         self.tree_widget = CullingDirectoryTreeWidget(
             config=self.config,
@@ -257,6 +262,7 @@ class TransferPaneWidget(QWidget):
         )
         self.tree_widget.setMinimumWidth(120)
         self.tree_widget.folder_selected.connect(self.load_folder)
+        self.tree_widget.root_changed.connect(self._on_tree_root_changed)
         self.tree_widget.collapse_panel_requested.connect(self._toggle_tree_visibility)
         self.pane_splitter.addWidget(self.tree_widget)
 
@@ -589,9 +595,28 @@ class TransferPaneWidget(QWidget):
             except Exception as e:
                 QMessageBox.critical(self, "Fehler", f"Ordner konnte nicht erstellt werden: {e}")
 
+    def _on_tree_root_changed(self, new_root: Path):
+        key = "transfer_source_dir" if self.is_source else "transfer_target_dir"
+        setattr(self.config, key, str(new_root))
+        try:
+            self.config.save()
+        except Exception:
+            pass
+        if not self.current_folder or not self.current_folder.exists() or not str(self.current_folder.resolve()).startswith(str(new_root.resolve())):
+            self.load_folder(new_root)
+
     def load_folder(self, folder: Path):
         """Scans the directory for media files and refreshes the views."""
         self.current_folder = Path(folder)
+        if self.is_source:
+            self.config.transfer_source_last_folder = str(self.current_folder)
+        else:
+            self.config.transfer_target_last_folder = str(self.current_folder)
+        try:
+            self.config.save()
+        except Exception:
+            pass
+
         icon = "💻" if self.is_source else "💾"
         self.lbl_folder_header.setText(f"<b>{icon} {self.current_folder.name}</b> <span style='color: #64748b;'>({self.current_folder})</span>")
         self.lbl_folder_header.setToolTip(str(self.current_folder))
@@ -1195,18 +1220,34 @@ class TransferTabView(QWidget):
     def refresh_defaults(self):
         """Loads default directories from configuration if not yet loaded."""
         if not self.pane_source.current_folder:
-            src = Path(self.config.culling_last_folder) if (self.config.culling_last_folder and Path(self.config.culling_last_folder).exists()) else (
-                Path(self.config.culling_root_folder) if (self.config.culling_root_folder and Path(self.config.culling_root_folder).exists()) else (
-                    Path(self.config.target_dir) if (self.config.target_dir and Path(self.config.target_dir).exists()) else Path.home() / "Pictures"
-                )
-            )
-            if src.exists():
+            src = None
+            if getattr(self.config, "transfer_source_last_folder", "") and Path(self.config.transfer_source_last_folder).exists():
+                src = Path(self.config.transfer_source_last_folder)
+            elif self.config.transfer_source_dir and Path(self.config.transfer_source_dir).exists():
+                src = Path(self.config.transfer_source_dir)
+            elif self.config.culling_last_folder and Path(self.config.culling_last_folder).exists():
+                src = Path(self.config.culling_last_folder)
+            elif self.config.culling_root_folder and Path(self.config.culling_root_folder).exists():
+                src = Path(self.config.culling_root_folder)
+            elif self.config.target_dir and Path(self.config.target_dir).exists():
+                src = Path(self.config.target_dir)
+            else:
+                src = Path.home() / "Pictures"
+
+            if src and src.exists():
                 self.pane_source.load_folder(src)
 
         if not self.pane_dest.current_folder:
-            dst = Path(self.config.nas_archive_dir) if (self.config.nas_archive_dir and Path(self.config.nas_archive_dir).exists()) else (
-                Path(self.config.family_album_dir) if (self.config.family_album_dir and Path(self.config.family_album_dir).exists()) else None
-            )
+            dst = None
+            if getattr(self.config, "transfer_target_last_folder", "") and Path(self.config.transfer_target_last_folder).exists():
+                dst = Path(self.config.transfer_target_last_folder)
+            elif self.config.transfer_target_dir and Path(self.config.transfer_target_dir).exists():
+                dst = Path(self.config.transfer_target_dir)
+            elif self.config.nas_archive_dir and Path(self.config.nas_archive_dir).exists():
+                dst = Path(self.config.nas_archive_dir)
+            elif self.config.family_album_dir and Path(self.config.family_album_dir).exists():
+                dst = Path(self.config.family_album_dir)
+
             if dst and dst.exists():
                 self.pane_dest.load_folder(dst)
 

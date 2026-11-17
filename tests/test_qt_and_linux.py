@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.26.0")
+        self.assertEqual(__version__, "0.27.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -2799,6 +2799,83 @@ class TestFullscreenMode(unittest.TestCase):
         self.assertTrue(dlg.isFullScreen())
         dlg.keyPressEvent(ev)
         self.assertFalse(dlg.isFullScreen())
+
+
+class TestEntryPointsPersistence(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from PySide6.QtWidgets import QApplication
+        if not QApplication.instance():
+            cls.app = QApplication([])
+        else:
+            cls.app = QApplication.instance()
+
+    def test_tree_init_prioritizes_saved_config_over_default_root(self):
+        import tempfile
+        from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+        from core.config import AppConfig
+
+        with tempfile.TemporaryDirectory() as tmp1, tempfile.TemporaryDirectory() as tmp2:
+            saved_dir = Path(tmp1) / "SavedRoot"
+            saved_dir.mkdir()
+            default_dir = Path(tmp2) / "DefaultRoot"
+            default_dir.mkdir()
+
+            cfg = AppConfig()
+            cfg.transfer_target_dir = str(saved_dir)
+
+            # default_root is passed, BUT config has a saved entry point
+            tree = CullingDirectoryTreeWidget(
+                config=cfg,
+                config_root_key="transfer_target_dir",
+                default_root=default_dir
+            )
+
+            # Saved root must take priority!
+            self.assertEqual(tree.root_path.resolve(), saved_dir.resolve())
+            self.assertEqual(cfg.transfer_target_dir, str(saved_dir))
+
+    def test_tree_set_root_folder_persists_to_config(self):
+        import tempfile
+        from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+        from core.config import AppConfig
+
+        with tempfile.TemporaryDirectory() as tmp:
+            new_root = Path(tmp) / "MyCustomEntry"
+            new_root.mkdir()
+
+            cfg = AppConfig()
+            cfg.culling_root_folder = ""
+
+            tree = CullingDirectoryTreeWidget(
+                config=cfg,
+                config_root_key="culling_root_folder"
+            )
+
+            tree.set_root_folder(new_root)
+            self.assertEqual(tree.root_path.resolve(), new_root.resolve())
+            self.assertEqual(cfg.culling_root_folder, str(new_root))
+
+    def test_transfer_tab_refresh_defaults_restores_entry_points(self):
+        import tempfile
+        from gui_qt.views.transfer_tab import TransferTabView
+        from core.config import AppConfig
+
+        with tempfile.TemporaryDirectory() as tmp:
+            src_root = Path(tmp) / "SourcePhotos"
+            src_root.mkdir()
+            dst_root = Path(tmp) / "DestNAS"
+            dst_root.mkdir()
+
+            cfg = AppConfig()
+            cfg.transfer_source_dir = str(src_root)
+            cfg.transfer_target_dir = str(dst_root)
+
+            tab = TransferTabView(config=cfg)
+            tab.refresh_defaults()
+
+            self.assertEqual(tab.pane_source.current_folder.resolve(), src_root.resolve())
+            self.assertEqual(tab.pane_dest.current_folder.resolve(), dst_root.resolve())
 
 
 if __name__ == "__main__":

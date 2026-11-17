@@ -385,6 +385,7 @@ class CullingTabView(QWidget):
         self.left_dock = CullingLeftNavigationDock(self.config, self)
         self.left_dock.folder_selected.connect(self._on_tree_folder_selected)
         self.left_dock.filter_changed.connect(self._on_filter_changed)
+        self.left_dock.tree_view.root_changed.connect(self._on_tree_root_changed)
         self.splitter.addWidget(self.left_dock)
         self.dir_tree = self.left_dock.tree_view
 
@@ -865,6 +866,15 @@ class CullingTabView(QWidget):
             self.btn_topaz.setEnabled(has_items)
         if hasattr(self, "btn_apply_reject"):
             self.btn_apply_reject.setEnabled(has_items)
+
+    def _on_tree_root_changed(self, new_root: Path):
+        self.config.culling_root_folder = str(new_root)
+        try:
+            self.config.save()
+        except Exception:
+            pass
+        if not self.current_folder or not self.current_folder.exists() or not str(self.current_folder.resolve()).startswith(str(new_root.resolve())):
+            self.load_folder(new_root)
 
     def load_folder(self, folder: Path):
         """Loads and scans photos from folder into the Culling workflow with progress display."""

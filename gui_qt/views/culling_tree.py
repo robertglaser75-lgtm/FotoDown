@@ -244,15 +244,20 @@ class CullingDirectoryTreeWidget(QWidget):
     def _init_default_root(self):
         """Resolves initial entry point from config or common photo directories."""
         chosen = None
-        if self.default_root and self.default_root.exists() and self.default_root.is_dir():
-            chosen = self.default_root
-        elif self.config_root_key and hasattr(self.config, self.config_root_key):
+
+        # 1. Primary: saved entry point from configuration
+        if self.config_root_key and hasattr(self.config, self.config_root_key):
             val = getattr(self.config, self.config_root_key)
             if val:
                 p = Path(val)
                 if p.exists() and p.is_dir():
                     chosen = p
 
+        # 2. Secondary: default_root fallback (e.g. NAS archive or imported target)
+        if not chosen and self.default_root and self.default_root.exists() and self.default_root.is_dir():
+            chosen = self.default_root
+
+        # 3. Third priority: culling root / last folder if applicable
         if not chosen and self.config.culling_root_folder:
             p = Path(self.config.culling_root_folder)
             if p.exists() and p.is_dir():
