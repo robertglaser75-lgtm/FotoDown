@@ -3,6 +3,23 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.31.0] - 2026-11-17
+
+### Hinzugefügt & Verbessert
+- **Vollständig durchgängige Vektor-Icons ([`gui_qt/styles/icons.py`](gui_qt/styles/icons.py)):**
+  - Alle bisherigen rohen Text-Emojis in Haupt-Tabs, Toolbars, Buttons und Dialogen wurden durch native, pixelgenaue QPainter-Vektor-Icons ersetzt.
+  - Neue Vektor-Icons: `get_import_icon()`, `get_culling_icon()`, `get_archive_icon()`, `get_tag_icon()`, `get_fullscreen_icon()`, `get_fullscreen_exit_icon()`, `get_zoom_icon()`, `get_zoom_fit_icon()`, `get_info_icon()`, `get_save_icon()`, `get_trash_icon()`, `get_folder_open_icon()`, `get_theme_icon()`, `get_eject_icon()`, `get_history_icon()`, `get_help_icon()`, `get_star_icon()`.
+  - Plattformübergreifend stabil ohne fehlende Glyphen oder Tofu-Kästchen (`[?]`) auf Linux.
+  - Dynamische Farb-Paletten: Icons passen ihre Standardfarben automatisch an das aktive Farbschema an (helles Grau/Blau im Dark Mode, dunkles Schiefergrau/Himmelblau im Light Mode).
+- **Zwei-Farbschema-Architektur & Light-Mode ([`gui_qt/styles/light_fluent.qss`](gui_qt/styles/light_fluent.qss), [`gui_qt/styles/theme.py`](gui_qt/styles/theme.py)):**
+  - Neues offizielles **Fluent Light Theme** (`light_fluent.qss`) mit dunkler Schrift (`#0f172a`) auf weißem/hellgrauem Hintergrund (`#ffffff` / `#f8fafc`) für hervorragenden Kontrast (WCAG AAA 14.8:1).
+  - Neuer `ThemeManager` mit automatischer Erkennung des Betriebssystem-Farbschemas (Windows & Linux).
+  - Farbschema-Umschaltung (*Dunkel (Fluent Dark)*, *Hell (Fluent Light)*, *Automatisch (System)*) direkt über das Header-Zahnradmenü sowie im Einstellungsdialog unter *„Einzelansicht & Farbschema“*.
+  - Das gewählte Farbschema wird dauerhaft in der `config.json` (`theme`) gespeichert und beim nächsten Start automatisch wiederhergestellt.
+- **Konsistente UI-Aktualisierung:**
+  - Header-Tabs (`1. Importieren`, `2. Sichten & Sortieren`, `3. Sichern & Archivieren`) nutzen nun das zentrale Stylesheet via `#headerTabBtn` anstelle starrer Inline-Styles.
+  - Aktualisierte Buttons in `FilterBarWidget` (`EXIF`), `ProfileBarWidget` (Vektor-Icons für Speichern, Neu, Löschen), `QuickPreviewDialog` (*„Original öffnen“*, *„Schließen“*) und `BatchRenameDialog`.
+
 ## [0.30.0] - 2026-11-17
 
 ### Hinzugefügt & Verbessert

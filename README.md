@@ -46,6 +46,11 @@ Lauffähig unter **Windows** und **Linux**.
     - Schnelle Filterung nach Workflow-Stand (z.B. nur noch „Zu bearbeiten“ anzeigen).
     - Filter nach Dateityp (RAW / JPEG), Bewertung (Sterne, Pick, Reject, Farblabels), Kamera, Objektiv, ISO-Bereich und Volltextsuche.
   - **Konfigurierbares Reject-Handling:** Aussortierte Bilder wahlweise in `_Abgelehnt/` verschieben, löschen oder nur kennzeichnen.
+- 🎨 **Modernes Zwei-Farbschema (Dark Fluent & Light Fluent) & Vektor-Icons:**
+  - **100% Durchgängige Vektor-Icons:** Vollständiger Verzicht auf instabile Plattform-Emojis. Alle Buttons, Tabs und Werkzeuge nutzen scharfe, skalierbare QPainter-Vektor-Icons (plattformstabil für Windows & Linux ohne fehlende Glyphen).
+  - **Umschaltbares Farbschema:** Wahl zwischen *Dunkel (Fluent Dark)*, *Hell (Fluent Light)* und *Automatisch (System)*.
+  - **Optimaler Kontrast:** Dunkler Modus mit schonendem Hintergrund für Farbkorrekturen; heller Modus mit hohem WCAG AAA-Kontrast (dunkle Schrift `#0f172a` auf hellen Flächen `#ffffff` / `#f8fafc`).
+  - **Dauerhafte Speicherung:** Das gewählte Farbschema wird dauerhaft gespeichert und beim nächsten Start automatisch wiederhergestellt.
 - ⚙️ **Zentrales Konfigurationsmenü & Zahnrad-Symbol rechts oben:**
   - Schnellzugriff per Zahnrad-Button `[ ⚙️ ]` in der oberen Leiste mit Dropdown-Menü.
   - Vollständiger Einstellungsdialog (`SettingsDialog`) mit Reitern für *Einzelansicht*, *Import & Organisation*, *NAS & Familienalbum*, *Externe Editoren* und *IPTC*.
