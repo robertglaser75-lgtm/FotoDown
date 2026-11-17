@@ -70,15 +70,15 @@ def launch_darktable(raw_paths: List[Path], custom_exe: Optional[str] = None) ->
     if not raw_paths:
         return False, "Keine RAW-Dateien zum Übergeben ausgewählt."
 
-    exe_path = Path(custom_exe) if (custom_exe and Path(custom_exe).exists()) else find_darktable()
-    if not exe_path or not exe_path.exists():
-        return False, "Darktable konnte nicht gefunden werden. Bitte Installationspfad in den Einstellungen prüfen."
-
     # Filter to only existing RAW files
     from core.thumbnail import RAW_EXTENSIONS
     valid_raws = [p for p in raw_paths if p.suffix.lower() in RAW_EXTENSIONS and p.exists()]
     if not valid_raws:
         return False, "Keine gültigen RAW-Dateien in der Auswahl gefunden."
+
+    exe_path = Path(custom_exe) if (custom_exe and Path(custom_exe).exists()) else find_darktable()
+    if not exe_path or not exe_path.exists():
+        return False, "Darktable konnte nicht gefunden werden. Bitte Installationspfad in den Einstellungen prüfen."
 
     cmd = [str(exe_path)] + [str(p) for p in valid_raws]
     try:
@@ -100,14 +100,14 @@ def launch_topaz_photo(jpeg_paths: List[Path], custom_exe: Optional[str] = None)
     if not jpeg_paths:
         return False, "Keine JPEG-Dateien zum Übergeben ausgewählt."
 
-    exe_path = Path(custom_exe) if (custom_exe and Path(custom_exe).exists()) else find_topaz_photo()
-    if not exe_path or not exe_path.exists():
-        return False, "Topaz Photo konnte nicht gefunden werden. Bitte Installationspfad in den Einstellungen prüfen."
-
     # Filter to only existing JPEG files
     valid_jpegs = [p for p in jpeg_paths if p.suffix.lower() in {".jpg", ".jpeg"} and p.exists()]
     if not valid_jpegs:
         return False, "Keine gültigen JPEG-Dateien in der Auswahl gefunden."
+
+    exe_path = Path(custom_exe) if (custom_exe and Path(custom_exe).exists()) else find_topaz_photo()
+    if not exe_path or not exe_path.exists():
+        return False, "Topaz Photo konnte nicht gefunden werden. Bitte Installationspfad in den Einstellungen prüfen."
 
     cmd = [str(exe_path)] + [str(p) for p in valid_jpegs]
     try:

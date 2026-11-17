@@ -1,3 +1,3 @@
 """FotoDown application version."""
 
-__version__ = "0.32.11"
+__version__ = "0.32.12"

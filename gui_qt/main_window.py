@@ -1,11 +1,13 @@
 """Main application window uniting all GUI widgets and core business logic."""
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
 from typing import List, Optional
 
 from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtGui import QIcon, QKeyEvent, QKeySequence, QPixmap, QResizeEvent, QShortcut
+from PySide6.QtGui import QIcon, QImage, QKeyEvent, QKeySequence, QPixmap, QResizeEvent, QShortcut
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
     QScrollArea, QSizePolicy, QSplitter, QStackedWidget, QStatusBar,
