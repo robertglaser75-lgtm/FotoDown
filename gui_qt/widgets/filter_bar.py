@@ -104,6 +104,12 @@ class FilterBarWidget(QWidget):
         self.btn_toggle_exif.toggled.connect(self.toggle_exif_panel.emit)
         layout.addWidget(self.btn_toggle_exif)
 
+    def set_view_mode(self, mode: str):
+        """Sets the active view mode in the combo box without losing sync."""
+        idx = self.combo_view.findData(mode)
+        if idx >= 0:
+            self.combo_view.setCurrentIndex(idx)
+
     def _on_view_changed(self):
         mode = self.combo_view.currentData()
         is_gallery = (mode == "gallery")

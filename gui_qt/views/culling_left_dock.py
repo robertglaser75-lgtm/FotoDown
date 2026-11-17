@@ -162,9 +162,21 @@ class CullingLeftNavigationDock(QWidget):
         self.tab_widget.setTabIcon(1, get_filter_icon("#38bdf8", 14))
 
         main_layout.addWidget(self.tab_widget)
+        self.tab_widget.currentChanged.connect(self._on_dock_tab_changed)
+
+        saved_tab = getattr(self.config, "culling_dock_tab", 0)
+        if saved_tab in (0, 1):
+            self.tab_widget.setCurrentIndex(saved_tab)
 
         self.setMinimumWidth(260)
         self.setMaximumWidth(480)
+
+    def _on_dock_tab_changed(self, idx: int):
+        self.config.culling_dock_tab = idx
+        try:
+            self.config.save()
+        except Exception:
+            pass
 
     def _on_filter_changed(self, criteria: CullingFilterCriteria):
         # Update collapsed strip icon styling if filter is active
@@ -196,6 +208,11 @@ class CullingLeftNavigationDock(QWidget):
         if self.is_collapsed:
             return
         self.is_collapsed = True
+        self.config.culling_dock_collapsed = True
+        try:
+            self.config.save()
+        except Exception:
+            pass
         self.expanded_width = self.width() if self.width() >= 260 else 330
         self.tab_widget.setVisible(False)
         self.collapsed_strip.setVisible(True)
@@ -218,6 +235,11 @@ class CullingLeftNavigationDock(QWidget):
         if not self.is_collapsed:
             return
         self.is_collapsed = False
+        self.config.culling_dock_collapsed = False
+        try:
+            self.config.save()
+        except Exception:
+            pass
         self.collapsed_strip.setVisible(False)
         self.tab_widget.setVisible(True)
 

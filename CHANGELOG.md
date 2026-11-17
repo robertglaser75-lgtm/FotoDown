@@ -3,6 +3,15 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.28.0] - 2026-11-17
+
+### Hinzugefügt & Verbessert
+- **Vollständige Persistenz aller Ansichten, Layouts und Einstellungen ([`core/config.py`](core/config.py), [`gui_qt/main_window.py`](gui_qt/main_window.py), [`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/views/culling_left_dock.py`](gui_qt/views/culling_left_dock.py), [`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py), [`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
+  - **Fensterzustand & Geometrie:** Fenstergröße (`window_width`, `window_height`), Vollbildmodus (`window_fullscreen`), Maximiert-Status (`window_maximized`) und der zuletzt aktive Haupt-Workflow-Tab (`active_tab`) werden beim Beenden gespeichert und beim nächsten Programmstart exakt wiederhergestellt.
+  - **Tab 1 (Importieren):** Aktive Ansichtsart (`import_view_mode`: Tabelle, Galerie, Einzelansicht, Zielstruktur), Zoomgröße der Galerie-Kacheln (`import_gallery_thumb_size`), Ein-/Ausklappzustände der drei Seitenleisten-Abschnitte (`box_paths`, `box_patterns`, `box_general`), Splitter-Breiten und Sichtbarkeit des EXIF-Inspektors werden persistent gesichert.
+  - **Tab 2 (Sichten & Sortieren):** Filmstreifen-Sichtbarkeit (`culling_show_filmstrip`), Zustand des linken Navigationsdocks (`culling_dock_collapsed`, `culling_dock_tab`: Verzeichnisse vs. Filter), Splitter-Größen und Ordnersortierung (A-Z / Z-A) bleiben erhalten.
+  - **Tab 3 (Sichern & Archivieren):** Datei-Anzeige (Dateien ein-/ausblenden `transfer_source_show_files` / `transfer_target_show_files`), Darstellungsmodus (Liste vs. Kacheln 80/140/200 px), Sortierkriterium & Sortierrichtung, Verzeichnisbaum-Sichtbarkeit und Splitter-Aufteilungen werden für Quelle und Ziel getrennt gespeichert und wiederhergestellt.
+
 ## [0.27.0] - 2026-11-17
 
 ### Hinzugefügt & Verbessert

@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.27.0")
+        self.assertEqual(__version__, "0.28.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -2876,6 +2876,81 @@ class TestEntryPointsPersistence(unittest.TestCase):
 
             self.assertEqual(tab.pane_source.current_folder.resolve(), src_root.resolve())
             self.assertEqual(tab.pane_dest.current_folder.resolve(), dst_root.resolve())
+
+
+class TestAllSettingsPersistence(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from PySide6.QtWidgets import QApplication
+        if not QApplication.instance():
+            cls.app = QApplication([])
+        else:
+            cls.app = QApplication.instance()
+
+    def test_mainwindow_restores_view_mode_and_boxes_and_tab(self):
+        from gui_qt.main_window import MainWindow
+        from core.config import AppConfig
+
+        cfg = AppConfig()
+        cfg.active_tab = 1
+        cfg.import_view_mode = "gallery"
+        cfg.import_gallery_thumb_size = 240
+        cfg.import_show_exif_inspector = True
+        cfg.import_sidebar_paths_expanded = False
+        cfg.import_sidebar_patterns_expanded = True
+        cfg.import_sidebar_general_expanded = True
+        cfg.window_width = 1400
+        cfg.window_height = 900
+
+        win = MainWindow()
+        win.config = cfg
+        win._load_config_to_ui()
+
+        # Check Tab 1 restored view states
+        self.assertEqual(win.filter_bar.combo_view.currentData(), "gallery")
+        self.assertEqual(win.filter_bar.slider_zoom.value(), 240)
+        self.assertTrue(win.filter_bar.btn_toggle_exif.isChecked())
+        self.assertFalse(win.box_paths.is_expanded)
+        self.assertTrue(win.box_patterns.is_expanded)
+        self.assertTrue(win.box_general.is_expanded)
+
+        # Check active tab restored
+        self.assertEqual(win.main_workflow_stack.currentIndex(), 1)
+        self.assertTrue(win.header_banner.btn_tab_culling.isChecked())
+
+    def test_culling_tab_restores_filmstrip_and_dock_state(self):
+        from gui_qt.views.culling_tab import CullingTabView
+        from core.config import AppConfig
+
+        cfg = AppConfig()
+        cfg.culling_show_filmstrip = False
+        cfg.culling_dock_tab = 1
+
+        tab = CullingTabView(config=cfg)
+        self.assertTrue(tab.filmstrip.isHidden())
+        self.assertEqual(tab.left_dock.tab_widget.currentIndex(), 1)
+
+        # Toggle filmstrip and verify config update
+        tab._toggle_filmstrip()
+        self.assertFalse(tab.filmstrip.isHidden())
+        self.assertTrue(cfg.culling_show_filmstrip)
+
+    def test_transfer_pane_restores_view_mode_and_files_toggle(self):
+        from gui_qt.views.transfer_tab import TransferPaneWidget
+        from core.config import AppConfig
+
+        cfg = AppConfig()
+        cfg.transfer_source_show_files = False
+        cfg.transfer_source_view_mode = "grid:200"
+        cfg.transfer_source_sort_key = "size"
+        cfg.transfer_source_sort_descending = True
+
+        pane = TransferPaneWidget(title="Quelle", is_source=True, config=cfg)
+        self.assertFalse(pane._show_files)
+        self.assertFalse(pane.files_container.isVisible())
+        self.assertEqual(pane.combo_view_mode.currentData(), "grid:200")
+        self.assertEqual(pane.combo_sort.currentData(), "size")
+        self.assertTrue(pane.btn_sort_dir.isChecked())
 
 
 if __name__ == "__main__":

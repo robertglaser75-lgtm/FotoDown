@@ -54,7 +54,7 @@ class CullingDirectoryTreeWidget(QWidget):
         self.default_root = default_root
         self.show_collapse_btn = show_collapse_btn
         self.root_path: Optional[Path] = None
-        self._sort_descending: bool = False
+        self._sort_descending: bool = getattr(self.config, "tree_sort_descending", False)
         self._init_ui()
         self._init_default_root()
 
@@ -101,10 +101,14 @@ class CullingDirectoryTreeWidget(QWidget):
         title_row.addWidget(self.btn_columns)
 
         self.btn_sort = QPushButton()
-        self.btn_sort.setIcon(get_sort_icon(False, "#cbd5e1", 13))
+        self.btn_sort.setIcon(get_sort_icon(self._sort_descending, "#cbd5e1", 13))
         self.btn_sort.setIconSize(QSize(13, 13))
         self.btn_sort.setFixedSize(24, 22)
-        self.btn_sort.setToolTip("Ordner-Sortierung: Aufsteigend (A–Z) – Klicken für Absteigend")
+        self.btn_sort.setToolTip(
+            "Ordner-Sortierung: Absteigend (Z–A) – Klicken für Aufsteigend"
+            if self._sort_descending
+            else "Ordner-Sortierung: Aufsteigend (A–Z) – Klicken für Absteigend"
+        )
         self.btn_sort.setStyleSheet(icon_btn_style)
         self.btn_sort.clicked.connect(self._toggle_sort_order)
         title_row.addWidget(self.btn_sort)
@@ -350,6 +354,11 @@ class CullingDirectoryTreeWidget(QWidget):
     def _toggle_sort_order(self):
         """Toggles ascending/descending directory sorting and rebuilds the tree."""
         self._sort_descending = not self._sort_descending
+        self.config.tree_sort_descending = self._sort_descending
+        try:
+            self.config.save()
+        except Exception:
+            pass
         self.btn_sort.setIcon(get_sort_icon(self._sort_descending, "#cbd5e1", 13))
         if self._sort_descending:
             self.btn_sort.setToolTip("Ordner-Sortierung: Absteigend (Z–A) – Klicken für Aufsteigend")

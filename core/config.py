@@ -130,6 +130,43 @@ class AppConfig:
     transfer_source_last_folder: str = ""
     transfer_target_last_folder: str = ""
     transfer_reconcile_method: str = "filename"  # "filename", "exif", "sha256"
+    # Fenster & Layout-Zustände (Persistente UI-Wiederherstellung)
+    window_width: int = 1280
+    window_height: int = 850
+    window_maximized: bool = False
+    window_fullscreen: bool = False
+    active_tab: int = 0  # 0: Import, 1: Sichten & Sortieren, 2: Sichern & Archivieren
+    # Tab 1: Import-Workflow Ansicht & Filter
+    import_view_mode: str = "table"  # "table", "gallery", "single", "tree"
+    import_gallery_thumb_size: int = 180
+    import_show_exif_inspector: bool = False
+    import_sidebar_paths_expanded: bool = True
+    import_sidebar_patterns_expanded: bool = False
+    import_sidebar_general_expanded: bool = False
+    import_main_splitter_sizes: List[int] = field(default_factory=lambda: [420, 860])
+    import_workspace_splitter_sizes: List[int] = field(default_factory=lambda: [900, 320])
+    # Tab 2: Sichten & Culling Ansicht
+    culling_show_filmstrip: bool = True
+    culling_dock_collapsed: bool = False
+    culling_dock_tab: int = 0  # 0: Verzeichnisse, 1: Filter
+    culling_zoom_mode: str = "fit"  # "fit", "100"
+    culling_splitter_sizes: List[int] = field(default_factory=lambda: [300, 360, 900])
+    # Tab 3: Sichern & Archivieren (Transfer-Workflow)
+    transfer_source_show_files: bool = True
+    transfer_target_show_files: bool = True
+    transfer_source_view_mode: str = "list"  # "list", "grid:80", "grid:140", "grid:200"
+    transfer_target_view_mode: str = "list"
+    transfer_source_sort_key: str = "name"
+    transfer_target_sort_key: str = "name"
+    transfer_source_sort_descending: bool = False
+    transfer_target_sort_descending: bool = False
+    transfer_source_tree_visible: bool = True
+    transfer_target_tree_visible: bool = True
+    transfer_source_pane_splitter_sizes: List[int] = field(default_factory=lambda: [240, 400])
+    transfer_target_pane_splitter_sizes: List[int] = field(default_factory=lambda: [240, 400])
+    transfer_main_splitter_sizes: List[int] = field(default_factory=lambda: [600, 80, 600])
+    # Verzeichnisbäume Sortierung
+    tree_sort_descending: bool = False
     # Verzeichnisbaum Spalten-Optionen
     tree_show_col_bilder: bool = True
     tree_show_col_raw: bool = True

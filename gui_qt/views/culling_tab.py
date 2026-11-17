@@ -809,8 +809,9 @@ class CullingTabView(QWidget):
 
         strip_layout.addStretch()
 
-        self.btn_toggle_filmstrip = QPushButton("Filmstreifen ausblenden [T]")
-        self.btn_toggle_filmstrip.setIcon(get_filmstrip_icon("#94a3b8", 14))
+        is_strip_vis = getattr(self.config, "culling_show_filmstrip", True)
+        self.btn_toggle_filmstrip = QPushButton("Filmstreifen ausblenden [T]" if is_strip_vis else "Filmstreifen einblenden [T]")
+        self.btn_toggle_filmstrip.setIcon(get_filmstrip_icon("#38bdf8" if is_strip_vis else "#94a3b8", 14))
         self.btn_toggle_filmstrip.setIconSize(QSize(14, 14))
         self.btn_toggle_filmstrip.setStyleSheet("""
             QPushButton {
@@ -831,13 +832,17 @@ class CullingTabView(QWidget):
 
         # Filmstrip Bar: Docked at bottom (can be collapsed with T)
         self.filmstrip = FilmstripBar(self)
+        self.filmstrip.setVisible(is_strip_vis)
         self.filmstrip.item_clicked.connect(self._on_filmstrip_item_clicked)
         workspace_layout.addWidget(self.filmstrip)
 
         self.splitter.addWidget(workspace_container)
 
         # Splitter sizing: Directory tree ~280px, Controls ~320px, Right canvas gets rest
-        self.splitter.setSizes([280, 320, 1800])
+        if getattr(self.config, "culling_splitter_sizes", None) and len(self.config.culling_splitter_sizes) == 3:
+            self.splitter.setSizes(self.config.culling_splitter_sizes)
+        else:
+            self.splitter.setSizes([280, 320, 1800])
         self.splitter.setStretchFactor(0, 0)
         self.splitter.setStretchFactor(1, 0)
         self.splitter.setStretchFactor(2, 1)
@@ -1434,6 +1439,18 @@ class CullingTabView(QWidget):
         self.filmstrip.setVisible(is_vis)
         self.btn_toggle_filmstrip.setText("Filmstreifen ausblenden [T]" if is_vis else "Filmstreifen einblenden [T]")
         self.btn_toggle_filmstrip.setIcon(get_filmstrip_icon("#38bdf8" if is_vis else "#94a3b8", 14))
+        self.config.culling_show_filmstrip = is_vis
+        try:
+            self.config.save()
+        except Exception:
+            pass
+
+    def save_state(self):
+        """Persists current UI splitter and dock sizes."""
+        if hasattr(self, "splitter") and self.splitter:
+            sizes = self.splitter.sizes()
+            if len(sizes) == 3 and not any(s == 0 for s in sizes):
+                self.config.culling_splitter_sizes = sizes
 
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()

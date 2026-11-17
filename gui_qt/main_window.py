@@ -51,7 +51,6 @@ class MainWindow(QMainWindow):
     def __init__(self, splash: Optional[FotoDownSplashScreen] = None):
         super().__init__()
         self.setWindowTitle(f"FotoDown v{__version__} - Foto-Importeur & EXIF-Manager")
-        self.resize(1280, 850)
         self.setMinimumSize(1000, 680)
 
         self._set_app_icon()
@@ -62,6 +61,9 @@ class MainWindow(QMainWindow):
         # Core logic setup
         self._is_loading_config = False
         self.config = AppConfig.load()
+        w = max(1000, getattr(self.config, "window_width", 1280))
+        h = max(680, getattr(self.config, "window_height", 850))
+        self.resize(w, h)
         self.history = ImportHistory()
         self.engine = ImporterEngine(self.history)
         self.thread_pool = QThreadPool.globalInstance()
@@ -91,6 +93,11 @@ class MainWindow(QMainWindow):
         self._connect_signals()
         self._load_config_to_ui()
         self._init_drive_watcher()
+
+        if getattr(self.config, "window_fullscreen", False):
+            self.showFullScreen()
+        elif getattr(self.config, "window_maximized", False):
+            self.showMaximized()
 
     def _set_app_icon(self):
         for icon_name in ["icon.png", "icon_64.png", "icon_256.png", "fotodown.ico", "icon.ico"]:
@@ -124,8 +131,8 @@ class MainWindow(QMainWindow):
         import_page_layout.setSpacing(0)
 
         # Main Horizontal Splitter (Sidebar left, Workspace right)
-        main_splitter = QSplitter(Qt.Orientation.Horizontal)
-        main_splitter.setChildrenCollapsible(False)
+        self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.main_splitter.setChildrenCollapsible(False)
 
         # Left Sidebar (Fixed Profile Bar at top, Scrollable Settings in middle, Fixed Action Bar at bottom)
         sidebar_container = QWidget()
@@ -176,7 +183,7 @@ class MainWindow(QMainWindow):
         self.action_bar = ActionBarWidget()
         sidebar_layout.addWidget(self.action_bar)
 
-        main_splitter.addWidget(sidebar_container)
+        self.main_splitter.addWidget(sidebar_container)
 
         # Right Section: Media Workspace (Filters + Views + EXIF Side Inspector)
         workspace_container = QWidget()
@@ -229,14 +236,14 @@ class MainWindow(QMainWindow):
         self.workspace_splitter.setStretchFactor(1, 0)
 
         workspace_layout.addWidget(self.workspace_splitter, 1)
-        main_splitter.addWidget(workspace_container)
+        self.main_splitter.addWidget(workspace_container)
 
         # Splitter sizing: Left sidebar ~420px, Right workspace gets rest
-        main_splitter.setSizes([420, 860])
-        main_splitter.setStretchFactor(0, 0)
-        main_splitter.setStretchFactor(1, 1)
+        self.main_splitter.setSizes([420, 860])
+        self.main_splitter.setStretchFactor(0, 0)
+        self.main_splitter.setStretchFactor(1, 1)
 
-        import_page_layout.addWidget(main_splitter)
+        import_page_layout.addWidget(self.main_splitter)
         self.main_workflow_stack.addWidget(self.import_page_widget)
 
         # Page 1: Culling & Review Workflow (Tab 2)
@@ -289,6 +296,11 @@ class MainWindow(QMainWindow):
         self.pattern_editor.changed.connect(self._on_settings_changed)
         self.general_settings.changed.connect(self._on_settings_changed)
 
+        # Collapsible boxes persistence
+        self.box_paths.toggled.connect(lambda exp: self._save_box_state("import_sidebar_paths_expanded", exp))
+        self.box_patterns.toggled.connect(lambda exp: self._save_box_state("import_sidebar_patterns_expanded", exp))
+        self.box_general.toggled.connect(lambda exp: self._save_box_state("import_sidebar_general_expanded", exp))
+
         # Actions
         self.action_bar.scan_clicked.connect(self._start_scan)
         self.action_bar.import_clicked.connect(self._start_import)
@@ -299,7 +311,7 @@ class MainWindow(QMainWindow):
         self.filter_bar.status_filter_changed.connect(self.proxy_model.set_status_filter)
         self.filter_bar.type_filter_changed.connect(self.proxy_model.set_type_filter)
         self.filter_bar.search_changed.connect(self.proxy_model.set_search_term)
-        self.filter_bar.thumbnail_size_changed.connect(self.gallery_view.set_thumbnail_size)
+        self.filter_bar.thumbnail_size_changed.connect(self._on_gallery_thumbnail_size_changed)
         self.filter_bar.toggle_exif_panel.connect(self._toggle_exif_inspector)
         self.exif_inspector.close_requested.connect(lambda: self.filter_bar.btn_toggle_exif.setChecked(False))
 
@@ -347,6 +359,12 @@ class MainWindow(QMainWindow):
 
     def _on_main_tab_changed(self, tab_idx: int):
         self.main_workflow_stack.setCurrentIndex(tab_idx)
+        if not getattr(self, "_is_loading_config", False):
+            self.config.active_tab = tab_idx
+            try:
+                self.config.save()
+            except Exception:
+                pass
         if tab_idx == 1:
             # Switching to Culling tab: if no folder loaded yet, load target_dir or last folder
             if not self.culling_tab_view.current_folder:
@@ -484,6 +502,33 @@ class MainWindow(QMainWindow):
             self.pattern_editor.load_config(self.config)
             self.general_settings.load_config(self.config)
             self.pattern_editor.update_preview(self.config.type_folder_organization)
+
+            # Sidebar collapsible boxes state
+            self.box_paths.set_expanded(getattr(self.config, "import_sidebar_paths_expanded", True))
+            self.box_patterns.set_expanded(getattr(self.config, "import_sidebar_patterns_expanded", False))
+            self.box_general.set_expanded(getattr(self.config, "import_sidebar_general_expanded", False))
+
+            # Splitters
+            saved_main = getattr(self.config, "import_main_splitter_sizes", None)
+            if saved_main and len(saved_main) == 2 and not any(s == 0 for s in saved_main):
+                self.main_splitter.setSizes(saved_main)
+            saved_ws = getattr(self.config, "import_workspace_splitter_sizes", None)
+            if saved_ws and len(saved_ws) == 2 and not any(s == 0 for s in saved_ws):
+                self.workspace_splitter.setSizes(saved_ws)
+
+            # View mode & EXIF inspector & gallery zoom
+            self.filter_bar.set_view_mode(getattr(self.config, "import_view_mode", "table"))
+            saved_zoom = getattr(self.config, "import_gallery_thumb_size", 180)
+            self.filter_bar.slider_zoom.setValue(saved_zoom)
+            self.gallery_view.set_thumbnail_size(saved_zoom)
+            show_exif = getattr(self.config, "import_show_exif_inspector", False)
+            self.filter_bar.btn_toggle_exif.setChecked(show_exif)
+            self.exif_inspector.setVisible(show_exif)
+
+            # Restore active workflow tab (0: Import, 1: Culling, 2: Transfer)
+            saved_tab = getattr(self.config, "active_tab", 0)
+            if saved_tab in (1, 2):
+                self.header_banner.switch_tab(saved_tab)
         finally:
             self._is_loading_config = False
 
@@ -530,11 +575,42 @@ class MainWindow(QMainWindow):
         else:
             self.view_stack.setCurrentWidget(self.table_view)
 
+    def _save_box_state(self, key: str, exp: bool):
+        if getattr(self, "_is_loading_config", False):
+            return
+        setattr(self.config, key, exp)
+        try:
+            self.config.save()
+        except Exception:
+            pass
+
+    def _on_gallery_thumbnail_size_changed(self, size: int):
+        self.gallery_view.set_thumbnail_size(size)
+        if getattr(self, "_is_loading_config", False):
+            return
+        self.config.import_gallery_thumb_size = size
+        try:
+            self.config.save()
+        except Exception:
+            pass
+
     def _on_view_mode_changed(self, mode: str):
+        if not getattr(self, "_is_loading_config", False):
+            self.config.import_view_mode = mode
+            try:
+                self.config.save()
+            except Exception:
+                pass
         self._update_view_selection()
 
     def _toggle_exif_inspector(self, show: bool):
         self.exif_inspector.setVisible(show)
+        if not getattr(self, "_is_loading_config", False):
+            self.config.import_show_exif_inspector = show
+            try:
+                self.config.save()
+            except Exception:
+                pass
         if show and not self.exif_inspector._current_item:
             items = self.table_model.get_items()
             if items:
@@ -763,5 +839,33 @@ class MainWindow(QMainWindow):
         if self._drive_watcher and self._drive_watcher.isRunning():
             self._drive_watcher.stop()
             self._drive_watcher.wait(1000)
+
+        # Persist window geometry
+        self.config.window_fullscreen = self.isFullScreen()
+        self.config.window_maximized = self.isMaximized()
+        if not self.isMaximized() and not self.isFullScreen():
+            self.config.window_width = self.width()
+            self.config.window_height = self.height()
+
+        # Persist splitters
+        if hasattr(self, "main_splitter") and self.main_splitter:
+            sizes = self.main_splitter.sizes()
+            if len(sizes) == 2 and not any(s == 0 for s in sizes):
+                self.config.import_main_splitter_sizes = sizes
+        if hasattr(self, "workspace_splitter") and self.workspace_splitter:
+            sizes = self.workspace_splitter.sizes()
+            if len(sizes) == 2 and not any(s == 0 for s in sizes):
+                self.config.import_workspace_splitter_sizes = sizes
+
+        # Persist tabs state
+        if hasattr(self, "culling_tab_view") and self.culling_tab_view:
+            self.culling_tab_view.save_state()
+        if hasattr(self, "transfer_tab_view") and self.transfer_tab_view:
+            self.transfer_tab_view.save_state()
+
         self._on_settings_changed()
+        try:
+            self.config.save()
+        except Exception:
+            pass
         event.accept()

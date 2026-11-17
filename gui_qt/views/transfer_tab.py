@@ -361,7 +361,7 @@ class TransferPaneWidget(QWidget):
         self.combo_sort.addItem("Größe", "size")
         self.combo_sort.addItem("Dateityp", "type")
         self.combo_sort.addItem("Bewertung", "rating")
-        self.combo_sort.currentIndexChanged.connect(self.apply_filter)
+        self.combo_sort.currentIndexChanged.connect(self._on_sort_key_changed)
         f_row2.addWidget(self.combo_sort)
 
         self.btn_sort_dir = QPushButton()
@@ -445,8 +445,50 @@ class TransferPaneWidget(QWidget):
         content_layout.addWidget(self.view_stack, 1)
         self.pane_splitter.addWidget(self.files_container)
 
+        # Restore show_files
+        self._show_files = getattr(self.config, "transfer_source_show_files" if self.is_source else "transfer_target_show_files", True)
+        self.btn_toggle_files.setChecked(self._show_files)
+        if not self._show_files:
+            self.files_container.setVisible(False)
+
+        # Restore tree visibility
+        tree_vis = getattr(self.config, "transfer_source_tree_visible" if self.is_source else "transfer_target_tree_visible", True)
+        self.tree_widget.setVisible(tree_vis)
+        self.btn_toggle_tree.setChecked(tree_vis)
+
+        # Restore sort key
+        saved_sort = getattr(self.config, "transfer_source_sort_key" if self.is_source else "transfer_target_sort_key", "name")
+        idx = self.combo_sort.findData(saved_sort)
+        if idx >= 0:
+            self.combo_sort.blockSignals(True)
+            self.combo_sort.setCurrentIndex(idx)
+            self.combo_sort.blockSignals(False)
+
+        # Restore sort direction
+        saved_sort_desc = getattr(self.config, "transfer_source_sort_descending" if self.is_source else "transfer_target_sort_descending", False)
+        self.btn_sort_dir.setChecked(saved_sort_desc)
+        self.btn_sort_dir.setIcon(get_sort_icon(saved_sort_desc, "#ffffff" if saved_sort_desc else "#cbd5e1", 13))
+
+        # Restore view mode
+        saved_vm = getattr(self.config, "transfer_source_view_mode" if self.is_source else "transfer_target_view_mode", "list")
+        vm_idx = self.combo_view_mode.findData(saved_vm)
+        if vm_idx >= 0:
+            self.combo_view_mode.blockSignals(True)
+            self.combo_view_mode.setCurrentIndex(vm_idx)
+            self.combo_view_mode.blockSignals(False)
+            mode, size = self._parse_view_mode_key(saved_vm)
+            if mode == "list":
+                self.view_stack.setCurrentIndex(0)
+            else:
+                self._update_grid_item_size(size)
+                self.view_stack.setCurrentIndex(1)
+
         # Splitter sizing: Left = ~190px tree on left side, Right = photo content gets remaining space
-        self.pane_splitter.setSizes([190, 420])
+        saved_pane_sizes = getattr(self.config, "transfer_source_pane_splitter_sizes" if self.is_source else "transfer_target_pane_splitter_sizes", None)
+        if saved_pane_sizes and len(saved_pane_sizes) == 2 and not any(s == 0 for s in saved_pane_sizes):
+            self.pane_splitter.setSizes(saved_pane_sizes)
+        else:
+            self.pane_splitter.setSizes([190, 420])
         self.pane_splitter.setStretchFactor(0, 0)
         self.pane_splitter.setStretchFactor(1, 1)
 
@@ -482,6 +524,13 @@ class TransferPaneWidget(QWidget):
             else:
                 self.pane_splitter.setSizes([total_w, 0])
 
+        cfg_key = "transfer_source_tree_visible" if self.is_source else "transfer_target_tree_visible"
+        setattr(self.config, cfg_key, bool(visible))
+        try:
+            self.config.save()
+        except Exception:
+            pass
+
     def _toggle_tree_visibility(self):
         """Toggles tree view visibility via collapse button in tree header."""
         sizes = self.pane_splitter.sizes()
@@ -511,6 +560,13 @@ class TransferPaneWidget(QWidget):
                 self.pane_splitter.setSizes([0, total_w])
             self.refresh(force_scan=True)
 
+        cfg_key = "transfer_source_show_files" if self.is_source else "transfer_target_show_files"
+        setattr(self.config, cfg_key, self._show_files)
+        try:
+            self.config.save()
+        except Exception:
+            pass
+
     def _on_toggle_files_clicked(self):
         self._set_files_visible(self.btn_toggle_files.isChecked())
 
@@ -522,6 +578,24 @@ class TransferPaneWidget(QWidget):
             self.btn_sort_dir.setToolTip("Sortierung: Absteigend (Klicken für Aufsteigend)")
         else:
             self.btn_sort_dir.setToolTip("Sortierung: Aufsteigend (Klicken für Absteigend)")
+
+        cfg_key = "transfer_source_sort_descending" if self.is_source else "transfer_target_sort_descending"
+        setattr(self.config, cfg_key, is_desc)
+        try:
+            self.config.save()
+        except Exception:
+            pass
+
+        self.apply_filter()
+
+    def _on_sort_key_changed(self):
+        """Persists the chosen sort key and applies sort order."""
+        cfg_key = "transfer_source_sort_key" if self.is_source else "transfer_target_sort_key"
+        setattr(self.config, cfg_key, self.combo_sort.currentData() or "name")
+        try:
+            self.config.save()
+        except Exception:
+            pass
         self.apply_filter()
 
     def _on_table_header_clicked(self, column: int):
@@ -753,6 +827,20 @@ class TransferPaneWidget(QWidget):
             self._update_grid_item_size(size)
             self.view_stack.setCurrentIndex(1)
             self._request_visible_thumbnails()
+
+        cfg_key = "transfer_source_view_mode" if self.is_source else "transfer_target_view_mode"
+        setattr(self.config, cfg_key, self.combo_view_mode.currentData())
+        try:
+            self.config.save()
+        except Exception:
+            pass
+
+    def save_state(self):
+        """Persists splitter sizes for this file pane."""
+        sizes = self.pane_splitter.sizes()
+        if len(sizes) == 2 and not any(s == 0 for s in sizes):
+            cfg_key = "transfer_source_pane_splitter_sizes" if self.is_source else "transfer_target_pane_splitter_sizes"
+            setattr(self.config, cfg_key, sizes)
 
     def _update_grid_item_size(self, thumb_size: int):
         self.list_grid.setIconSize(QSize(thumb_size, thumb_size))
@@ -1205,7 +1293,11 @@ class TransferTabView(QWidget):
         self.main_splitter = splitter
 
         # Sizing: Source ~45%, Center ~10%, Dest ~45%
-        splitter.setSizes([580, 156, 580])
+        saved_main_sizes = getattr(self.config, "transfer_main_splitter_sizes", None)
+        if saved_main_sizes and len(saved_main_sizes) == 3 and not any(s == 0 for s in saved_main_sizes):
+            splitter.setSizes(saved_main_sizes)
+        else:
+            splitter.setSizes([580, 156, 580])
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 0)
         splitter.setStretchFactor(2, 1)
@@ -1216,6 +1308,15 @@ class TransferTabView(QWidget):
         self.pane_source.selection_changed.connect(self._update_action_states)
         self.pane_dest.selection_changed.connect(self._update_action_states)
         self._update_action_states()
+
+    def save_state(self):
+        """Persists all subpane states and main transfer splitter sizes."""
+        self.pane_source.save_state()
+        self.pane_dest.save_state()
+        if hasattr(self, "main_splitter") and self.main_splitter:
+            sizes = self.main_splitter.sizes()
+            if len(sizes) == 3 and not any(s == 0 for s in sizes):
+                self.config.transfer_main_splitter_sizes = sizes
 
     def refresh_defaults(self):
         """Loads default directories from configuration if not yet loaded."""
