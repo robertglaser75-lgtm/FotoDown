@@ -533,38 +533,53 @@ class CullingDirectoryTreeWidget(QWidget):
                     self.tree_view.expand(child_idx)
 
     def select_folder(self, folder: Path) -> bool:
-        """Finds and highlights the specified folder in the tree if present."""
-        if not folder or not folder.exists():
+        """Finds and highlights the specified folder in the tree if present under root_path."""
+        if not folder or not folder.exists() or not self.root_path:
             return False
 
-        target_str = str(folder.resolve()).lower()
+        try:
+            folder_res = folder.resolve()
+            root_res = self.root_path.resolve()
+            rel = folder_res.relative_to(root_res)
+        except (ValueError, Exception):
+            return False
 
-        def search_node(item: QStandardItem) -> Optional[QStandardItem]:
-            val = item.data(Qt.ItemDataRole.UserRole)
-            if val and Path(val).resolve() == folder.resolve():
-                return item
-            # Ensure children are loaded
-            idx = self.model.indexFromItem(item)
-            if item.rowCount() == 1 and item.child(0, 0) and item.child(0, 0).text() == DUMMY_ITEM_TEXT:
+        if self.model.rowCount() == 0:
+            return False
+
+        current_item = self.model.item(0, 0)
+        if not current_item:
+            return False
+
+        if rel == Path("."):
+            idx = self.model.indexFromItem(current_item)
+            self.tree_view.setCurrentIndex(idx)
+            self.tree_view.scrollTo(idx)
+            return True
+
+        parts = rel.parts
+        for part in parts:
+            idx = self.model.indexFromItem(current_item)
+            if current_item.rowCount() == 1 and current_item.child(0, 0) and current_item.child(0, 0).text() == DUMMY_ITEM_TEXT:
                 self._on_node_expanded(idx)
 
-            for r in range(item.rowCount()):
-                child = item.child(r, 0)
+            matched_child = None
+            for r in range(current_item.rowCount()):
+                child = current_item.child(r, 0)
                 if child:
-                    found = search_node(child)
-                    if found:
-                        return found
-            return None
+                    child_path_str = child.data(Qt.ItemDataRole.UserRole)
+                    if child_path_str and Path(child_path_str).name.lower() == part.lower():
+                        matched_child = child
+                        break
 
-        if self.model.rowCount() > 0:
-            root_item = self.model.item(0, 0)
-            target_item = search_node(root_item)
-            if target_item:
-                idx = self.model.indexFromItem(target_item)
-                self.tree_view.setCurrentIndex(idx)
-                self.tree_view.scrollTo(idx)
-                return True
-        return False
+            if not matched_child:
+                return False
+            current_item = matched_child
+
+        idx = self.model.indexFromItem(current_item)
+        self.tree_view.setCurrentIndex(idx)
+        self.tree_view.scrollTo(idx)
+        return True
 
     def _on_context_menu(self, pos):
         """Right-click context menu on a folder."""

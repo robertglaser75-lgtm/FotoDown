@@ -3,6 +3,15 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.11] - 2026-11-17
+
+### Behoben
+- **Gezielte Pfad-Traversierung in `CullingDirectoryTreeWidget.select_folder` (`culling_tree.py`):**
+  - Vor der Traversierung wird geprüft, ob der Zielordner innerhalb des Baum-Wurzelverzeichnisses (`root_path`) liegt.
+  - Anstelle eines rekursiven Komplettscans aller Verzeichnisse des gesamten Dateisystems werden nur die Pfadkomponenten des Zielordners schrittweise expandiert. Dies verhindert Speicherüberläufe und extreme Laufzeiten.
+- **Vermeidung von verwaisten Prozessen im Headless-Modus (`quick_preview_dialog.py`):**
+  - Öffnen von Originaldateien via `QDesktopServices.openUrl` wird während Headless-Tests (`FOTODOWN_HEADLESS_TEST`) unterdrückt, sodass keine externen Viewer (`xdg-open`, `vim`) im CI-Runner gestartet werden.
+
 ## [0.32.10] - 2026-11-17
 
 ### Behoben

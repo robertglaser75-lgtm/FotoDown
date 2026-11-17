@@ -1,5 +1,6 @@
 """Quick Look / Fullscreen Preview Dialog with keyboard navigation and EXIF inspector."""
 
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -300,12 +301,13 @@ class QuickPreviewDialog(QDialog):
 
     def _open_original_external(self, target_path: Path):
         """Automatically opens the original file with the system default viewer."""
-        from PySide6.QtCore import QUrl
-        from PySide6.QtGui import QDesktopServices
-        try:
-            QDesktopServices.openUrl(QUrl.fromLocalFile(str(target_path.resolve())))
-        except Exception:
-            pass
+        if not os.environ.get("FOTODOWN_HEADLESS_TEST"):
+            from PySide6.QtCore import QUrl
+            from PySide6.QtGui import QDesktopServices
+            try:
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(target_path.resolve())))
+            except Exception:
+                pass
 
         self.lbl_image.setText(
             f"<div style='text-align: center; padding: 24px;'>"
@@ -324,7 +326,7 @@ class QuickPreviewDialog(QDialog):
             return
         info = self._extract_item_info(self.items[self.current_idx])
         p = info.get("target_path")
-        if p and p.exists():
+        if p and p.exists() and not os.environ.get("FOTODOWN_HEADLESS_TEST"):
             from PySide6.QtCore import QUrl
             from PySide6.QtGui import QDesktopServices
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(p.resolve())))
