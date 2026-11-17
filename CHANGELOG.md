@@ -3,6 +3,12 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.7] - 2026-11-17
+
+### Behoben
+- **Fehlender `Set`-Typimport in `culling_model.py` behoben:**
+  - `Set` in `from typing import ...` sowie `from __future__ import annotations` in [`gui_qt/models/culling_model.py`](gui_qt/models/culling_model.py) ergänzt. Dies behebt den `NameError: name 'Set' is not defined` unter Python 3.11 auf den GitHub Actions CI-Runnern.
+
 ## [0.32.6] - 2026-11-17
 
 ### Verbessert

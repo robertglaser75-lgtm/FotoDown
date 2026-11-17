@@ -46,7 +46,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.32.6")
+        self.assertEqual(__version__, "0.32.7")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -3281,6 +3281,12 @@ class TestPackagingSuite(unittest.TestCase):
         self.assertIn("fotodown.sh", rel_paths)
         self.assertIn("requirements.txt", rel_paths)
         self.assertIn("gui/app.py", rel_paths)
+
+    def test_culling_model_import_and_type_annotations(self):
+        """Ensures culling_model imports without NameError on Python 3.11+."""
+        import gui_qt.models.culling_model as cm
+        self.assertTrue(hasattr(cm, "check_exported_file"))
+        self.assertTrue(hasattr(cm, "count_folder_images"))
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Data model and logic for the Culling & Review tab."""
 
 from dataclasses import dataclass, field
@@ -5,7 +7,7 @@ from datetime import datetime
 import os
 from pathlib import Path
 import shutil
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Set, Tuple
 from core.exif_reader import extract_metadata, MediaMetadata
 from core.thumbnail import RAW_EXTENSIONS
 from core.xmp_sync import read_xmp_metadata, read_xmp_workflow_info, sync_pair_xmp, XMPWorkflowInfo
