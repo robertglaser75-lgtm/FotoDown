@@ -3,6 +3,12 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.6] - 2026-11-17
+
+### Verbessert
+- **Detaillierte GitHub Actions Fehlerdiagnose (`.github/workflows/release.yml`):**
+  - Ausgabe des Testprotokolls bei Testfehlern direkt in das GitHub Step-Summary (`$GITHUB_STEP_SUMMARY`) integriert, um CI-Fehlschläge sofort transparent einzusehen.
+
 ## [0.32.5] - 2026-11-17
 
 ### Behoben

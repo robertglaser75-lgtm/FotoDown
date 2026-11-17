@@ -54,8 +54,17 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Test Suite
+        shell: bash
         run: |
-          xvfb-run --auto-servernum python -X faulthandler -m unittest discover -v tests
+          set -o pipefail
+          xvfb-run --auto-servernum python -X faulthandler -m unittest discover -v tests 2>&1 | tee test_output.log || {
+            TEST_EXIT=$?
+            echo "## ❌ Test Suite Failure Details" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -n 120 test_output.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $TEST_EXIT
+          }
 
       - name: Build Distribution Packages
         run: |
