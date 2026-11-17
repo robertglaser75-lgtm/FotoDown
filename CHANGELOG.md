@@ -6,6 +6,9 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 ## [0.28.0] - 2026-11-17
 
 ### Hinzugefügt & Verbessert
+- **Installations- & Verteilungspakete für Windows und Linux ([`package.py`](package.py), [`.github/workflows/release.yml`](.github/workflows/release.yml)):**
+  - Automatisches Erstellen von eigenständigen Installationsarchiven für Windows (`FotoDown-v0.28.0-Windows.zip`) und Linux (`FotoDown-v0.28.0-Linux.tar.gz`) inklusive automatischer Prüfsummenberechnung (`SHA256SUMS-v0.28.0.txt`).
+  - GitHub Actions Workflow zum automatisierten Testen, Packen und Bereitstellen als Release-Assets bei Tag-Pushs.
 - **Vollständige Persistenz aller Ansichten, Layouts und Einstellungen ([`core/config.py`](core/config.py), [`gui_qt/main_window.py`](gui_qt/main_window.py), [`gui_qt/views/culling_tab.py`](gui_qt/views/culling_tab.py), [`gui_qt/views/culling_left_dock.py`](gui_qt/views/culling_left_dock.py), [`gui_qt/views/culling_tree.py`](gui_qt/views/culling_tree.py), [`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
   - **Fensterzustand & Geometrie:** Fenstergröße (`window_width`, `window_height`), Vollbildmodus (`window_fullscreen`), Maximiert-Status (`window_maximized`) und der zuletzt aktive Haupt-Workflow-Tab (`active_tab`) werden beim Beenden gespeichert und beim nächsten Programmstart exakt wiederhergestellt.
   - **Tab 1 (Importieren):** Aktive Ansichtsart (`import_view_mode`: Tabelle, Galerie, Einzelansicht, Zielstruktur), Zoomgröße der Galerie-Kacheln (`import_gallery_thumb_size`), Ein-/Ausklappzustände der drei Seitenleisten-Abschnitte (`box_paths`, `box_patterns`, `box_general`), Splitter-Breiten und Sichtbarkeit des EXIF-Inspektors werden persistent gesichert.
