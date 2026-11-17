@@ -3,6 +3,23 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.30.0] - 2026-11-17
+
+### Hinzugefügt & Verbessert
+- **Versionsübergreifende Einstellungsübernahme & Konfigurations-Migration ([`core/config.py`](core/config.py)):**
+  - Automatisches Auffinden und Migrieren bestehender Konfigurationen über Versionen und Pfade hinweg (Windows `LOCALAPPDATA`, `APPDATA`, Linux XDG/Home, portable Installationsverzeichnisse und Vorversionen-Ordner).
+  - Beim Starten einer neuen Programmversion bleiben alle bisherigen individuellen Einstellungen, Pfade, Namensmuster und Ansichten vollständig erhalten; neu hinzugekommene Einstellungsoptionen werden nahtlos mit Standardwerten ergänzt.
+  - Versions-Tracking (`last_known_version`) speichert die jeweils aktive Version in `config.json`.
+- **Automatisches Öffnen der Originaldatei bei fehlender interner Vorschau ([`gui_qt/dialogs/quick_preview_dialog.py`](gui_qt/dialogs/quick_preview_dialog.py)):**
+  - Kann für eine Datei in der Vollbilddarstellung keine interne Vorschau erzeugt werden (z. B. bei bestimmten RAW-Formaten oder Videos), wird die Originaldatei nun automatisch im Standardprogramm des Betriebssystems geöffnet.
+  - Neuer Button *„📂 Original öffnen“* im Vorschaufenster erlaubt jederzeit das direkte Öffnen der Originaldatei im externen Editor / Bildbetrachter.
+- **Batch-Umbenennungsfunktion in „Sichern und Archivieren“ ([`gui_qt/dialogs/rename_dialog.py`](gui_qt/dialogs/rename_dialog.py), [`gui_qt/views/transfer_tab.py`](gui_qt/views/transfer_tab.py)):**
+  - Neue Schaltfläche *„🏷️ Umbenennen“* in beiden Seiten (Quelle und Ziel/NAS) von Tab 3.
+  - Übernimmt alle markierten Dateien in den neuen Dialog [`BatchRenameDialog`](gui_qt/dialogs/rename_dialog.py).
+  - Volle Konfiguration wie im Importieren-Tab: Dateinamen-Muster mit klickbaren Platzhaltern (`{YYYY}`, `{MM}`, `{DD}`, `{hh}`, `{mm}`, `{ss}`, `{camera}`, `{orig_name}`, `{num:04d}`, `{ext}`) und Startnummer.
+  - Interaktive Live-Vorschautabelle mit Status aller umzubenennenden Dateien.
+  - Synchrones Umbenennen von Begleitdateien (RAW/JPG-Paare und `.xmp`-Sidecars) sowie integrierter Kollisionsschutz (`_1`, `_2`).
+
 ## [0.29.0] - 2026-11-17
 
 ### Hinzugefügt & Verbessert

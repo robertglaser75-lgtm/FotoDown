@@ -355,6 +355,18 @@ class TransferPaneWidget(QWidget):
         self.lbl_sel_count.setStyleSheet("color: #94a3b8; font-size: 10px;")
         f_row2.addWidget(self.lbl_sel_count, 1)
 
+        self.btn_rename = QPushButton("🏷️ Umbenennen")
+        self.btn_rename.setToolTip("Alle markierten Dateien nach Muster umbenennen (wie beim Import)")
+        self.btn_rename.setStyleSheet("""
+            QPushButton {
+                background-color: #1e293b; border: 1px solid #334155;
+                border-radius: 3px; padding: 2px 6px; font-size: 10px; color: #38bdf8; font-weight: 600;
+            }
+            QPushButton:hover { background-color: #0284c7; color: white; border-color: #38bdf8; }
+        """)
+        self.btn_rename.clicked.connect(self._open_rename_dialog)
+        f_row2.addWidget(self.btn_rename)
+
         self.combo_sort = QComboBox()
         self.combo_sort.setToolTip("Sortierkriterium wählen")
         self.combo_sort.addItem("Name", "name")
@@ -1017,6 +1029,55 @@ class TransferPaneWidget(QWidget):
         self._populate_views()
         self._update_selection_counter()
         self.selection_changed.emit()
+
+    def _open_rename_dialog(self):
+        """Opens batch rename dialog for all marked files in this pane."""
+        if not self.current_folder:
+            QMessageBox.information(
+                self,
+                "Kein Ordner gewählt",
+                "Bitte wählen Sie zuerst einen Ordner im Verzeichnisbaum aus."
+            )
+            return
+
+        marked_items = [it for it in self.filtered_items if str(it.path) in self._checked_paths]
+        if not marked_items:
+            # Check if any item is currently selected in table/grid to suggest it
+            if self.view_stack.currentIndex() == 0 and self.table_view.selectionModel():
+                sel = self.table_view.selectionModel().selectedRows()
+                if sel:
+                    r = sel[0].row()
+                    if 0 <= r < len(self.filtered_items):
+                        marked_items = [self.filtered_items[r]]
+            elif self.view_stack.currentIndex() == 1:
+                sel_items = self.list_grid.selectedItems()
+                if sel_items:
+                    r = self.list_grid.row(sel_items[0])
+                    if 0 <= r < len(self.filtered_items):
+                        marked_items = [self.filtered_items[r]]
+
+        if not marked_items:
+            QMessageBox.information(
+                self,
+                "Keine Dateien markiert",
+                "Bitte markieren Sie mit den Checkboxen mindestens eine Datei, die Sie umbenennen möchten."
+            )
+            return
+
+        from gui_qt.dialogs.rename_dialog import BatchRenameDialog
+        dlg = BatchRenameDialog(
+            items=marked_items,
+            folder_path=self.current_folder,
+            config=self.config,
+            parent=self
+        )
+        if dlg.exec():
+            if dlg.renamed_paths:
+                for it in marked_items:
+                    self._checked_paths.discard(str(it.path))
+                for new_p in dlg.renamed_paths:
+                    self._checked_paths.add(str(new_p))
+            self.refresh()
 
     def _sync_check_to_grid(self, path_str: str, state: Qt.CheckState):
         self.list_grid.blockSignals(True)

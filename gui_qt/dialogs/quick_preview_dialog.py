@@ -70,6 +70,12 @@ class QuickPreviewDialog(QDialog):
         self.btn_next.clicked.connect(self._next_item)
         header.addWidget(self.btn_next)
 
+        self.btn_open_orig = QPushButton("📂 Original öffnen")
+        self.btn_open_orig.setObjectName("secondaryBtn")
+        self.btn_open_orig.setToolTip("Öffnet die Originaldatei im Standardprogramm des Betriebssystems")
+        self.btn_open_orig.clicked.connect(self._open_current_original)
+        header.addWidget(self.btn_open_orig)
+
         btn_close = QPushButton("✕ Schließen")
         btn_close.setObjectName("secondaryBtn")
         btn_close.clicked.connect(self.accept)
@@ -264,7 +270,17 @@ class QuickPreviewDialog(QDialog):
             self.lbl_image.setStyleSheet("color: #64748b; font-size: 16px;")
             return
 
+        # 1. Try high-resolution preview extractor (embedded JPEG in RAW or fast scaling up to 4K)
         pil_img = load_preview_image(target_path, max_dim=3840)
+
+        # 2. Fallback: try opening full native image directly with PIL
+        if pil_img is None:
+            try:
+                with Image.open(target_path) as full_img:
+                    pil_img = ImageOps.exif_transpose(full_img).copy()
+            except Exception:
+                pil_img = None
+
         if pil_img:
             try:
                 if pil_img.mode != "RGB":
@@ -277,10 +293,40 @@ class QuickPreviewDialog(QDialog):
             except Exception:
                 pass
 
-        # Fallback placeholder
+        # 3. If no high-res preview can be generated: automatically open the original file with system viewer
         self._current_pixmap = None
-        self.lbl_image.setText("\U0001F5BC Keine hochauflösende Vorschau verfügbar")
-        self.lbl_image.setStyleSheet("color: #64748b; font-size: 16px;")
+        self._open_original_external(target_path)
+
+    def _open_original_external(self, target_path: Path):
+        """Automatically opens the original file with the system default viewer."""
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+        try:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(target_path.resolve())))
+        except Exception:
+            pass
+
+        self.lbl_image.setText(
+            f"<div style='text-align: center; padding: 24px;'>"
+            f"<div style='font-size: 42px; margin-bottom: 12px;'>📂</div>"
+            f"<div style='color: #38bdf8; font-size: 16px; font-weight: bold;'>Originaldatei im Standardprogramm geöffnet</div>"
+            f"<div style='color: #e2e8f0; font-size: 13px; margin-top: 6px;'>{target_path.name}</div>"
+            f"<div style='color: #94a3b8; font-size: 11px; margin-top: 10px;'>"
+            f"Keine interne Vorschau verfügbar. Das Original wurde extern geöffnet.</div>"
+            f"</div>"
+        )
+        self.lbl_image.setStyleSheet("background: transparent;")
+
+    def _open_current_original(self):
+        """Opens the original file of the currently displayed item."""
+        if not self.items or not (0 <= self.current_idx < len(self.items)):
+            return
+        info = self._extract_item_info(self.items[self.current_idx])
+        p = info.get("target_path")
+        if p and p.exists():
+            from PySide6.QtCore import QUrl
+            from PySide6.QtGui import QDesktopServices
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(p.resolve())))
 
     def _scale_preview(self):
         if not self._current_pixmap or self._current_pixmap.isNull():

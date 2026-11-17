@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.29.0")
+        self.assertEqual(__version__, "0.30.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -3033,6 +3033,87 @@ class TestAllSettingsPersistence(unittest.TestCase):
         sv.mouseDoubleClickEvent(event)
         self.assertEqual(len(emitted), 1)
         self.assertEqual(emitted[0].source_path.name, "IMG_0001.JPG")
+
+    def test_config_candidates_and_version_tracking(self):
+        from core.config import AppConfig
+        from core.version import __version__
+
+        candidates = AppConfig.get_candidate_config_paths()
+        self.assertGreater(len(candidates), 0)
+        self.assertIn(AppConfig.get_default_config_path(), candidates)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cfg_path = Path(tmpdir) / "old_config.json"
+            cfg = AppConfig()
+            cfg.culling_root_folder = "/custom/photos"
+            cfg.file_pattern = "{YYYY}_custom_{orig_name}"
+            cfg.save(old_cfg_path)
+
+            loaded = AppConfig.load(old_cfg_path)
+            self.assertEqual(loaded.culling_root_folder, "/custom/photos")
+            self.assertEqual(loaded.file_pattern, "{YYYY}_custom_{orig_name}")
+            self.assertEqual(loaded.last_known_version, __version__)
+
+    def test_quick_preview_opens_original_when_no_preview(self):
+        from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "video_clip.mp4"
+            test_file.write_bytes(b"dummy video data")
+
+            opened = []
+            dlg = QuickPreviewDialog(items=[test_file], start_index=0, fullscreen=False)
+            # Patch _open_original_external to verify it is called for unrenderable video
+            dlg._open_original_external = lambda p: opened.append(p)
+            dlg._load_image_preview(test_file)
+            self.assertEqual(len(opened), 1)
+            self.assertEqual(opened[0].name, "video_clip.mp4")
+            dlg.close()
+
+    def test_batch_rename_dialog_plan_and_execution(self):
+        from gui_qt.dialogs.rename_dialog import BatchRenameDialog
+        from gui_qt.views.transfer_tab import TransferItem
+        from core.config import AppConfig
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            dir_path = Path(tmpdir)
+            f1 = dir_path / "DSC_0010.JPG"
+            f1.write_bytes(b"image data 1")
+            sc1 = dir_path / "DSC_0010.xmp"
+            sc1.write_bytes(b"xmp sidecar")
+            f2 = dir_path / "DSC_0011.JPG"
+            f2.write_bytes(b"image data 2")
+
+            item1 = TransferItem.from_path(f1)
+            item2 = TransferItem.from_path(f2)
+
+            cfg = AppConfig()
+            cfg.rename_file_pattern = "Test_{num:02d}_{orig_name}"
+
+            dlg = BatchRenameDialog(
+                items=[item1, item2],
+                folder_path=dir_path,
+                config=cfg
+            )
+            dlg.edit_pattern.setText("Pic_{num:02d}_{orig_name}")
+            dlg.spin_start_num.setValue(1)
+
+            plan = dlg._calculate_plan()
+            self.assertEqual(len(plan), 2)
+            self.assertEqual(plan[0].new_filename, "Pic_01_DSC_0010.JPG")
+            self.assertEqual(plan[1].new_filename, "Pic_02_DSC_0011.JPG")
+            self.assertEqual(len(plan[0].companions), 1)  # XMP companion detected
+
+            # Execute rename
+            dlg._execute_rename()
+
+            self.assertTrue((dir_path / "Pic_01_DSC_0010.JPG").exists())
+            self.assertTrue((dir_path / "Pic_01_DSC_0010.xmp").exists())
+            self.assertTrue((dir_path / "Pic_02_DSC_0011.JPG").exists())
+            self.assertFalse(f1.exists())
+            self.assertFalse(sc1.exists())
+            self.assertFalse(f2.exists())
+            dlg.close()
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ Lauffähig unter **Windows** und **Linux**.
     - Frei wählbare **Sortierreihenfolge** für Dateien (*Name*, *Datum*, *Größe*, *Dateityp*, *Bewertung*) sowie Auf-/Absteigend-Umschaltung – synchron für Listen- und Kachelansicht (inkl. Spaltenklick in der Tabelle) sowie Auf-/Absteigend-Sortierung im Verzeichnisbaum.
     - **Anzeigearten über kompakte Dropdown-Liste konfigurierbar:** Einfacher Wechsel zwischen *Liste* und *Vorschau: Klein (80px) / Mittel (140px) / Groß (200px)* ohne überladene Button-Leisten.
     - Platzsparende Icon-Werkzeuge für *Alle markieren*, *Keine*, *Invertieren* sowie Checkboxen mit Live-Zähler.
+    - 🏷️ **Batch-Umbenennung auf beiden Seiten:** Markierte Dateien direkt in Quelle oder Ziel nach konfigurierbarem Namensmuster mit EXIF-Platzhaltern, Live-Vorschautabelle, Begleitdatei-Synchronisation und Kollisionsschutz umbenennen.
   - **Begleitdatei-Integrität & Sicherheit:**
     - Überträgt automatisch alle zugehörigen `.xmp`-Sidecars mit.
     - Sicheres Verschieben: Quelldateien werden erst nach verifizierter erfolgreicher Übertragung am Ziel gelöscht.

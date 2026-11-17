@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field, asdict
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -183,6 +184,9 @@ class AppConfig:
     # Tastatur & Weiterschalten von Bildern
     navigation_scheme: str = "arrows_ad"        # "arrows", "arrows_ad", "arrows_all", "ad_only", "page_keys", "all"
     navigation_enable_mouse_wheel: bool = False
+    # Versions-Tracking & Umbenennungs-Muster
+    last_known_version: str = ""
+    rename_file_pattern: str = "{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}_{camera}_{orig_name}"
 
     def apply_profile(self, name: str) -> bool:
         """Applies configuration settings from a profile by name."""
@@ -237,14 +241,76 @@ class AppConfig:
         if appdata:
             config_dir = Path(appdata) / "FotoDown"
         else:
-            config_dir = Path.home() / ".fotodown"
+            xdg = os.getenv("XDG_CONFIG_HOME")
+            if xdg:
+                config_dir = Path(xdg) / "fotodown"
+            else:
+                config_dir = Path.home() / ".config" / "fotodown"
         config_dir.mkdir(parents=True, exist_ok=True)
         return config_dir / "config.json"
 
     @classmethod
+    def get_candidate_config_paths(cls) -> List[Path]:
+        """Returns all potential configuration file locations in priority order for version migration."""
+        candidates: List[Path] = []
+        # Primary standard path
+        candidates.append(cls.get_default_config_path())
+
+        # Windows Local & Roaming
+        local_appdata = os.getenv("LOCALAPPDATA")
+        if local_appdata:
+            p = Path(local_appdata) / "FotoDown" / "config.json"
+            if p not in candidates:
+                candidates.append(p)
+        roaming_appdata = os.getenv("APPDATA")
+        if roaming_appdata:
+            p = Path(roaming_appdata) / "FotoDown" / "config.json"
+            if p not in candidates:
+                candidates.append(p)
+
+        # Linux XDG & Home
+        xdg_config = os.getenv("XDG_CONFIG_HOME")
+        if xdg_config:
+            candidates.append(Path(xdg_config) / "fotodown" / "config.json")
+            candidates.append(Path(xdg_config) / "FotoDown" / "config.json")
+        candidates.append(Path.home() / ".config" / "fotodown" / "config.json")
+        candidates.append(Path.home() / ".config" / "FotoDown" / "config.json")
+        candidates.append(Path.home() / ".fotodown" / "config.json")
+
+        # Local directory / Portable installation
+        try:
+            root_dir = Path(__file__).resolve().parent.parent
+            candidates.append(root_dir / "config.json")
+            candidates.append(root_dir / "data" / "config.json")
+            # Check parent folder for previous versions (e.g. ../FotoDown*/config.json)
+            parent_dir = root_dir.parent
+            if parent_dir.exists():
+                for sibling in parent_dir.glob("FotoDown*"):
+                    if sibling.is_dir() and sibling != root_dir:
+                        cand = sibling / "config.json"
+                        if cand.exists() and cand not in candidates:
+                            candidates.append(cand)
+        except Exception:
+            pass
+
+        return candidates
+
+    @classmethod
     def load(cls, path: Optional[Path] = None) -> "AppConfig":
-        """Loads configuration from JSON file or returns defaults."""
+        """Loads configuration from JSON file or migrates from existing version locations."""
         config_path = path or cls.get_default_config_path()
+
+        # If designated path does not exist, look for any candidate from previous versions or locations
+        if not config_path.exists():
+            for cand in cls.get_candidate_config_paths():
+                if cand.exists() and cand != config_path:
+                    try:
+                        config_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(cand, config_path)
+                        break
+                    except Exception:
+                        pass
+
         if config_path.exists():
             try:
                 with open(config_path, "r", encoding="utf-8") as f:
@@ -271,12 +337,29 @@ class AppConfig:
 
                 if cfg.active_profile not in cfg.profiles:
                     cfg.active_profile = "Standard" if "Standard" in cfg.profiles else next(iter(cfg.profiles.keys()))
-                cfg.apply_profile(cfg.active_profile)
+
+                # Preserve explicitly customized fields from data without unconditional overwrite
+                for k in (
+                    "file_pattern", "folder_pattern", "type_folder_organization",
+                    "only_new_files", "verify_checksums", "pair_raw_jpg", "sync_xmp_sidecars",
+                    "separate_video_dir", "enable_dual_backup", "enable_iptc"
+                ):
+                    if k in data and data[k] is not None:
+                        setattr(cfg, k, data[k])
 
                 if not cfg.file_pattern:
                     cfg.file_pattern = default_std["file_pattern"]
                 if not cfg.folder_pattern:
                     cfg.folder_pattern = default_std["folder_pattern"]
+
+                # Version tracking: update version in config file
+                try:
+                    from core.version import __version__
+                    if getattr(cfg, "last_known_version", "") != __version__:
+                        cfg.last_known_version = __version__
+                        cfg.save(config_path)
+                except Exception:
+                    pass
 
                 return cfg
             except Exception as e:
