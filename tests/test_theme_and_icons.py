@@ -51,7 +51,8 @@ from gui_qt.styles.theme import (
 class TestVectorIcons(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+        if not os.environ.get("DISPLAY"):
+            os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         cls.app = QApplication.instance() or QApplication([])
 
     def test_all_vector_icons_render_valid_pixmaps(self):
@@ -117,7 +118,8 @@ class TestVectorIcons(unittest.TestCase):
 class TestThemeManager(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+        if not os.environ.get("DISPLAY"):
+            os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         cls.app = QApplication.instance() or QApplication([])
 
     def test_detect_system_theme(self):

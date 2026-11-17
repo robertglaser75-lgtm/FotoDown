@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.5] - 2026-11-17
+
+### Behoben
+- **Stabilität der GitHub Actions Test-Suite (`.github/workflows/release.yml`, Test-Dateien):**
+  - Installation von `libfontconfig1`, `fonts-dejavu-core` und `libgl1-mesa-dri` im Ubuntu-Runner hinzugefügt, um Font-Rendering-Abstürze (SIGSEGV Exit-Code 139) zu verhindern.
+  - Python-Aufruf mit `-X faulthandler` und `-v` für lückenlose Absturzdiagnostik ausgestattet.
+  - Harte `offscreen`-Erzwingung in `test_responsive_and_typography.py`, `test_theme_and_icons.py` und `test_qt_and_linux.py` flexibilisiert, sodass bei vorhandenem Xvfb-Display (`DISPLAY`) nativer X11/XCB-Betrieb ohne Display-Konflikte genutzt wird.
+
 ## [0.32.4] - 2026-11-17
 
 ### Behoben & Verbessert

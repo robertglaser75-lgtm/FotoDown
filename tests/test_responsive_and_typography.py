@@ -18,7 +18,8 @@ from gui_qt.widgets.header_banner import HeaderBanner
 class TestElidedLabel(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+        if not os.environ.get("DISPLAY"):
+            os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         cls.app = QApplication.instance() or QApplication([])
 
     def test_elided_label_stores_and_returns_full_text(self):
@@ -48,7 +49,8 @@ class TestElidedLabel(unittest.TestCase):
 class TestHeaderBannerCompactMode(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+        if not os.environ.get("DISPLAY"):
+            os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         cls.app = QApplication.instance() or QApplication([])
 
     def test_compact_mode_toggle(self):
@@ -79,7 +81,8 @@ class TestHeaderBannerCompactMode(unittest.TestCase):
 class TestTransferTabCompactMode(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+        if not os.environ.get("DISPLAY"):
+            os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         cls.app = QApplication.instance() or QApplication([])
 
     def test_transfer_tab_compact_mode(self):
