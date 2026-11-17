@@ -3,6 +3,15 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.26.0] - 2026-11-17
+
+### Hinzugefügt & Verbessert
+- **Vollbildmodus per F11 ([`gui_qt/main_window.py`](gui_qt/main_window.py), [`gui_qt/widgets/header_banner.py`](gui_qt/widgets/header_banner.py), [`gui_qt/dialogs/quick_preview_dialog.py`](gui_qt/dialogs/quick_preview_dialog.py)):**
+  - Globale Taste **F11** schaltet nun das Hauptanwendungsfenster unterbrechungsfrei in den Vollbildmodus (`showFullScreen()`) und beim erneuten Drücken wieder zurück in den vorherigen Fenstermodus (maximiert oder normale Fenstergröße).
+  - Zusätzlicher Menüeintrag *„⛶ Vollbildmodus (F11)“* im Konfigurationsmenü des Headers.
+  - Vollbild-Umschaltung per **F11** auch im Dialog der Schnellvorschau (`QuickPreviewDialog`) integriert.
+  - Dokumentation aller Tastaturkürzel inklusive F11 im Hilfe-Dialog (`HelpDialog`) sowie in der `README.md`.
+
 ## [0.25.0] - 2026-11-17
 
 ### Hinzugefügt & Verbessert

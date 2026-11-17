@@ -70,7 +70,22 @@ class HelpDialog(QDialog):
             <li><b>Videos:</b> .mp4, .mov, .mts, .m2ts, .avi, .mkv</li>
         </ul>
 
-        <h2>4. Plattformunabhängigkeit (Windows & Linux)</h2>
+        <h2>4. Wichtige Tastaturkürzel & Navigation</h2>
+        <table>
+            <tr><th>Taste</th><th>Funktion</th><th>Bereich</th></tr>
+            <tr><td><code>F11</code></td><td>Vollbildmodus ein- / ausschalten</td><td>Global & Vorschau</td></tr>
+            <tr><td><code>Leertaste</code></td><td>Schnellansicht / Quick-Look öffnen / schließen</td><td>Import & Galerie</td></tr>
+            <tr><td><code>1 - 5</code></td><td>Sterne-Bewertung vergeben (1 bis 5 Sterne)</td><td>Sichten & Sortieren</td></tr>
+            <tr><td><code>0</code></td><td>Bewertung aufheben (0 Sterne)</td><td>Sichten & Sortieren</td></tr>
+            <tr><td><code>P</code> / <code>X</code></td><td>Bild behalten (Pick) / Verwerfen (Reject)</td><td>Sichten & Sortieren</td></tr>
+            <tr><td><code>J</code> / <code>R</code></td><td>Zwischen RAW- und JPG-Ansicht umschalten</td><td>Sichten & Sortieren</td></tr>
+            <tr><td><code>F</code></td><td>Zwischen 'Einpassen' und '100% Zoom' umschalten</td><td>Einzelansicht & Sichten</td></tr>
+            <tr><td><code>T</code></td><td>Filmstreifen ein- / ausblenden</td><td>Sichten & Sortieren</td></tr>
+            <tr><td><code>V</code></td><td>Verzeichnisbaum ein- / ausblenden</td><td>Sichten & Sortieren</td></tr>
+            <tr><td><code>Strg+D</code> / <code>Strg+T</code></td><td>In Darktable / Topaz Photo AI öffnen</td><td>Sichten & Sortieren</td></tr>
+        </table>
+
+        <h2>5. Plattformunabhängigkeit (Windows & Linux)</h2>
         <p>FotoDown funktioniert vollständig und ohne Einschränkungen unter <b>Windows</b> und <b>Linux</b>.
         Speicherkarten und USB-Laufwerke werden unter Linux in <code>/media</code>, <code>/run/media</code> sowie <code>/mnt</code> automatisch gefunden.</p>
         """)

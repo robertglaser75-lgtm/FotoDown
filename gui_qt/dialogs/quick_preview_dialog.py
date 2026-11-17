@@ -214,11 +214,24 @@ class QuickPreviewDialog(QDialog):
             self.items[self.current_idx].selected = checked
             self.selection_changed.emit()
 
+    def toggle_fullscreen(self):
+        """Toggles fullscreen mode for the preview dialog."""
+        if self.isFullScreen():
+            if getattr(self, "_was_maximized_before_fullscreen", False):
+                self.showMaximized()
+            else:
+                self.showNormal()
+        else:
+            self._was_maximized_before_fullscreen = self.isMaximized()
+            self.showFullScreen()
+
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
         scheme = self.config.navigation_scheme if self.config else DEFAULT_NAVIGATION_SCHEME
         if key in (Qt.Key.Key_Space, Qt.Key.Key_Escape):
             self.accept()
+        elif key == Qt.Key.Key_F11:
+            self.toggle_fullscreen()
         elif is_nav_prev(key, scheme):
             self._prev_item()
         elif is_nav_next(key, scheme):

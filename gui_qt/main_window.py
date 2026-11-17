@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon, QKeyEvent, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
     QScrollArea, QSizePolicy, QSplitter, QStackedWidget, QStatusBar,
@@ -84,7 +84,10 @@ class MainWindow(QMainWindow):
         if splash:
             splash.set_status("Erstelle Benutzeroberfläche...", 4, 5)
 
+        self._was_maximized_before_fullscreen = False
+
         self._setup_ui()
+        self._setup_shortcuts()
         self._connect_signals()
         self._load_config_to_ui()
         self._init_drive_watcher()
@@ -252,6 +255,12 @@ class MainWindow(QMainWindow):
         self.lbl_status_stats = QLabel("Bereit. Wählen Sie ein Quelllaufwerk und klicken Sie auf 'Scannen'.")
         self.status_bar.addWidget(self.lbl_status_stats, 1)
 
+    def _setup_shortcuts(self):
+        """Initializes global keyboard shortcuts for the main window."""
+        self._fullscreen_shortcut = QShortcut(QKeySequence(Qt.Key.Key_F11), self)
+        self._fullscreen_shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
+        self._fullscreen_shortcut.activated.connect(self.toggle_fullscreen)
+
     def _connect_signals(self):
         # Header signals
         self.header_banner.drive_selected.connect(self._on_header_drive_selected)
@@ -261,6 +270,7 @@ class MainWindow(QMainWindow):
         self.header_banner.open_help.connect(self._open_help_dialog)
         self.header_banner.open_settings.connect(self._open_settings_dialog)
         self.header_banner.single_view_config_changed.connect(self._on_single_view_config_changed)
+        self.header_banner.toggle_fullscreen_requested.connect(self.toggle_fullscreen)
 
         # Notification banner signals
         self.card_notification.scan_requested.connect(self._on_card_scan_requested)
@@ -720,6 +730,26 @@ class MainWindow(QMainWindow):
     def _on_single_view_config_changed(self):
         self.single_view.apply_config(self.config)
         self.culling_tab.apply_config()
+
+    def toggle_fullscreen(self):
+        """Toggles between fullscreen and normal/maximized window mode."""
+        if self.isFullScreen():
+            if getattr(self, "_was_maximized_before_fullscreen", False):
+                self.showMaximized()
+            else:
+                self.showNormal()
+            self.status_bar.showMessage("Vollbildmodus beendet.", 2000)
+        else:
+            self._was_maximized_before_fullscreen = self.isMaximized()
+            self.showFullScreen()
+            self.status_bar.showMessage("Vollbildmodus aktiviert (F11 zum Beenden).", 3000)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_F11:
+            self.toggle_fullscreen()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def closeEvent(self, event):
         self._cancel_task()

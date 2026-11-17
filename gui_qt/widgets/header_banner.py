@@ -24,6 +24,7 @@ class HeaderBanner(QFrame):
     open_settings = Signal(int)   # Emits target tab index (0=Einzelansicht, 1=Import, 2=NAS, 3=Editoren, etc.)
     single_view_config_changed = Signal()
     tab_changed = Signal(int)     # Emits 0 for Import, 1 for Culling
+    toggle_fullscreen_requested = Signal()
 
     def __init__(self, config: Optional[AppConfig] = None, parent=None):
         super().__init__(parent)
@@ -151,6 +152,9 @@ class HeaderBanner(QFrame):
         act_all = self.settings_menu.addAction("Alle Einstellungen öffnen...")
         act_all.setIcon(get_gear_icon("#38bdf8", 14))
         act_all.triggered.connect(lambda: self.open_settings.emit(0))
+
+        act_fs = self.settings_menu.addAction("⛶ Vollbildmodus (F11)")
+        act_fs.triggered.connect(self.toggle_fullscreen_requested.emit)
 
         self.settings_menu.addSeparator()
 

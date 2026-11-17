@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.25.0")
+        self.assertEqual(__version__, "0.26.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -2736,6 +2736,69 @@ class TestKeyNavigationAndImageSwitching(unittest.TestCase):
             self.assertIsNotNone(res2)
             self.assertEqual(res2.name, "DSC_0002.jpg")
             self.assertIn(month_dir, month_cache)
+
+
+class TestFullscreenMode(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from PySide6.QtWidgets import QApplication
+        if not QApplication.instance():
+            cls.app = QApplication([])
+        else:
+            cls.app = QApplication.instance()
+
+    def test_mainwindow_fullscreen_toggle(self):
+        from gui_qt.main_window import MainWindow
+        from PySide6.QtGui import QKeyEvent
+        from PySide6.QtCore import Qt, QEvent
+
+        win = MainWindow()
+        self.assertFalse(win.isFullScreen())
+
+        # Test toggle_fullscreen to fullscreen
+        win.toggle_fullscreen()
+        self.assertTrue(win.isFullScreen())
+        self.assertIn("aktiviert", win.status_bar.currentMessage())
+
+        # Test toggle_fullscreen back
+        win.toggle_fullscreen()
+        self.assertFalse(win.isFullScreen())
+        self.assertIn("beendet", win.status_bar.currentMessage())
+
+        # Verify QShortcut for F11
+        self.assertEqual(win._fullscreen_shortcut.key().toString(), "F11")
+
+        # Test keyPressEvent with F11
+        event = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_F11, Qt.KeyboardModifier.NoModifier)
+        win.keyPressEvent(event)
+        self.assertTrue(win.isFullScreen())
+        win.keyPressEvent(event)
+        self.assertFalse(win.isFullScreen())
+
+        # Test header banner toggle signal connection
+        win.header_banner.toggle_fullscreen_requested.emit()
+        self.assertTrue(win.isFullScreen())
+        win.header_banner.toggle_fullscreen_requested.emit()
+        self.assertFalse(win.isFullScreen())
+
+    def test_quick_preview_dialog_fullscreen_toggle(self):
+        from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
+        from PySide6.QtGui import QKeyEvent
+        from PySide6.QtCore import Qt, QEvent
+
+        dlg = QuickPreviewDialog(items=[])
+        self.assertFalse(dlg.isFullScreen())
+        dlg.toggle_fullscreen()
+        self.assertTrue(dlg.isFullScreen())
+        dlg.toggle_fullscreen()
+        self.assertFalse(dlg.isFullScreen())
+
+        # Test keyPressEvent F11
+        ev = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_F11, Qt.KeyboardModifier.NoModifier)
+        dlg.keyPressEvent(ev)
+        self.assertTrue(dlg.isFullScreen())
+        dlg.keyPressEvent(ev)
+        self.assertFalse(dlg.isFullScreen())
 
 
 if __name__ == "__main__":
