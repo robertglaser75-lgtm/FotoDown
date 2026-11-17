@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.32.3")
+        self.assertEqual(__version__, "0.32.4")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -3263,6 +3263,22 @@ class TestAllSettingsPersistence(unittest.TestCase):
 
         self.assertIn("alternate-background-color: #f1f5f9;", light_qss)
         self.assertIn("alternate-background-color: #162032;", dark_qss)
+
+
+class TestPackagingSuite(unittest.TestCase):
+    def test_collect_project_files_includes_stylesheets_and_fallbacks(self):
+        """Verifies package.py collects all required project files including QSS stylesheets."""
+        from package import collect_project_files
+        files = collect_project_files()
+        rel_paths = [str(rel).replace("\\", "/") for _, rel in files]
+
+        self.assertIn("gui_qt/styles/dark_fluent.qss", rel_paths)
+        self.assertIn("gui_qt/styles/light_fluent.qss", rel_paths)
+        self.assertIn("fotodown.py", rel_paths)
+        self.assertIn("FotoDown.bat", rel_paths)
+        self.assertIn("fotodown.sh", rel_paths)
+        self.assertIn("requirements.txt", rel_paths)
+        self.assertIn("gui/app.py", rel_paths)
 
 
 if __name__ == "__main__":

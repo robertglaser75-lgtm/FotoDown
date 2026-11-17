@@ -53,11 +53,20 @@ def collect_project_files() -> list:
         rel = p.relative_to(SCRIPT_DIR)
         included_files.append((p, rel))
 
-    # GUI Qt package
+    # GUI Qt package (includes Python sources and .qss stylesheets)
     gui_qt_dir = SCRIPT_DIR / "gui_qt"
-    for p in gui_qt_dir.rglob("*.py"):
-        rel = p.relative_to(SCRIPT_DIR)
-        included_files.append((p, rel))
+    if gui_qt_dir.exists():
+        for p in gui_qt_dir.rglob("*"):
+            if p.is_file() and not p.name.startswith(".") and "__pycache__" not in p.parts and p.suffix != ".pyc":
+                rel = p.relative_to(SCRIPT_DIR)
+                included_files.append((p, rel))
+
+    # GUI Tk fallback package
+    gui_dir = SCRIPT_DIR / "gui"
+    if gui_dir.exists():
+        for p in gui_dir.rglob("*.py"):
+            rel = p.relative_to(SCRIPT_DIR)
+            included_files.append((p, rel))
 
     # Assets
     assets_dir = SCRIPT_DIR / "assets"

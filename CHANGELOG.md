@@ -3,6 +3,18 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.4] - 2026-11-17
+
+### Behoben & Verbessert
+- **Korrektur der GitHub Actions Release-Pipeline (`.github/workflows/release.yml`):**
+  - **Headless Linux-Abhängigkeiten:** Installation der für PySide6 und Qt6 unter Ubuntu erforderlichen XCB-, EGL- und Grafikbibliotheken (`libegl1`, `libgl1`, `libxkbcommon-x11-0`, `libxcb-*`) und Xvfb hinzugefügt.
+  - **Headless Testausführung:** Test-Suite wird nun mit `xvfb-run --auto-servernum` und `QT_QPA_PLATFORM=offscreen` ausgeführt, wodurch Fehler wie `Could not load the Qt platform plugin "xcb"` im CI-Lauf behoben sind.
+  - **Manueller Workflow-Trigger:** `workflow_dispatch` ergänzt, sodass Release- und Paketierungs-Builds bei Bedarf auch manuell im GitHub Actions Webinterface gestartet werden können.
+- **Vollständigkeit der Paketierung (`package.py`):**
+  - Einbindung der Fluent-Stylesheets (`dark_fluent.qss`, `light_fluent.qss`) in die erzeugten ZIP- und TAR.GZ-Installationsarchive sichergestellt (bisher wurden nur reine `.py`-Dateien erfasst).
+  - Einbindung der Tkinter-Fallback-Module (`gui/`) in die Pakete aufgenommen.
+  - Neuer automatisierter Test `test_collect_project_files_includes_stylesheets_and_fallbacks` zur Sicherung der Paket-Vollständigkeit.
+
 ## [0.32.3] - 2026-11-17
 
 ### Verbessert
