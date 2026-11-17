@@ -217,15 +217,6 @@ class TransferPaneWidget(QWidget):
         self.pane_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.pane_splitter.setChildrenCollapsible(False)
         self.pane_splitter.setHandleWidth(6)
-        self.pane_splitter.setStyleSheet("""
-            QSplitter::handle {
-                background-color: #334155;
-                border-radius: 2px;
-            }
-            QSplitter::handle:hover {
-                background-color: #38bdf8;
-            }
-        """)
         self.pane_splitter.splitterMoved.connect(self._on_splitter_moved)
 
         # 1. Directory Tree Widget on Left side (Identical to Culling / Tab 2)
@@ -1142,15 +1133,6 @@ class TransferTabView(QWidget):
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setChildrenCollapsible(False)
         splitter.setHandleWidth(6)
-        splitter.setStyleSheet("""
-            QSplitter::handle {
-                background-color: #334155;
-                border-radius: 2px;
-            }
-            QSplitter::handle:hover {
-                background-color: #38bdf8;
-            }
-        """)
 
         # Left Pane: Source (PC / Laptop)
         self.pane_source = TransferPaneWidget(
@@ -1172,22 +1154,16 @@ class TransferTabView(QWidget):
 
         lbl_actions = QLabel("AKTIONEN")
         lbl_actions.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl_actions.setStyleSheet("color: #38bdf8; font-weight: bold; font-size: 11px; letter-spacing: 1px;")
+        lbl_actions.setObjectName("sectionSubTitle")
+        lbl_actions.setStyleSheet("font-weight: bold; font-size: 11px; letter-spacing: 1px;")
         center_layout.addWidget(lbl_actions)
 
         # Abgleich (Reconcile / Check missing files on right side)
         self.btn_reconcile = QPushButton("Abgleich ▾")
+        self.btn_reconcile.setObjectName("btnReconcile")
         self.btn_reconcile.setIcon(get_search_icon("#fbbf24", 13))
         self.btn_reconcile.setIconSize(QSize(13, 13))
         self.btn_reconcile.setToolTip("Abgleich: Ermittelt welche Dateien links vorhanden sind, aber rechts noch fehlen, und markiert sie zum Kopieren.")
-        self.btn_reconcile.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #fbbf24; border: 1px solid #d97706;
-                font-weight: bold; border-radius: 5px; padding: 7px 6px; font-size: 11px;
-            }
-            QPushButton:hover { background-color: #d97706; color: white; }
-            QPushButton::menu-indicator { subcontrol-origin: padding; subcontrol-position: right center; width: 12px; }
-        """)
 
         reconcile_menu = QMenu(self.btn_reconcile)
 
@@ -1211,7 +1187,7 @@ class TransferTabView(QWidget):
         reconcile_menu.addSeparator()
 
         self.act_reconcile_settings = reconcile_menu.addAction("")
-        self.act_reconcile_settings.setIcon(get_gear_icon("#94a3b8", 12))
+        self.act_reconcile_settings.setIcon(get_gear_icon(size=12))
         self.act_reconcile_settings.triggered.connect(self._open_reconcile_settings)
         self._update_reconcile_action_label()
 
@@ -1227,84 +1203,56 @@ class TransferTabView(QWidget):
 
         # Separator line
         sep_rec = QFrame()
+        sep_rec.setObjectName("transferSeparator")
         sep_rec.setFrameShape(QFrame.Shape.HLine)
-        sep_rec.setStyleSheet("color: #334155; margin: 2px 0;")
         center_layout.addWidget(sep_rec)
 
         # Action: Copy Selection
         self.btn_copy_sel = QPushButton("Kopieren")
-        self.btn_copy_sel.setIcon(get_arrow_right_icon("#ffffff", 14, double=False))
+        self.btn_copy_sel.setObjectName("btnCopySel")
+        self.btn_copy_sel.setIcon(get_arrow_right_icon(size=14, double=False))
         self.btn_copy_sel.setIconSize(QSize(14, 14))
         self.btn_copy_sel.setToolTip("Markierte Fotos von links nach rechts kopieren")
-        self.btn_copy_sel.setStyleSheet("""
-            QPushButton {
-                background-color: #0284c7; color: white; font-weight: bold;
-                border-radius: 5px; padding: 7px 6px; font-size: 11px;
-            }
-            QPushButton:hover { background-color: #0369a1; }
-            QPushButton:disabled { background-color: #334155; color: #64748b; }
-        """)
         self.btn_copy_sel.clicked.connect(self._transfer_selected_copy)
         center_layout.addWidget(self.btn_copy_sel)
 
         # Action: Move Selection
         self.btn_move_sel = QPushButton("Verschieben")
-        self.btn_move_sel.setIcon(get_move_icon("#ffffff", 14, double=False))
+        self.btn_move_sel.setObjectName("btnMoveSel")
+        self.btn_move_sel.setIcon(get_move_icon(size=14, double=False))
         self.btn_move_sel.setIconSize(QSize(14, 14))
         self.btn_move_sel.setToolTip("Markierte Fotos verschieben (Quelle wird nach Transfer gelöscht)")
-        self.btn_move_sel.setStyleSheet("""
-            QPushButton {
-                background-color: #0d9488; color: white; font-weight: bold;
-                border-radius: 5px; padding: 7px 6px; font-size: 11px;
-            }
-            QPushButton:hover { background-color: #0f766e; }
-            QPushButton:disabled { background-color: #334155; color: #64748b; }
-        """)
         self.btn_move_sel.clicked.connect(self._transfer_selected_move)
         center_layout.addWidget(self.btn_move_sel)
 
         # Separator line
         sep = QFrame()
+        sep.setObjectName("transferSeparator")
         sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("color: #334155; margin: 4px 0;")
         center_layout.addWidget(sep)
 
         # Action: Copy All
         self.btn_copy_all = QPushButton("Alle kopieren")
-        self.btn_copy_all.setIcon(get_arrow_right_icon("#38bdf8", 14, double=True))
+        self.btn_copy_all.setObjectName("btnCopyAll")
+        self.btn_copy_all.setIcon(get_arrow_right_icon(size=14, double=True))
         self.btn_copy_all.setIconSize(QSize(14, 14))
         self.btn_copy_all.setToolTip("Alle gefilterten Fotos von links nach rechts kopieren")
-        self.btn_copy_all.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #38bdf8; border: 1px solid #0284c7;
-                font-weight: 600; border-radius: 5px; padding: 6px; font-size: 11px;
-            }
-            QPushButton:hover { background-color: #0284c7; color: white; }
-            QPushButton:disabled { background-color: #1e293b; color: #475569; border-color: #334155; }
-        """)
         self.btn_copy_all.clicked.connect(self._transfer_all_copy)
         center_layout.addWidget(self.btn_copy_all)
 
         # Action: Move All
         self.btn_move_all = QPushButton("Alle versch.")
-        self.btn_move_all.setIcon(get_move_icon("#2dd4bf", 14, double=True))
+        self.btn_move_all.setObjectName("btnMoveAll")
+        self.btn_move_all.setIcon(get_move_icon(size=14, double=True))
         self.btn_move_all.setIconSize(QSize(14, 14))
         self.btn_move_all.setToolTip("Alle gefilterten Fotos verschieben (vom Laptop löschen)")
-        self.btn_move_all.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #2dd4bf; border: 1px solid #0d9488;
-                font-weight: 600; border-radius: 5px; padding: 6px; font-size: 11px;
-            }
-            QPushButton:hover { background-color: #0d9488; color: white; }
-            QPushButton:disabled { background-color: #1e293b; color: #475569; border-color: #334155; }
-        """)
         self.btn_move_all.clicked.connect(self._transfer_all_move)
         center_layout.addWidget(self.btn_move_all)
 
         # Swap sides button
         self.btn_swap = QPushButton("Tauschen")
         self.btn_swap.setObjectName("compactToolBtn")
-        self.btn_swap.setIcon(get_swap_icon("#94a3b8", 13))
+        self.btn_swap.setIcon(get_swap_icon(size=13))
         self.btn_swap.setIconSize(QSize(13, 13))
         self.btn_swap.setToolTip("Tauscht die Ordner von Quelle und Ziel")
         self.btn_swap.clicked.connect(self._swap_folders)
@@ -1322,20 +1270,13 @@ class TransferTabView(QWidget):
 
         self.lbl_progress = QLabel("Übertrage...")
         self.lbl_progress.setWordWrap(True)
-        self.lbl_progress.setStyleSheet("color: #38bdf8; font-size: 10px; font-weight: bold;")
+        self.lbl_progress.setStyleSheet("color: #0284c7; font-size: 10px; font-weight: bold;")
         p_layout.addWidget(self.lbl_progress)
 
         self.bar_progress = QProgressBar()
+        self.bar_progress.setObjectName("transferProgressBar")
         self.bar_progress.setFixedHeight(12)
         self.bar_progress.setTextVisible(False)
-        self.bar_progress.setStyleSheet("""
-            QProgressBar {
-                background-color: #0b0f19; border: 1px solid #334155; border-radius: 3px;
-            }
-            QProgressBar::chunk {
-                background-color: #0284c7; border-radius: 2px;
-            }
-        """)
         p_layout.addWidget(self.bar_progress)
 
         self.btn_cancel_transfer = QPushButton("✕ Abbrechen")

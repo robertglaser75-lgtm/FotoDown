@@ -111,16 +111,6 @@ class SettingsDialog(QDialog):
 
         # Farbschema & Theme Box
         box_theme = QGroupBox("Farbschema & Erscheinungsbild")
-        box_theme.setStyleSheet("""
-            QGroupBox {
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                margin-top: 6px;
-                padding-top: 14px;
-                font-weight: bold;
-                color: #38bdf8;
-            }
-        """)
         theme_row = QHBoxLayout(box_theme)
         theme_row.setContentsMargins(12, 10, 12, 10)
         lbl_theme = QLabel("Erscheinungsbild / Modus:")
@@ -135,16 +125,6 @@ class SettingsDialog(QDialog):
         layout.addWidget(box_theme)
 
         box_fields = QGroupBox("Sichtbare Informationen")
-        box_fields.setStyleSheet("""
-            QGroupBox {
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                margin-top: 10px;
-                padding-top: 14px;
-                font-weight: bold;
-                color: #38bdf8;
-            }
-        """)
         fields_layout = QGridLayout(box_fields)
         fields_layout.setHorizontalSpacing(20)
         fields_layout.setVerticalSpacing(8)
@@ -189,14 +169,7 @@ class SettingsDialog(QDialog):
         layout.addWidget(lbl_preview_title)
 
         self.frame_preview = QFrame()
-        self.frame_preview.setStyleSheet("""
-            QFrame {
-                background-color: #070d1a;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                padding: 8px 12px;
-            }
-        """)
+        self.frame_preview.setObjectName("settingsPreviewCard")
         preview_layout = QVBoxLayout(self.frame_preview)
         preview_layout.setContentsMargins(8, 8, 8, 8)
         preview_layout.setSpacing(6)
@@ -208,7 +181,7 @@ class SettingsDialog(QDialog):
 
         # Badges row
         self.lbl_preview_chips_row = QLabel("")
-        self.lbl_preview_chips_row.setStyleSheet("font-size: 11px; color: #e2e8f0; line-height: 1.5;")
+        self.lbl_preview_chips_row.setStyleSheet("font-size: 11px; line-height: 1.5;")
         self.lbl_preview_chips_row.setWordWrap(True)
         preview_layout.addWidget(self.lbl_preview_chips_row)
 
@@ -216,16 +189,6 @@ class SettingsDialog(QDialog):
 
         # Tastatur & Weiterschalten Box
         box_nav = QGroupBox("Tastatur & Bild-Navigation (Weiterschalten)")
-        box_nav.setStyleSheet("""
-            QGroupBox {
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                margin-top: 10px;
-                padding-top: 14px;
-                font-weight: bold;
-                color: #38bdf8;
-            }
-        """)
         nav_vbox = QVBoxLayout(box_nav)
         nav_vbox.setSpacing(6)
 
@@ -277,11 +240,13 @@ class SettingsDialog(QDialog):
         else:
             title_text = "<i>(Name und Endung ausgeblendet)</i>"
 
+        from gui_qt.styles.theme import theme_manager
+        is_light = (theme_manager.effective_theme == "light")
+        title_color = "#0284c7" if is_light else "#38bdf8"
+        self.lbl_preview_title_row.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {title_color};")
         self.lbl_preview_title_row.setText(title_text)
 
         # 2. Chips
-        from gui_qt.styles.theme import theme_manager
-        is_light = (theme_manager.effective_theme == "light")
         c_style = "background:#e2e8f0; color:#0f172a;" if is_light else "background:#1e293b; color:#cbd5e1;"
 
         chips = []

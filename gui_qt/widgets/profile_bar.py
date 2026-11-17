@@ -38,7 +38,7 @@ class ProfileBarWidget(QFrame):
 
         lbl_title = QLabel("Profil:")
         lbl_title.setObjectName("sectionSubTitle")
-        lbl_title.setStyleSheet("font-weight: 600; font-size: 12px; color: #38bdf8;")
+        lbl_title.setStyleSheet("font-weight: 600; font-size: 12px;")
         layout.addWidget(lbl_title)
 
         self.combo_profiles = QComboBox()

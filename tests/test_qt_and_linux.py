@@ -44,7 +44,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.32.1")
+        self.assertEqual(__version__, "0.32.2")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -3162,6 +3162,67 @@ class TestAllSettingsPersistence(unittest.TestCase):
         tree.close()
         dock.close()
         empty.close()
+
+    def test_light_mode_soft_palette_and_buttons(self):
+        from pathlib import Path
+        from gui_qt.styles.theme import theme_manager
+        from gui_qt.styles.icons import get_icon_color, get_plus_icon, get_minus_icon, get_files_icon
+        from gui_qt.views.transfer_tab import TransferTabView
+        from gui_qt.views.culling_tab import CullingTabView
+
+        cfg = AppConfig()
+
+        # 1. Light stylesheet verification: non-glare slate neutral background
+        qss_path = Path(__file__).resolve().parent.parent / "gui_qt" / "styles" / "light_fluent.qss"
+        self.assertTrue(qss_path.exists())
+        with open(qss_path, "r", encoding="utf-8") as fp:
+            light_qss = fp.read()
+
+        self.assertIn("QMainWindow, QWidget#centralWidget", light_qss)
+        self.assertIn("#f1f5f9", light_qss)  # Soft non-glare background
+        self.assertIn("QPushButton#btnReconcile", light_qss)
+        self.assertIn("QPushButton#btnCopyAll", light_qss)
+        self.assertIn("QPushButton#btnMoveAll", light_qss)
+        self.assertIn("#cullingSidebarCard", light_qss)
+        self.assertIn("QPushButton#cullingNavBtn", light_qss)
+        self.assertIn("QPushButton#cullingZoomBtn", light_qss)
+        self.assertIn("QPushButton#cullingStarBtn", light_qss)
+        self.assertIn("QPushButton#cullingPickBtn", light_qss)
+        self.assertIn("QPushButton#cullingRejectBtn", light_qss)
+        self.assertIn("QPushButton#cullingWfBtn", light_qss)
+        self.assertIn("QFrame#filmstripCard", light_qss)
+
+        # 2. Check icon palette adaptation
+        theme_manager.apply_theme("light")
+        self.assertEqual(get_icon_color("normal"), "#334155")
+        self.assertEqual(get_icon_color("accent"), "#0284c7")
+        self.assertFalse(get_plus_icon().isNull())
+        self.assertFalse(get_minus_icon().isNull())
+        self.assertFalse(get_files_icon().isNull())
+
+        # 3. TransferTabView buttons check: no dark background inline stylesheets
+        transfer = TransferTabView(cfg)
+        self.assertEqual(transfer.btn_reconcile.objectName(), "btnReconcile")
+        self.assertEqual(transfer.btn_copy_all.objectName(), "btnCopyAll")
+        self.assertEqual(transfer.btn_move_all.objectName(), "btnMoveAll")
+        self.assertNotIn("#1e293b", transfer.btn_reconcile.styleSheet())
+        self.assertNotIn("#1e293b", transfer.btn_copy_all.styleSheet())
+        self.assertNotIn("#1e293b", transfer.btn_move_all.styleSheet())
+        transfer.close()
+
+        # 4. CullingTabView buttons & cards check: no dark background inline stylesheets
+        culling = CullingTabView(cfg)
+        self.assertEqual(culling.btn_refresh.objectName(), "compactToolBtn")
+        self.assertEqual(culling.btn_prev.objectName(), "cullingNavBtn")
+        self.assertEqual(culling.btn_next.objectName(), "cullingNavBtn")
+        self.assertEqual(culling.btn_zoom.objectName(), "cullingZoomBtn")
+        self.assertEqual(culling.btn_pick.objectName(), "cullingPickBtn")
+        self.assertEqual(culling.btn_reject.objectName(), "cullingRejectBtn")
+        self.assertEqual(culling.btn_wf_sooc.objectName(), "cullingWfBtn")
+        self.assertNotIn("#1e293b", culling.btn_prev.styleSheet())
+        self.assertNotIn("#1e293b", culling.btn_next.styleSheet())
+        self.assertNotIn("#1e293b", culling.btn_zoom.styleSheet())
+        culling.close()
 
 
 if __name__ == "__main__":

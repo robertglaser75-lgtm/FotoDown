@@ -50,9 +50,9 @@ class CullingCanvasWidget(QScrollArea):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("cullingCanvas")
         self.setWidgetResizable(True)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setStyleSheet("background-color: #0b0f19; border: none;")
 
         self.lbl_image = QLabel()
         self.lbl_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -188,16 +188,11 @@ class FilmstripBar(QScrollArea):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("cullingFilmstrip")
         self.setFixedHeight(120)
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setStyleSheet("""
-            QScrollArea {
-                background-color: #090d16;
-                border-top: 1px solid #1e293b;
-            }
-        """)
 
         self.container = QWidget()
         self.layout_strip = QHBoxLayout(self.container)
@@ -283,19 +278,9 @@ class FilmstripBar(QScrollArea):
 
     def _create_card(self, it: CullingItem, idx: int) -> QFrame:
         card = QFrame()
+        card.setObjectName("filmstripCard")
         card.setFixedSize(92, 104)
         card.setCursor(Qt.CursorShape.PointingHandCursor)
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1e293b;
-                border: 1px solid #334155;
-                border-radius: 6px;
-            }
-            QFrame[active="true"] {
-                border: 2px solid #38bdf8;
-                background-color: #0f2744;
-            }
-        """)
 
         layout = QVBoxLayout(card)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -407,85 +392,60 @@ class CullingTabView(QWidget):
         sidebar_layout.setContentsMargins(4, 4, 6, 4)
         sidebar_layout.setSpacing(8)
 
-        card_style = """
-            QFrame {
-                background-color: #0f172a;
-                border: 1px solid #1e293b;
-                border-radius: 6px;
-                padding: 6px;
-            }
-        """
-
         # 1. Compact Current Folder Bar
         card_folder = QFrame()
-        card_folder.setStyleSheet(card_style)
+        card_folder.setObjectName("cullingSidebarCard")
         layout_folder = QVBoxLayout(card_folder)
         layout_folder.setContentsMargins(6, 6, 6, 6)
         layout_folder.setSpacing(4)
 
         folder_head = QHBoxLayout()
         lbl_sec_folder = QLabel("AKTUELLER ORDNER")
-        lbl_sec_folder.setStyleSheet("font-size: 10px; font-weight: bold; color: #94a3b8;")
+        lbl_sec_folder.setObjectName("sectionSubTitle")
+        lbl_sec_folder.setStyleSheet("font-size: 10px; font-weight: bold;")
         folder_head.addWidget(lbl_sec_folder, stretch=1)
 
         self.btn_refresh = QPushButton()
-        self.btn_refresh.setIcon(get_refresh_icon("#cbd5e1", 13))
+        self.btn_refresh.setObjectName("compactToolBtn")
+        self.btn_refresh.setIcon(get_refresh_icon(size=13))
         self.btn_refresh.setIconSize(QSize(13, 13))
         self.btn_refresh.setFixedSize(24, 22)
         self.btn_refresh.setToolTip("Ordner neu scannen")
-        self.btn_refresh.setStyleSheet("background-color: #1e293b; border: 1px solid #334155; border-radius: 3px;")
         self.btn_refresh.clicked.connect(self.refresh_current_folder)
         folder_head.addWidget(self.btn_refresh)
         layout_folder.addLayout(folder_head)
 
         self.lbl_folder_path = QLabel("Kein Ordner ausgewählt")
-        self.lbl_folder_path.setStyleSheet("color: #38bdf8; font-size: 11px; font-weight: 500;")
+        self.lbl_folder_path.setStyleSheet("color: #0284c7; font-size: 11px; font-weight: 500;")
         self.lbl_folder_path.setWordWrap(True)
         layout_folder.addWidget(self.lbl_folder_path)
 
         # Scanning Progress Frame
         self.progress_frame = QFrame()
-        self.progress_frame.setStyleSheet("""
-            QFrame {
-                background-color: #0b1329;
-                border: 1px solid #1d4ed8;
-                border-radius: 6px;
-                padding: 4px 6px;
-            }
-        """)
+        self.progress_frame.setObjectName("cullingScanFrame")
         prog_layout = QVBoxLayout(self.progress_frame)
         prog_layout.setContentsMargins(6, 4, 6, 4)
         prog_layout.setSpacing(4)
 
         prog_head = QHBoxLayout()
         self.lbl_scan_status = QLabel("Lese Fotos ein...")
-        self.lbl_scan_status.setStyleSheet("color: #38bdf8; font-weight: 600; font-size: 10px;")
+        self.lbl_scan_status.setStyleSheet("color: #0284c7; font-weight: 600; font-size: 10px;")
         prog_head.addWidget(self.lbl_scan_status, stretch=1)
 
         self.btn_cancel_scan = QPushButton("✕")
         self.btn_cancel_scan.setFixedSize(20, 20)
         self.btn_cancel_scan.setToolTip("Scan abbrechen")
-        self.btn_cancel_scan.setStyleSheet("background-color: #7f1d1d; color: white; border: none; border-radius: 3px; font-size: 10px; font-weight: bold;")
+        self.btn_cancel_scan.setStyleSheet("background-color: #dc2626; color: white; border: none; border-radius: 3px; font-size: 10px; font-weight: bold;")
         self.btn_cancel_scan.clicked.connect(self._cancel_scan)
         prog_head.addWidget(self.btn_cancel_scan)
         prog_layout.addLayout(prog_head)
 
         self.scan_progress_bar = QProgressBar()
+        self.scan_progress_bar.setObjectName("cullingScanProgress")
         self.scan_progress_bar.setFixedHeight(8)
         self.scan_progress_bar.setRange(0, 100)
         self.scan_progress_bar.setValue(0)
         self.scan_progress_bar.setTextVisible(False)
-        self.scan_progress_bar.setStyleSheet("""
-            QProgressBar {
-                background-color: #1e293b;
-                border: 1px solid #334155;
-                border-radius: 3px;
-            }
-            QProgressBar::chunk {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0284c7, stop:1 #38bdf8);
-                border-radius: 2px;
-            }
-        """)
         prog_layout.addWidget(self.scan_progress_bar)
         self.progress_frame.setVisible(False)
         layout_folder.addWidget(self.progress_frame)
@@ -496,13 +456,14 @@ class CullingTabView(QWidget):
 
         # 2. Card: Active Photo & Navigation
         card_photo = QFrame()
-        card_photo.setStyleSheet(card_style)
+        card_photo.setObjectName("cullingSidebarCard")
         layout_photo = QVBoxLayout(card_photo)
         layout_photo.setContentsMargins(6, 6, 6, 6)
         layout_photo.setSpacing(6)
 
         lbl_sec_photo = QLabel("📷 AKTIVES FOTO")
-        lbl_sec_photo.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        lbl_sec_photo.setObjectName("sectionSubTitle")
+        lbl_sec_photo.setStyleSheet("font-size: 11px; font-weight: bold;")
         layout_photo.addWidget(lbl_sec_photo)
 
         self.lbl_active_name = QLabel("Kein Foto ausgewählt")
@@ -525,14 +486,8 @@ class CullingTabView(QWidget):
         badges_layout.addWidget(self.lbl_pair_badge)
 
         self.btn_toggle_raw_jpg = QPushButton("Ansicht: Auto")
+        self.btn_toggle_raw_jpg.setObjectName("cullingToggleRawJpg")
         self.btn_toggle_raw_jpg.setToolTip("Zwischen JPEG und RAW Ansicht umschalten (Taste J oder R)")
-        self.btn_toggle_raw_jpg.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #38bdf8; border: 1px solid #0284c7;
-                border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600;
-            }
-            QPushButton:hover { background-color: #0369a1; color: white; }
-        """)
         self.btn_toggle_raw_jpg.clicked.connect(self._toggle_raw_jpg_view)
         self.btn_toggle_raw_jpg.setVisible(False)
         badges_layout.addWidget(self.btn_toggle_raw_jpg)
@@ -546,22 +501,22 @@ class CullingTabView(QWidget):
         _prev_lbl, _next_lbl = get_nav_labels(_scheme)
         _hint = get_nav_hint(_scheme)
         self.btn_prev = QPushButton(_prev_lbl)
+        self.btn_prev.setObjectName("cullingNavBtn")
         self.btn_prev.setToolTip(f"Vorheriges Foto ({_hint})")
-        self.btn_prev.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 6px; font-size: 10px;")
         self.btn_prev.clicked.connect(self._prev_item)
         nav_layout.addWidget(self.btn_prev)
 
         self.btn_next = QPushButton(_next_lbl)
+        self.btn_next.setObjectName("cullingNavBtn")
         self.btn_next.setToolTip(f"Nächstes Foto ({_hint})")
-        self.btn_next.setStyleSheet("background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 6px; font-size: 10px;")
         self.btn_next.clicked.connect(self._next_item)
         nav_layout.addWidget(self.btn_next)
         layout_photo.addLayout(nav_layout)
 
         # Zoom Button
         self.btn_zoom = QPushButton("100% Schärfelupe [F]")
+        self.btn_zoom.setObjectName("cullingZoomBtn")
         self.btn_zoom.setIcon(get_zoom_icon())
-        self.btn_zoom.setStyleSheet("background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; border-radius: 4px; padding: 4px; font-size: 11px;")
         self.btn_zoom.clicked.connect(self._toggle_canvas_zoom)
         layout_photo.addWidget(self.btn_zoom)
 
@@ -569,13 +524,14 @@ class CullingTabView(QWidget):
 
         # 3. Card: Rating & Culling
         card_rating = QFrame()
-        card_rating.setStyleSheet(card_style)
+        card_rating.setObjectName("cullingSidebarCard")
         layout_rating = QVBoxLayout(card_rating)
         layout_rating.setContentsMargins(6, 6, 6, 6)
         layout_rating.setSpacing(6)
 
         lbl_sec_rating = QLabel("⭐ BEWERTUNG & CULLING")
-        lbl_sec_rating.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        lbl_sec_rating.setObjectName("sectionSubTitle")
+        lbl_sec_rating.setStyleSheet("font-size: 11px; font-weight: bold;")
         layout_rating.addWidget(lbl_sec_rating)
 
         # Stars row
@@ -584,23 +540,17 @@ class CullingTabView(QWidget):
         self.star_buttons = []
         for s in range(1, 6):
             btn = QPushButton(f"{s}★")
+            btn.setObjectName("cullingStarBtn")
             btn.setFixedHeight(26)
             btn.setToolTip(f"Mit {s} Stern(en) bewerten (Taste {s})")
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #1e293b; color: #fbbf24; border: 1px solid #334155;
-                    border-radius: 4px; font-weight: bold; font-size: 11px;
-                }
-                QPushButton:hover { background-color: #d97706; color: white; }
-            """)
             btn.clicked.connect(lambda _, val=s: self.set_current_rating(val))
             stars_layout.addWidget(btn)
             self.star_buttons.append(btn)
 
         self.btn_star_zero = QPushButton("0")
+        self.btn_star_zero.setObjectName("cullingZeroBtn")
         self.btn_star_zero.setFixedSize(26, 26)
         self.btn_star_zero.setToolTip("Bewertung entfernen (Taste 0)")
-        self.btn_star_zero.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; font-size: 10px;")
         self.btn_star_zero.clicked.connect(lambda: self.set_current_rating(0))
         stars_layout.addWidget(self.btn_star_zero)
         layout_rating.addLayout(stars_layout)
@@ -609,24 +559,12 @@ class CullingTabView(QWidget):
         pick_rej_layout = QHBoxLayout()
         pick_rej_layout.setSpacing(6)
         self.btn_pick = QPushButton("✔ Behalten [P]")
-        self.btn_pick.setStyleSheet("""
-            QPushButton {
-                background-color: #065f46; color: #a7f3d0; border: 1px solid #059669;
-                border-radius: 4px; padding: 5px; font-weight: 600; font-size: 11px;
-            }
-            QPushButton:hover { background-color: #047857; color: white; }
-        """)
+        self.btn_pick.setObjectName("cullingPickBtn")
         self.btn_pick.clicked.connect(self._toggle_pick)
         pick_rej_layout.addWidget(self.btn_pick)
 
         self.btn_reject = QPushButton("✖ Ablehnen [X]")
-        self.btn_reject.setStyleSheet("""
-            QPushButton {
-                background-color: #7f1d1d; color: #fca5a5; border: 1px solid #b91c1c;
-                border-radius: 4px; padding: 5px; font-weight: 600; font-size: 11px;
-            }
-            QPushButton:hover { background-color: #991b1b; color: white; }
-        """)
+        self.btn_reject.setObjectName("cullingRejectBtn")
         self.btn_reject.clicked.connect(self._toggle_reject)
         pick_rej_layout.addWidget(self.btn_reject)
         layout_rating.addLayout(pick_rej_layout)
@@ -635,18 +573,19 @@ class CullingTabView(QWidget):
 
         # 3b. Card: Workflow & Editing Status
         card_wf = QFrame()
-        card_wf.setStyleSheet(card_style)
+        card_wf.setObjectName("cullingSidebarCard")
         layout_wf = QVBoxLayout(card_wf)
         layout_wf.setContentsMargins(6, 6, 6, 6)
         layout_wf.setSpacing(6)
 
         wf_head = QHBoxLayout()
         lbl_sec_wf = QLabel("📋 WORKFLOW-STAND")
-        lbl_sec_wf.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        lbl_sec_wf.setObjectName("sectionSubTitle")
+        lbl_sec_wf.setStyleSheet("font-size: 11px; font-weight: bold;")
         wf_head.addWidget(lbl_sec_wf, stretch=1)
 
         self.lbl_wf_badge = QLabel("⚪ Ungeprüft")
-        self.lbl_wf_badge.setStyleSheet("background-color: #334155; color: #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;")
+        self.lbl_wf_badge.setObjectName("cullingWfBadge")
         wf_head.addWidget(self.lbl_wf_badge)
         layout_wf.addLayout(wf_head)
 
@@ -654,20 +593,20 @@ class CullingTabView(QWidget):
         wf_btn_layout.setSpacing(4)
 
         self.btn_wf_sooc = QPushButton("📸 SOOC [Q]")
+        self.btn_wf_sooc.setObjectName("cullingWfBtn")
         self.btn_wf_sooc.setToolTip("Qualität passt direkt aus Kamera (Taste Q)")
-        self.btn_wf_sooc.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;")
         self.btn_wf_sooc.clicked.connect(lambda: self.set_workflow_status("SOOC_OK"))
         wf_btn_layout.addWidget(self.btn_wf_sooc)
 
         self.btn_wf_to_edit = QPushButton("🎨 Bearb. [B]")
+        self.btn_wf_to_edit.setObjectName("cullingWfBtn")
         self.btn_wf_to_edit.setToolTip("Soll noch nachbearbeitet werden (Taste B)")
-        self.btn_wf_to_edit.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;")
         self.btn_wf_to_edit.clicked.connect(lambda: self.set_workflow_status("TO_EDIT"))
         wf_btn_layout.addWidget(self.btn_wf_to_edit)
 
         self.btn_wf_done = QPushButton("✔ Fertig [E]")
+        self.btn_wf_done.setObjectName("cullingWfBtn")
         self.btn_wf_done.setToolTip("Bearbeitung abgeschlossen / Exportiert (Taste E)")
-        self.btn_wf_done.setStyleSheet("background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;")
         self.btn_wf_done.clicked.connect(lambda: self.set_workflow_status("EDITED"))
         wf_btn_layout.addWidget(self.btn_wf_done)
 
@@ -676,48 +615,31 @@ class CullingTabView(QWidget):
 
         # 4. Card: External Editors & Reject Processing
         card_external = QFrame()
-        card_external.setStyleSheet(card_style)
+        card_external.setObjectName("cullingSidebarCard")
         layout_ext = QVBoxLayout(card_external)
         layout_ext.setContentsMargins(6, 6, 6, 6)
         layout_ext.setSpacing(6)
 
         lbl_sec_ext = QLabel("🚀 EXTERNE EDITOREN")
-        lbl_sec_ext.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        lbl_sec_ext.setObjectName("sectionSubTitle")
+        lbl_sec_ext.setStyleSheet("font-size: 11px; font-weight: bold;")
         layout_ext.addWidget(lbl_sec_ext)
 
         self.btn_darktable = QPushButton("🎨 In Darktable öffnen (RAW) [Strg+D]")
+        self.btn_darktable.setObjectName("cullingDarktableBtn")
         self.btn_darktable.setToolTip("Ausgewählte RAW-Dateien direkt an Darktable übergeben")
-        self.btn_darktable.setStyleSheet("""
-            QPushButton {
-                background-color: #831843; color: #fbcfe8; border: 1px solid #be185d;
-                border-radius: 4px; padding: 6px 10px; font-weight: bold; font-size: 11px; text-align: left;
-            }
-            QPushButton:hover { background-color: #9d174d; color: white; }
-        """)
         self.btn_darktable.clicked.connect(self._launch_darktable)
         layout_ext.addWidget(self.btn_darktable)
 
         self.btn_topaz = QPushButton("✨ In Topaz Photo öffnen (JPEG) [Strg+T]")
+        self.btn_topaz.setObjectName("cullingTopazBtn")
         self.btn_topaz.setToolTip("Ausgewählte JPEG-Dateien direkt an Topaz Photo zur KI-Optimierung übergeben")
-        self.btn_topaz.setStyleSheet("""
-            QPushButton {
-                background-color: #1e3a8a; color: #bfdbfe; border: 1px solid #2563eb;
-                border-radius: 4px; padding: 6px 10px; font-weight: bold; font-size: 11px; text-align: left;
-            }
-            QPushButton:hover { background-color: #1d4ed8; color: white; }
-        """)
         self.btn_topaz.clicked.connect(self._launch_topaz)
         layout_ext.addWidget(self.btn_topaz)
 
         self.btn_apply_reject = QPushButton("🗑️ Aussortierte verarbeiten")
+        self.btn_apply_reject.setObjectName("cullingApplyRejectBtn")
         self.btn_apply_reject.setToolTip("Führt die konfigurierte Aktion für alle mit [X] abgelehnten Fotos aus")
-        self.btn_apply_reject.setStyleSheet("""
-            QPushButton {
-                background-color: #334155; color: #f87171; border: 1px solid #475569;
-                border-radius: 4px; padding: 5px 10px; font-size: 11px; font-weight: 600; text-align: left;
-            }
-            QPushButton:hover { background-color: #475569; color: white; }
-        """)
         self.btn_apply_reject.clicked.connect(self._apply_reject_action)
         layout_ext.addWidget(self.btn_apply_reject)
 
@@ -725,13 +647,14 @@ class CullingTabView(QWidget):
 
         # 5. Card: Statistics
         card_stats = QFrame()
-        card_stats.setStyleSheet(card_style)
+        card_stats.setObjectName("cullingSidebarCard")
         layout_stats = QVBoxLayout(card_stats)
         layout_stats.setContentsMargins(6, 6, 6, 6)
         layout_stats.setSpacing(4)
 
         lbl_sec_stats = QLabel("📊 STATISTIK")
-        lbl_sec_stats.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        lbl_sec_stats.setObjectName("sectionSubTitle")
+        lbl_sec_stats.setStyleSheet("font-size: 11px; font-weight: bold;")
         layout_stats.addWidget(lbl_sec_stats)
 
         self.lbl_stats = QLabel("Kein Ordner geöffnet")
@@ -743,29 +666,30 @@ class CullingTabView(QWidget):
 
         # 6. Card: Keyboard Shortcuts
         card_keys = QFrame()
-        card_keys.setStyleSheet(card_style)
+        card_keys.setObjectName("cullingSidebarCard")
         layout_keys = QVBoxLayout(card_keys)
         layout_keys.setContentsMargins(6, 6, 6, 6)
         layout_keys.setSpacing(3)
 
         lbl_sec_keys = QLabel("⌨️ SCHNELLZUGRIFF")
-        lbl_sec_keys.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        lbl_sec_keys.setObjectName("sectionSubTitle")
+        lbl_sec_keys.setStyleSheet("font-size: 11px; font-weight: bold;")
         layout_keys.addWidget(lbl_sec_keys)
 
         shortcuts_text = (
-            "<span style='color:#38bdf8;'>A / D</span> Blättern &nbsp;|&nbsp; "
-            "<span style='color:#38bdf8;'>1 - 5</span> Sterne &nbsp;|&nbsp; "
-            "<span style='color:#38bdf8;'>0</span> Reset<br>"
-            "<span style='color:#38bdf8;'>Q</span> SOOC &nbsp;|&nbsp; "
-            "<span style='color:#38bdf8;'>B</span> Bearbeiten &nbsp;|&nbsp; "
-            "<span style='color:#38bdf8;'>E</span> Fertig<br>"
-            "<span style='color:#38bdf8;'>P</span> Behalten &nbsp;|&nbsp; "
-            "<span style='color:#38bdf8;'>X</span> Ablehnen &nbsp;|&nbsp; "
-            "<span style='color:#38bdf8;'>J / R</span> RAW/JPG<br>"
-            "<span style='color:#38bdf8;'>F</span> 100% Zoom &nbsp;|&nbsp; "
-            "<span style='color:#38bdf8;'>V</span> Baum &nbsp;|&nbsp; "
-            "<span style='color:#38bdf8;'>T</span> Filmstreifen &nbsp;|&nbsp; "
-            "<span style='color:#38bdf8;'>Strg+D/T</span> Editoren"
+            "<span style='color:#0284c7;'>A / D</span> Blättern &nbsp;|&nbsp; "
+            "<span style='color:#0284c7;'>1 - 5</span> Sterne &nbsp;|&nbsp; "
+            "<span style='color:#0284c7;'>0</span> Reset<br>"
+            "<span style='color:#0284c7;'>Q</span> SOOC &nbsp;|&nbsp; "
+            "<span style='color:#0284c7;'>B</span> Bearbeiten &nbsp;|&nbsp; "
+            "<span style='color:#0284c7;'>E</span> Fertig<br>"
+            "<span style='color:#0284c7;'>P</span> Behalten &nbsp;|&nbsp; "
+            "<span style='color:#0284c7;'>X</span> Ablehnen &nbsp;|&nbsp; "
+            "<span style='color:#0284c7;'>J / R</span> RAW/JPG<br>"
+            "<span style='color:#0284c7;'>F</span> 100% Zoom &nbsp;|&nbsp; "
+            "<span style='color:#0284c7;'>V</span> Baum &nbsp;|&nbsp; "
+            "<span style='color:#0284c7;'>T</span> Filmstreifen &nbsp;|&nbsp; "
+            "<span style='color:#0284c7;'>Strg+D/T</span> Editoren"
         )
         lbl_keys_desc = QLabel(shortcuts_text)
         lbl_keys_desc.setStyleSheet("color: #64748b; font-size: 10px; line-height: 1.4;")
@@ -787,7 +711,7 @@ class CullingTabView(QWidget):
 
         # Minimal Top Toolbar on the image canvas (Filmstrip Toggle & Photo Details)
         top_strip = QFrame()
-        top_strip.setStyleSheet("background-color: #070a12; border-bottom: 1px solid #1e293b; padding: 2px 6px;")
+        top_strip.setObjectName("cullingCanvasTopStrip")
         strip_layout = QHBoxLayout(top_strip)
         strip_layout.setContentsMargins(4, 2, 4, 2)
         strip_layout.setSpacing(8)
@@ -797,17 +721,17 @@ class CullingTabView(QWidget):
         strip_layout.addWidget(self.lbl_canvas_name)
 
         self.lbl_canvas_path = QLabel("")
-        self.lbl_canvas_path.setStyleSheet("color: #94a3b8; font-size: 11px; background-color: #1e293b; border-radius: 3px; padding: 1px 6px;")
+        self.lbl_canvas_path.setObjectName("cullingCanvasPathBadge")
         self.lbl_canvas_path.setVisible(False)
         strip_layout.addWidget(self.lbl_canvas_path)
 
         self.lbl_canvas_rating = QLabel("")
-        self.lbl_canvas_rating.setStyleSheet("color: #fbbf24; font-size: 11px; font-weight: bold;")
+        self.lbl_canvas_rating.setStyleSheet("color: #d97706; font-size: 11px; font-weight: bold;")
         self.lbl_canvas_rating.setVisible(False)
         strip_layout.addWidget(self.lbl_canvas_rating)
 
         self.lbl_canvas_meta = QLabel("")
-        self.lbl_canvas_meta.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        self.lbl_canvas_meta.setStyleSheet("color: #64748b; font-size: 11px;")
         self.lbl_canvas_meta.setVisible(False)
         strip_layout.addWidget(self.lbl_canvas_meta)
 
@@ -815,15 +739,9 @@ class CullingTabView(QWidget):
 
         is_strip_vis = getattr(self.config, "culling_show_filmstrip", True)
         self.btn_toggle_filmstrip = QPushButton("Filmstreifen ausblenden [T]" if is_strip_vis else "Filmstreifen einblenden [T]")
-        self.btn_toggle_filmstrip.setIcon(get_filmstrip_icon("#38bdf8" if is_strip_vis else "#94a3b8", 14))
+        self.btn_toggle_filmstrip.setObjectName("cullingToggleFilmstripBtn")
+        self.btn_toggle_filmstrip.setIcon(get_filmstrip_icon(size=14))
         self.btn_toggle_filmstrip.setIconSize(QSize(14, 14))
-        self.btn_toggle_filmstrip.setStyleSheet("""
-            QPushButton {
-                background-color: #1e293b; color: #94a3b8; border: 1px solid #334155;
-                border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: 500;
-            }
-            QPushButton:hover { background-color: #334155; color: white; }
-        """)
         self.btn_toggle_filmstrip.clicked.connect(self._toggle_filmstrip)
         strip_layout.addWidget(self.btn_toggle_filmstrip)
 
@@ -1145,12 +1063,19 @@ class CullingTabView(QWidget):
             self.lbl_pair_badge.setVisible(False)
             self.btn_toggle_raw_jpg.setVisible(False)
 
-        # Highlight current rating buttons
+        # Highlight current rating buttons (theme adaptive)
+        from gui_qt.styles.theme import theme_manager
+        is_light = (theme_manager.effective_theme == "light")
+        inactive_bg = "#ffffff" if is_light else "#1e293b"
+        inactive_border = "#cbd5e1" if is_light else "#334155"
+        inactive_color = "#d97706" if is_light else "#fbbf24"
+        inactive_text = "#475569" if is_light else "#94a3b8"
+
         for s_idx, btn in enumerate(self.star_buttons, 1):
             if s_idx <= it.rating:
                 btn.setStyleSheet("background-color: #d97706; color: white; border: 1px solid #f59e0b; border-radius: 4px; font-weight: bold;")
             else:
-                btn.setStyleSheet("background-color: #1e293b; color: #fbbf24; border: 1px solid #334155; border-radius: 4px; font-weight: bold;")
+                btn.setStyleSheet(f"background-color: {inactive_bg}; color: {inactive_color}; border: 1px solid {inactive_border}; border-radius: 4px; font-weight: bold;")
 
         # Workflow Status Badge & Buttons
         status_label, status_color, status_symbol = it.workflow_status_info
@@ -1169,26 +1094,29 @@ class CullingTabView(QWidget):
 
         wf = it.workflow_status
         self.btn_wf_sooc.setStyleSheet(
-            "background-color: #0284c7; color: white; border: 1px solid #38bdf8; border-radius: 4px; padding: 5px; font-weight: bold; font-size: 11px;"
+            "background-color: #0284c7; color: white; border: 1px solid #0369a1; border-radius: 4px; padding: 5px; font-weight: bold; font-size: 11px;"
             if wf == "SOOC_OK" else
-            "background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;"
+            f"background-color: {inactive_bg}; color: {inactive_text}; border: 1px solid {inactive_border}; border-radius: 4px; padding: 5px; font-size: 11px;"
         )
         self.btn_wf_to_edit.setStyleSheet(
             "background-color: #d97706; color: white; border: 1px solid #f59e0b; border-radius: 4px; padding: 5px; font-weight: bold; font-size: 11px;"
             if wf == "TO_EDIT" else
-            "background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;"
+            f"background-color: {inactive_bg}; color: {inactive_text}; border: 1px solid {inactive_border}; border-radius: 4px; padding: 5px; font-size: 11px;"
         )
         self.btn_wf_done.setStyleSheet(
             "background-color: #059669; color: white; border: 1px solid #10b981; border-radius: 4px; padding: 5px; font-weight: bold; font-size: 11px;"
             if wf == "EDITED" else
-            "background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-size: 11px;"
+            f"background-color: {inactive_bg}; color: {inactive_text}; border: 1px solid {inactive_border}; border-radius: 4px; padding: 5px; font-size: 11px;"
         )
 
         # Pick / Reject buttons state
         if it.is_rejected:
             self.btn_reject.setStyleSheet("background-color: #dc2626; color: white; border: 1px solid #ef4444; border-radius: 4px; font-weight: bold;")
         else:
-            self.btn_reject.setStyleSheet("background-color: #7f1d1d; color: #fca5a5; border: 1px solid #b91c1c; border-radius: 4px; font-weight: 600;")
+            rej_bg = "#fef2f2" if is_light else "#7f1d1d"
+            rej_color = "#b91c1c" if is_light else "#fca5a5"
+            rej_border = "#fca5a5" if is_light else "#b91c1c"
+            self.btn_reject.setStyleSheet(f"background-color: {rej_bg}; color: {rej_color}; border: 1px solid {rej_border}; border-radius: 4px; font-weight: 600;")
 
         # Load Preview Image (LRU memory cache, low-res instant placeholder, lookahead prefetching)
         disp_path = it.current_display_path

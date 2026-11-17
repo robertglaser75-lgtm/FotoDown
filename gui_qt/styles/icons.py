@@ -74,14 +74,15 @@ def get_refresh_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_plus_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_plus_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp plus (+) icon for expanding."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+    pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
     p.setPen(pen)
 
     pad = size * 0.22
@@ -93,14 +94,15 @@ def get_plus_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_minus_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_minus_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp minus (−) icon for collapsing."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+    pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
     p.setPen(pen)
 
     pad = size * 0.22
@@ -111,14 +113,15 @@ def get_minus_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_collapse_panel_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_collapse_panel_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a left chevron (◀ / «) to collapse a side panel."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
 
     mid_y = size / 2.0
@@ -137,14 +140,15 @@ def get_collapse_panel_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_expand_panel_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_expand_panel_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a right chevron (▶ / ») to expand a side panel."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
 
     mid_y = size / 2.0
@@ -187,21 +191,22 @@ def get_folder_icon(color: str = "#38bdf8", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_filmstrip_icon(color: str = "#94a3b8", size: int = 16) -> QIcon:
+def get_filmstrip_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp filmstrip icon."""
+    c = color or get_icon_color("muted")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
     # Strip frame
-    pen = QPen(QColor(color), 1.5)
+    pen = QPen(QColor(c), 1.5)
     p.setPen(pen)
     p.drawRoundedRect(QRectF(1.5, 2.5, size - 3.0, size - 5.0), 1.5, 1.5)
 
     # Sprockets / frames inside
     p.setPen(Qt.PenStyle.NoPen)
-    p.setBrush(QBrush(QColor(color)))
+    p.setBrush(QBrush(QColor(c)))
     for x in [3.5, 7.5, 11.5]:
         p.drawRect(QRectF(x, 4.0, 1.5, 2.0))
         p.drawRect(QRectF(x, size - 6.0, 1.5, 2.0))
@@ -210,14 +215,15 @@ def get_filmstrip_icon(color: str = "#94a3b8", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_filter_icon(color: str = "#38bdf8", size: int = 16) -> QIcon:
+def get_filter_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp vector funnel / filter icon."""
+    c = color or get_icon_color("accent")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
 
     top_y = size * 0.22
@@ -242,15 +248,16 @@ def get_filter_icon(color: str = "#38bdf8", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_gear_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_gear_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp vector gear/cog settings icon."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
     p.setPen(Qt.PenStyle.NoPen)
-    p.setBrush(QBrush(QColor(color)))
+    p.setBrush(QBrush(QColor(c)))
 
     cx, cy = size / 2.0, size / 2.0
     r_outer = size * 0.44
@@ -287,14 +294,15 @@ def get_gear_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_columns_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_columns_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp 3-column layout icon for toggling table columns."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
     p.drawRoundedRect(QRectF(1.5, 2.0, size - 3.0, size - 4.0), 1.5, 1.5)
 
@@ -306,14 +314,15 @@ def get_columns_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_sort_icon(descending: bool = False, color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_sort_icon(descending: bool = False, color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a clean ascending or descending sort arrow icon with bars."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
 
     # Vertical arrow shaft on left
@@ -338,14 +347,15 @@ def get_sort_icon(descending: bool = False, color: str = "#cbd5e1", size: int = 
     return QIcon(pix)
 
 
-def get_files_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_files_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp document/photo sheet icon."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
 
     path = QPainterPath()
@@ -367,14 +377,15 @@ def get_files_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_list_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_list_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp bulleted list view icon."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+    pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
     p.setPen(pen)
     for idx in range(3):
         y = size * (0.25 + idx * 0.25)
@@ -385,16 +396,17 @@ def get_list_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_grid_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_grid_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp 2x2 thumbnail grid icon."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.4)
+    pen = QPen(QColor(c), 1.4)
     p.setPen(pen)
-    p.setBrush(QBrush(QColor(color)))
+    p.setBrush(QBrush(QColor(c)))
     pad = size * 0.16
     cell = size * 0.28
     gap = size * 0.12
@@ -408,14 +420,15 @@ def get_grid_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_check_all_icon(color: str = "#38bdf8", size: int = 16) -> QIcon:
+def get_check_all_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a checked checkbox icon."""
+    c = color or get_icon_color("accent")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
     p.drawRoundedRect(QRectF(2.0, 2.0, size - 4.0, size - 4.0), 2.0, 2.0)
     p.drawLine(QPointF(size * 0.28, size * 0.52), QPointF(size * 0.45, size * 0.70))
@@ -425,14 +438,15 @@ def get_check_all_icon(color: str = "#38bdf8", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_uncheck_all_icon(color: str = "#94a3b8", size: int = 16) -> QIcon:
+def get_uncheck_all_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders an empty checkbox icon."""
+    c = color or get_icon_color("muted")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
     p.drawRoundedRect(QRectF(2.0, 2.0, size - 4.0, size - 4.0), 2.0, 2.0)
 
@@ -440,14 +454,15 @@ def get_uncheck_all_icon(color: str = "#94a3b8", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_invert_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_invert_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders an invert-selection diagonal split box icon."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
     p.drawRoundedRect(QRectF(2.0, 2.0, size - 4.0, size - 4.0), 2.0, 2.0)
 
@@ -456,14 +471,15 @@ def get_invert_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
     tri.lineTo(size - 2.5, 2.5)
     tri.lineTo(size - 2.5, size - 2.5)
     tri.closeSubpath()
-    p.fillPath(tri, QBrush(QColor(color)))
+    p.fillPath(tri, QBrush(QColor(c)))
 
     p.end()
     return QIcon(pix)
 
 
-def get_quick_icon(color: str = "#fbbf24", size: int = 16) -> QIcon:
+def get_quick_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp lightning bolt icon for quick access."""
+    c = color or get_icon_color("warning")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
@@ -477,20 +493,21 @@ def get_quick_icon(color: str = "#fbbf24", size: int = 16) -> QIcon:
     path.lineTo(size * 0.76, size * 0.44)
     path.lineTo(size * 0.52, size * 0.44)
     path.closeSubpath()
-    p.fillPath(path, QBrush(QColor(color)))
+    p.fillPath(path, QBrush(QColor(c)))
 
     p.end()
     return QIcon(pix)
 
 
-def get_clear_icon(color: str = "#94a3b8", size: int = 16) -> QIcon:
+def get_clear_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp X / clear icon."""
+    c = color or get_icon_color("muted")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+    pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
     p.setPen(pen)
     pad = size * 0.26
     p.drawLine(QPointF(pad, pad), QPointF(size - pad, size - pad))
@@ -500,14 +517,15 @@ def get_clear_icon(color: str = "#94a3b8", size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
-def get_arrow_right_icon(color: str = "#ffffff", size: int = 16, double: bool = False) -> QIcon:
+def get_arrow_right_icon(color: Optional[str] = None, size: int = 16, double: bool = False) -> QIcon:
     """Renders single or double right-pointing chevron/arrow icons for Copy/Move."""
+    c = color or get_icon_color("contrast")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
 
     offsets = [size * 0.26, size * 0.54] if double else [size * 0.40]
@@ -526,14 +544,15 @@ def get_arrow_right_icon(color: str = "#ffffff", size: int = 16, double: bool = 
     return QIcon(pix)
 
 
-def get_move_icon(color: str = "#ffffff", size: int = 16, double: bool = False) -> QIcon:
+def get_move_icon(color: Optional[str] = None, size: int = 16, double: bool = False) -> QIcon:
     """Renders a move arrow icon (horizontal arrow shaft + tip)."""
+    c = color or get_icon_color("contrast")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
 
     mid_y = size * 0.5
@@ -547,14 +566,15 @@ def get_move_icon(color: str = "#ffffff", size: int = 16, double: bool = False) 
     return QIcon(pix)
 
 
-def get_swap_icon(color: str = "#cbd5e1", size: int = 16) -> QIcon:
+def get_swap_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders left/right swap arrows icon."""
+    c = color or get_icon_color("normal")
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    pen = QPen(QColor(color), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
 
     # Top arrow right

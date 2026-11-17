@@ -3,6 +3,30 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.2] - 2026-11-17
+
+### Behoben & Verbessert
+- **Blendfreies, augenschonendes Farbschema für den Hellen Modus (Fluent Light):**
+  - **Sanfter Schiefer-Neutral-Hintergrund (`#f1f5f9`):** Das bisherige sterile und blendende Reinweiß als Basishintergrund wurde durch ein augenschonendes, sanftes Neutralgrau (`#f1f5f9`, Slate 100) für Fenster und Arbeitsbereiche ersetzt (analog Fluent 2 / macOS System Light).
+  - **Strukturierte Oberflächen & Karten:** Karten (`#cullingSidebarCard`, `#folderCard`, `#filterCard`, `#treeHeaderCard`, `#storageCard`, `#renameConfigCard`) heben sich nun als saubere weiße Oberflächen mit dezenten, klaren Rändern (`#cbd5e1`) weich vom Basishintergrund ab.
+  - **Kopfzeile (`#headerBanner`):** Nutzt nun ein sanftes Off-White (`#f8fafc`) mit Schiefer-Trennlinie (`#cbd5e1`), um visuelle Harmonie zu gewährleisten.
+- **Vollständige Beseitigung aller verbliebenen dunklen Buttons im Hellen Modus:**
+  - **Sichten & Sortieren (`gui_qt/views/culling_tab.py`):**
+    - Alle 7 Seitenleisten-Karten von starren Inline-Dunkelstilen (`#0f172a` / `#1e293b`) befreit; sie erben nun über `#cullingSidebarCard` das aktive Farbschema.
+    - Buttons für Aktualisieren (`#compactToolBtn`), RAW/JPG-Umschaltung (`#cullingToggleRawJpg`), Vor/Zurück (`#cullingNavBtn`), 100%-Schärfelupe (`#cullingZoomBtn`), Sterne-Bewertung (`#cullingStarBtn`), Behalten (`#cullingPickBtn`), Ablehnen (`#cullingRejectBtn`), Workflow-Status (`#cullingWfBtn`), externe Editoren (`#cullingDarktableBtn`, `#cullingTopazBtn`) und Ablehnungs-Aktion (`#cullingApplyRejectBtn`) komplett auf adaptive Hell-/Dunkel-Stylesheets umgestellt.
+    - Dynamische Bewertungs- und Workflow-Zustände passen Hintergrund und Textfarbe im Hellen Modus an, sodass keine unlesbaren dunklen Flächen mehr verbleiben.
+    - Minimaler Toolbar-Streifen über der Leinwand (`#cullingCanvasTopStrip`) und Filmstreifen-Toggle-Button erstrahlen im Hellen Modus in freundlichen Hellgrau-Tönen.
+    - Horizontaler Filmstreifen (`FilmstripBar`): Dunkle Inline-Hintergründe entfernt; Filmstreifen (`#cullingFilmstrip`) und Thumbnail-Karten (`#filmstripCard`) adaptieren sich nativ an Hell und Dunkel.
+  - **Sichern & Archivieren (`gui_qt/views/transfer_tab.py`):**
+    - Die Aktionsbuttons der Mittelsäule (`Abgleich ▾`, `Alle kopieren`, `Alle verschieben`, `Kopieren`, `Verschieben`) besitzen keine starren `#1e293b`-Inline-Stile mehr, sondern werden über `#btnReconcile`, `#btnCopyAll`, `#btnMoveAll`, `#btnCopySel` und `#btnMoveSel` im Stylesheet für Hell und Dunkel geführt.
+    - Im Hellen Modus erscheinen sie nun auf sanft getönten Flächen (`#fffbeb`, `#f0f9ff`, `#f0fdfa`) mit kräftigen Akzentfarben.
+    - Splitter-Griffe und Trennlinien von `#334155` befreit.
+  - **Einstellungen & Profil (`gui_qt/dialogs/settings_dialog.py`, `gui_qt/widgets/profile_bar.py`):**
+    - `QGroupBox`-Container und Vorschaukarten (`#settingsPreviewCard`) im Hellen Modus mit hellem Hintergrund und passenden Randfarben versehen.
+    - Harte Cyan-Schriftzüge (`#38bdf8`) durch kontrastreiches Blau (`#0284c7`) im Hellen Modus ersetzt.
+  - **Automatische Icon-Farbpalette (`gui_qt/styles/icons.py`):**
+    - Alle Standard-Vektor-Icons (`get_plus_icon`, `get_minus_icon`, `get_collapse_panel_icon`, `get_expand_panel_icon`, `get_filmstrip_icon`, `get_gear_icon`, `get_columns_icon`, `get_sort_icon`, `get_files_icon`, `get_list_icon`, `get_grid_icon`, `get_check_all_icon`, `get_uncheck_all_icon`, `get_invert_icon`, `get_quick_icon`, `get_clear_icon`, `get_swap_icon`) passen ihre Standardfarbe nun automatisch an das aktive Farbschema an (`#334155` bei Hell, `#cbd5e1` bei Dunkel).
+
 ## [0.32.1] - 2026-11-17
 
 ### Behoben

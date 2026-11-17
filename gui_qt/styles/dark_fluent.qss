@@ -938,3 +938,380 @@ QPushButton#chipBtn:hover {
     color: #f1f5f9;
 }
 
+/* Center Transfer Action Buttons (Dark Mode) */
+QPushButton#btnReconcile {
+    background-color: #1e293b;
+    color: #fbbf24;
+    border: 1px solid #d97706;
+    font-weight: bold;
+    border-radius: 5px;
+    padding: 7px 6px;
+    font-size: 11px;
+}
+QPushButton#btnReconcile:hover {
+    background-color: #d97706;
+    color: #ffffff;
+}
+QPushButton#btnReconcile::menu-indicator {
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+    width: 12px;
+}
+
+QPushButton#btnCopySel {
+    background-color: #0284c7;
+    color: #ffffff;
+    font-weight: bold;
+    border: 1px solid #0284c7;
+    border-radius: 5px;
+    padding: 7px 6px;
+    font-size: 11px;
+}
+QPushButton#btnCopySel:hover {
+    background-color: #0369a1;
+}
+QPushButton#btnCopySel:disabled {
+    background-color: #334155;
+    color: #64748b;
+    border: 1px solid #334155;
+}
+
+QPushButton#btnMoveSel {
+    background-color: #0d9488;
+    color: #ffffff;
+    font-weight: bold;
+    border: 1px solid #0d9488;
+    border-radius: 5px;
+    padding: 7px 6px;
+    font-size: 11px;
+}
+QPushButton#btnMoveSel:hover {
+    background-color: #0f766e;
+}
+QPushButton#btnMoveSel:disabled {
+    background-color: #334155;
+    color: #64748b;
+    border: 1px solid #334155;
+}
+
+QPushButton#btnCopyAll {
+    background-color: #1e293b;
+    color: #38bdf8;
+    border: 1px solid #0284c7;
+    font-weight: 600;
+    border-radius: 5px;
+    padding: 6px;
+    font-size: 11px;
+}
+QPushButton#btnCopyAll:hover {
+    background-color: #0284c7;
+    color: #ffffff;
+}
+QPushButton#btnCopyAll:disabled {
+    background-color: #1e293b;
+    color: #475569;
+    border-color: #334155;
+}
+
+QPushButton#btnMoveAll {
+    background-color: #1e293b;
+    color: #2dd4bf;
+    border: 1px solid #0d9488;
+    font-weight: 600;
+    border-radius: 5px;
+    padding: 6px;
+    font-size: 11px;
+}
+QPushButton#btnMoveAll:hover {
+    background-color: #0d9488;
+    color: #ffffff;
+}
+QPushButton#btnMoveAll:disabled {
+    background-color: #1e293b;
+    color: #475569;
+    border-color: #334155;
+}
+
+#transferSeparator {
+    color: #334155;
+    margin: 3px 0;
+}
+
+QProgressBar#transferProgressBar {
+    background-color: #0b0f19;
+    border: 1px solid #334155;
+    border-radius: 3px;
+    text-align: center;
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+}
+QProgressBar#transferProgressBar::chunk {
+    background-color: #0284c7;
+    border-radius: 2px;
+}
+
+/* Secondary Button Standard */
+QPushButton#secondaryBtn {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 5px;
+    padding: 4px 10px;
+    color: #f1f5f9;
+    font-weight: 500;
+}
+QPushButton#secondaryBtn:hover {
+    background-color: #334155;
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+
+/* Culling Sidebar Cards & Buttons (Dark Mode) */
+#cullingSidebarCard {
+    background-color: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#cullingToggleRawJpg {
+    background-color: #1e293b;
+    color: #38bdf8;
+    border: 1px solid #0284c7;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 600;
+}
+QPushButton#cullingToggleRawJpg:hover {
+    background-color: #0369a1;
+    color: #ffffff;
+}
+
+QPushButton#cullingNavBtn {
+    background-color: #1e293b;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 10px;
+    font-weight: 500;
+}
+QPushButton#cullingNavBtn:hover {
+    background-color: #334155;
+}
+
+QPushButton#cullingZoomBtn {
+    background-color: #1e293b;
+    color: #cbd5e1;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 4px;
+    font-size: 11px;
+}
+QPushButton#cullingZoomBtn:hover {
+    background-color: #334155;
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+
+QPushButton#cullingStarBtn {
+    background-color: #1e293b;
+    color: #fbbf24;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 11px;
+}
+QPushButton#cullingStarBtn:hover {
+    background-color: #d97706;
+    color: #ffffff;
+    border-color: #f59e0b;
+}
+
+QPushButton#cullingZeroBtn {
+    background-color: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    font-size: 10px;
+}
+QPushButton#cullingZeroBtn:hover {
+    background-color: #334155;
+    color: #ffffff;
+}
+
+QPushButton#cullingPickBtn {
+    background-color: #065f46;
+    color: #a7f3d0;
+    border: 1px solid #059669;
+    border-radius: 4px;
+    padding: 5px;
+    font-weight: 600;
+    font-size: 11px;
+}
+QPushButton#cullingPickBtn:hover {
+    background-color: #047857;
+    color: #ffffff;
+}
+
+QPushButton#cullingRejectBtn {
+    background-color: #7f1d1d;
+    color: #fca5a5;
+    border: 1px solid #b91c1c;
+    border-radius: 4px;
+    padding: 5px;
+    font-weight: 600;
+    font-size: 11px;
+}
+QPushButton#cullingRejectBtn:hover {
+    background-color: #991b1b;
+    color: #ffffff;
+}
+
+#cullingWfBadge {
+    background-color: #334155;
+    color: #cbd5e1;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+QPushButton#cullingWfBtn {
+    background-color: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 11px;
+}
+QPushButton#cullingWfBtn:hover {
+    background-color: #334155;
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+
+QPushButton#cullingDarktableBtn {
+    background-color: #831843;
+    color: #fbcfe8;
+    border: 1px solid #be185d;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-weight: bold;
+    font-size: 11px;
+    text-align: left;
+}
+QPushButton#cullingDarktableBtn:hover {
+    background-color: #9d174d;
+    color: #ffffff;
+}
+
+QPushButton#cullingTopazBtn {
+    background-color: #1e3a8a;
+    color: #bfdbfe;
+    border: 1px solid #2563eb;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-weight: bold;
+    font-size: 11px;
+    text-align: left;
+}
+QPushButton#cullingTopazBtn:hover {
+    background-color: #1d4ed8;
+    color: #ffffff;
+}
+
+QPushButton#cullingApplyRejectBtn {
+    background-color: #334155;
+    color: #f87171;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+}
+QPushButton#cullingApplyRejectBtn:hover {
+    background-color: #475569;
+    color: #ffffff;
+}
+
+/* Canvas Area, Top Strip & Filmstrip (Dark Mode) */
+#cullingCanvasTopStrip {
+    background-color: #070a12;
+    border-bottom: 1px solid #1e293b;
+    padding: 2px 6px;
+}
+
+#cullingCanvasPathBadge {
+    color: #94a3b8;
+    font-size: 11px;
+    background-color: #1e293b;
+    border-radius: 3px;
+    padding: 1px 6px;
+}
+
+QPushButton#cullingToggleFilmstripBtn {
+    background-color: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 500;
+}
+QPushButton#cullingToggleFilmstripBtn:hover {
+    background-color: #334155;
+    color: #ffffff;
+}
+
+#cullingCanvas {
+    background-color: #0b0f19;
+    border: none;
+}
+
+#cullingFilmstrip {
+    background-color: #090d16;
+    border-top: 1px solid #1e293b;
+}
+#cullingFilmstrip QWidget {
+    background-color: #090d16;
+}
+
+QFrame#filmstripCard {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+}
+QFrame#filmstripCard:hover {
+    border-color: #38bdf8;
+}
+QFrame#filmstripCard[active="true"] {
+    border: 2px solid #38bdf8;
+    background-color: #0c4a6e;
+}
+
+/* GroupBox & Settings Dialog (Dark Mode) */
+QGroupBox {
+    border: 1px solid #1e293b;
+    border-radius: 6px;
+    margin-top: 10px;
+    padding-top: 14px;
+    font-weight: bold;
+    color: #38bdf8;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 10px;
+    padding: 0 4px;
+}
+
+#settingsPreviewCard {
+    background-color: #070d1a;
+    border: 1px solid #1e293b;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
