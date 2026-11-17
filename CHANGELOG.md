@@ -3,6 +3,13 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.9] - 2026-11-17
+
+### Behoben
+- **Release-Workflow im CI (`.github/workflows/release.yml`):**
+  - Direkte Ausführung von `xvfb-run -a -s "-screen 0 1920x1080x24" python -m unittest discover -v tests` ohne Subshell-Piping (`| tee`), wodurch Hänger durch offene Datei-Deskriptoren im Ubuntu-Runner vermieden werden.
+  - Umgebungsvariablen `PYTHONUNBUFFERED=1` und `QT_LOGGING_RULES="*.debug=false"` für sofortiges Logging und reduzierte Debug-Meldungen hinzugefügt.
+
 ## [0.32.8] - 2026-11-17
 
 ### Behoben

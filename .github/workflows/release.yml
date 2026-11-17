@@ -16,6 +16,8 @@ jobs:
     timeout-minutes: 10
     env:
       FOTODOWN_HEADLESS_TEST: "1"
+      PYTHONUNBUFFERED: "1"
+      QT_LOGGING_RULES: "*.debug=false"
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -57,17 +59,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Test Suite
-        shell: bash
         run: |
-          set -o pipefail
-          xvfb-run --auto-servernum python -X faulthandler -m unittest discover -v tests 2>&1 | tee test_output.log || {
-            TEST_EXIT=$?
-            echo "## ❌ Test Suite Failure Details" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            tail -n 120 test_output.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit $TEST_EXIT
-          }
+          xvfb-run -a -s "-screen 0 1920x1080x24" python -m unittest discover -v tests
 
       - name: Build Distribution Packages
         run: |
