@@ -82,11 +82,11 @@ class ActionBarWidget(QWidget):
         """Updates the import button label and enabled status based on selected items."""
         if count > 0 and has_capacity:
             size_str = format_size(total_bytes)
-            self.btn_import.setText(f"\u2B07 {count} Fotos importieren ({size_str})")
+            self.btn_import.setText(f"\u2B07 {count} Importieren ({size_str})")
             self.btn_import.setEnabled(True)
             self.lbl_status.setText(f"{count} Medien ausgewählt ({size_str}).")
         elif count > 0 and not has_capacity:
-            self.btn_import.setText("\u26A0 Nicht genügend Speicher")
+            self.btn_import.setText("\u26A0 Speicher voll")
             self.btn_import.setEnabled(False)
             self.lbl_status.setText(warning_msg or "Ziellaufwerk hat nicht genügend Speicherplatz!")
         else:

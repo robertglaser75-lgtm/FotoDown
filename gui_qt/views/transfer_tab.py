@@ -35,10 +35,12 @@ from core.drive_detector import format_size
 from core.exif_reader import extract_metadata
 from core.xmp_sync import read_xmp_workflow_info
 from gui_qt.styles.icons import (
-    get_arrow_right_icon, get_check_all_icon, get_clear_icon, get_files_icon,
-    get_folder_icon, get_gear_icon, get_grid_icon, get_invert_icon, get_list_icon,
-    get_move_icon, get_quick_icon, get_refresh_icon, get_search_icon,
-    get_sort_icon, get_swap_icon, get_tag_icon, get_uncheck_all_icon
+    get_archive_icon, get_arrow_right_icon, get_camera_icon, get_check_all_icon,
+    get_clear_icon, get_files_icon, get_filmstrip_icon, get_folder_icon,
+    get_gear_icon, get_grid_icon, get_grid_large_icon, get_grid_small_icon,
+    get_history_icon, get_invert_icon, get_list_icon, get_move_icon,
+    get_quick_icon, get_refresh_icon, get_search_icon, get_sort_icon,
+    get_star_icon, get_swap_icon, get_tag_icon, get_uncheck_all_icon, get_video_icon
 )
 from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
 from gui_qt.widgets.paired_header import PairedHeaderView
@@ -272,13 +274,21 @@ class TransferPaneWidget(QWidget):
 
         self.combo_type = QComboBox()
         self.combo_type.setToolTip("Dateiformat filtern")
-        self.combo_type.addItems(["Alle Medien", "Nur RAW", "Nur JPG", "RAW + JPG", "Nur Videos", "Mit XMP"])
+        self.combo_type.addItem(get_files_icon(size=12), "Alle Medien")
+        self.combo_type.addItem(get_filmstrip_icon("#f43f5e", 12), "Nur RAW")
+        self.combo_type.addItem(get_camera_icon("#38bdf8", 12), "Nur JPG")
+        self.combo_type.addItem(get_swap_icon("#a855f7", 12), "RAW + JPG")
+        self.combo_type.addItem(get_video_icon("#10b981", 12), "Nur Videos")
+        self.combo_type.addItem(get_tag_icon("#fbbf24", 12), "Mit XMP")
         self.combo_type.currentIndexChanged.connect(self.apply_filter)
         f_row1.addWidget(self.combo_type)
 
         self.combo_status = QComboBox()
         self.combo_status.setToolTip("Bearbeitungsstatus filtern")
-        self.combo_status.addItems(["Alle Status", "Bearbeitet", "SOOC", "Bewertet ★+"])
+        self.combo_status.addItem(get_check_all_icon("#94a3b8", 12), "Alle Status")
+        self.combo_status.addItem(get_check_all_icon("#10b981", 12), "Bearbeitet")
+        self.combo_status.addItem(get_camera_icon("#38bdf8", 12), "SOOC")
+        self.combo_status.addItem(get_star_icon(1, color="#fbbf24", size=12), "Bewertet ★+")
         self.combo_status.currentIndexChanged.connect(self.apply_filter)
         f_row1.addWidget(self.combo_status)
 
@@ -338,11 +348,11 @@ class TransferPaneWidget(QWidget):
 
         self.combo_sort = QComboBox()
         self.combo_sort.setToolTip("Sortierkriterium wählen")
-        self.combo_sort.addItem("Name", "name")
-        self.combo_sort.addItem("Datum", "mtime")
-        self.combo_sort.addItem("Größe", "size")
-        self.combo_sort.addItem("Dateityp", "type")
-        self.combo_sort.addItem("Bewertung", "rating")
+        self.combo_sort.addItem(get_tag_icon(size=12), "Name", "name")
+        self.combo_sort.addItem(get_history_icon(size=12), "Datum", "mtime")
+        self.combo_sort.addItem(get_archive_icon(size=12), "Größe", "size")
+        self.combo_sort.addItem(get_filmstrip_icon(size=12), "Dateityp", "type")
+        self.combo_sort.addItem(get_star_icon(1, color="#fbbf24", size=12), "Bewertung", "rating")
         self.combo_sort.currentIndexChanged.connect(self._on_sort_key_changed)
         f_row2.addWidget(self.combo_sort)
 
@@ -361,9 +371,9 @@ class TransferPaneWidget(QWidget):
         self.combo_view_mode = QComboBox()
         self.combo_view_mode.setToolTip("Darstellungsart & Vorschaugröße wählen")
         self.combo_view_mode.addItem(get_list_icon("#cbd5e1", 13), "Liste", "list")
-        self.combo_view_mode.addItem(get_grid_icon("#cbd5e1", 13), "Vorschau: Klein", "grid:80")
+        self.combo_view_mode.addItem(get_grid_small_icon("#cbd5e1", 13), "Vorschau: Klein", "grid:80")
         self.combo_view_mode.addItem(get_grid_icon("#cbd5e1", 13), "Vorschau: Mittel", "grid:140")
-        self.combo_view_mode.addItem(get_grid_icon("#cbd5e1", 13), "Vorschau: Groß", "grid:200")
+        self.combo_view_mode.addItem(get_grid_large_icon("#cbd5e1", 13), "Vorschau: Groß", "grid:200")
         self.combo_view_mode.currentIndexChanged.connect(self._on_view_mode_combo_changed)
         f_row2.addWidget(self.combo_view_mode)
 
@@ -1168,19 +1178,19 @@ class TransferTabView(QWidget):
         reconcile_menu = QMenu(self.btn_reconcile)
 
         act_missing_jpg = reconcile_menu.addAction("Fehlende JPGs markieren")
-        act_missing_jpg.setIcon(get_search_icon("#38bdf8", 12))
+        act_missing_jpg.setIcon(get_camera_icon("#38bdf8", 12))
         act_missing_jpg.setToolTip("Prüft welche JPGs links vorhanden sind und rechts fehlen, und markiert sie links.")
         act_missing_jpg.triggered.connect(self.reconcile_missing_jpg)
 
         act_missing_raw = reconcile_menu.addAction("Fehlende RAWs markieren")
-        act_missing_raw.setIcon(get_search_icon("#f43f5e", 12))
+        act_missing_raw.setIcon(get_filmstrip_icon("#f43f5e", 12))
         act_missing_raw.setToolTip("Prüft welche RAWs links vorhanden sind und rechts fehlen, und markiert sie links.")
         act_missing_raw.triggered.connect(self.reconcile_missing_raw)
 
         reconcile_menu.addSeparator()
 
         act_missing_both = reconcile_menu.addAction("Beides (RAW & JPG) markieren")
-        act_missing_both.setIcon(get_search_icon("#fbbf24", 12))
+        act_missing_both.setIcon(get_files_icon("#fbbf24", 12))
         act_missing_both.setToolTip("Prüft alle RAW- und JPG-Dateien, die links vorhanden sind und rechts fehlen, und markiert sie links.")
         act_missing_both.triggered.connect(self.reconcile_missing_both)
 

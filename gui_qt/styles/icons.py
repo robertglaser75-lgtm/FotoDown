@@ -420,6 +420,93 @@ def get_grid_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     return QIcon(pix)
 
 
+def get_grid_small_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
+    """Renders a 3x3 small/dense thumbnail grid icon."""
+    c = color or get_icon_color("normal")
+    pix = QPixmap(size, size)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setBrush(QBrush(QColor(c)))
+    pad = size * 0.12
+    avail = size - (2 * pad)
+    gap = size * 0.08
+    cell = (avail - 2 * gap) / 3.0
+    for row in range(3):
+        for col in range(3):
+            x = pad + col * (cell + gap)
+            y = pad + row * (cell + gap)
+            p.drawRoundedRect(QRectF(x, y, cell, cell), 0.8, 0.8)
+
+    p.end()
+    return QIcon(pix)
+
+
+def get_grid_large_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
+    """Renders a single large thumbnail/preview card icon."""
+    c = color or get_icon_color("normal")
+    pix = QPixmap(size, size)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    pen = QPen(QColor(c), 1.4)
+    p.setPen(pen)
+    p.setBrush(Qt.BrushStyle.NoBrush)
+    pad = size * 0.14
+    frame_w = size - 2 * pad
+    p.drawRoundedRect(QRectF(pad, pad, frame_w, frame_w), 2.0, 2.0)
+
+    p.setBrush(QBrush(QColor(c)))
+    p.setPen(Qt.PenStyle.NoPen)
+    sun_r = size * 0.08
+    p.drawEllipse(QPointF(pad + frame_w * 0.3, pad + frame_w * 0.35), sun_r, sun_r)
+    path = QPainterPath()
+    path.moveTo(pad + 2, pad + frame_w - 2)
+    path.lineTo(pad + frame_w * 0.45, pad + frame_w * 0.5)
+    path.lineTo(pad + frame_w * 0.7, pad + frame_w * 0.65)
+    path.lineTo(pad + frame_w - 2, pad + frame_w - 2)
+    path.closeSubpath()
+    p.drawPath(path)
+
+    p.end()
+    return QIcon(pix)
+
+
+def get_video_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
+    """Renders a video camera / movie media player icon."""
+    c = color or get_icon_color("normal")
+    pix = QPixmap(size, size)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    pen = QPen(QColor(c), 1.4)
+    p.setPen(pen)
+    p.setBrush(Qt.BrushStyle.NoBrush)
+    pad = size * 0.16
+    rect_w = size * 0.52
+    rect_h = size * 0.6
+    p.drawRoundedRect(QRectF(pad, pad + (size - 2 * pad - rect_h) / 2, rect_w, rect_h), 1.5, 1.5)
+
+    lens = QPainterPath()
+    lx = pad + rect_w + 1
+    cy = size / 2.0
+    lens.moveTo(lx, cy - size * 0.18)
+    lens.lineTo(size - pad, cy - size * 0.28)
+    lens.lineTo(size - pad, cy + size * 0.28)
+    lens.lineTo(lx, cy + size * 0.18)
+    lens.closeSubpath()
+    p.setBrush(QBrush(QColor(c)))
+    p.setPen(Qt.PenStyle.NoPen)
+    p.drawPath(lens)
+
+    p.end()
+    return QIcon(pix)
+
+
 def get_check_all_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a checked checkbox icon."""
     c = color or get_icon_color("accent")

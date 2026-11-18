@@ -21,6 +21,9 @@ from gui_qt.styles.icons import (
     get_fullscreen_exit_icon,
     get_fullscreen_icon,
     get_gear_icon,
+    get_grid_icon,
+    get_grid_large_icon,
+    get_grid_small_icon,
     get_help_icon,
     get_history_icon,
     get_icon_color,
@@ -34,6 +37,7 @@ from gui_qt.styles.icons import (
     get_tag_icon,
     get_theme_icon,
     get_trash_icon,
+    get_video_icon,
     get_zoom_fit_icon,
     get_zoom_icon,
     set_icon_theme,
@@ -86,6 +90,9 @@ class TestVectorIcons(unittest.TestCase):
             ("gear", lambda: get_gear_icon(size=20)),
             ("plus", lambda: get_plus_icon(size=20)),
             ("files", lambda: get_files_icon(size=20)),
+            ("grid_small", lambda: get_grid_small_icon(size=20)),
+            ("grid_large", lambda: get_grid_large_icon(size=20)),
+            ("video", lambda: get_video_icon(size=20)),
         ]
 
         for name, factory in icon_factories:
@@ -113,6 +120,37 @@ class TestVectorIcons(unittest.TestCase):
 
         # Reset back to dark
         set_icon_theme("dark")
+
+    def test_dropdown_distinct_icons(self):
+        """Verifies that dropdown menus use non-null, distinct icons for different settings."""
+        from gui_qt.views.transfer_tab import TransferTabView
+        tab = TransferTabView(AppConfig())
+
+        # 1. combo_view_mode: Liste, Klein, Mittel, Groß must all have non-null icons
+        view_mode_icons = []
+        for i in range(tab.pane_source.combo_view_mode.count()):
+            ico = tab.pane_source.combo_view_mode.itemIcon(i)
+            self.assertFalse(ico.isNull(), f"View mode item {i} icon must not be null")
+            pix = ico.pixmap(16, 16)
+            self.assertFalse(pix.isNull())
+            view_mode_icons.append(pix.toImage().bits().tobytes())
+
+        # Ensure that Klein, Mittel and Groß have distinct icon pixel data
+        self.assertNotEqual(view_mode_icons[1], view_mode_icons[2], "Klein and Mittel icons must differ")
+        self.assertNotEqual(view_mode_icons[2], view_mode_icons[3], "Mittel and Groß icons must differ")
+        self.assertNotEqual(view_mode_icons[1], view_mode_icons[3], "Klein and Groß icons must differ")
+
+        # 2. combo_type: all formats must have icons
+        for i in range(tab.pane_source.combo_type.count()):
+            ico = tab.pane_source.combo_type.itemIcon(i)
+            self.assertFalse(ico.isNull(), f"Type filter item {i} must have an icon")
+
+        # 3. combo_sort: all sort items must have icons
+        for i in range(tab.pane_source.combo_sort.count()):
+            ico = tab.pane_source.combo_sort.itemIcon(i)
+            self.assertFalse(ico.isNull(), f"Sort item {i} must have an icon")
+
+        tab.close()
 
 
 class TestThemeManager(unittest.TestCase):

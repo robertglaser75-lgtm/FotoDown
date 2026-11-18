@@ -3,6 +3,19 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.2] - 2026-11-18
+
+### Behoben & Verbessert
+- **Optimierung der Benutzeroberfläche & Responsive Schriftgrößen:**
+  - Standard-Basisschriftgröße in Stylesheets (`dark_fluent.qss`, `light_fluent.qss`) von 13px auf 12px optimiert und feiner abgestufte Typografie-Tokens (micro 9.5px, caption 10.5px, body 11.5px, subheading 13px, title 15px) eingeführt, um ein aufgeräumtes Layout auf kleineren Bildschirmen und Laptops zu erzielen.
+  - Horizontale Schaltflächen-Paddings für Standard- und Aktionsbuttons (`#primaryBtn`, `#scanBtn`, `#secondaryBtn`, `#compactToolBtn`) verringert, um Text- und Icon-Abschneidungen auf schmalen Viewports zu verhindern.
+  - Leere Tool- und Header-Buttons im Kompaktmodus mit minimalem Innenabstand versehen, sodass Icons stets unbeschnitten dargestellt werden.
+  - Button-Texte in Import-Sidebar und Culling-Ansicht harmonisiert und gestrafft (z. B. *„🎨 Darktable (RAW) [Strg+D]“*, *„✨ Topaz Photo (JPEG) [Strg+T]“*, *„⬇ {count} Importieren ({size})“*).
+- **Individuelle Vektor-Icons für Dropdown-Menüs:**
+  - Neue differenzierte Vektor-Icons `get_grid_small_icon` (3x3 Kacheln) und `get_grid_large_icon` (Großbild-Rahmen) implementiert, sodass „Vorschau: Klein“, „Vorschau: Mittel“ und „Vorschau: Groß“ visuell klar unterscheidbar sind.
+  - Abgleichsmenü (Reconcile) im Transfer-Tab mit typgerechten Icons für JPGs (Kamera), RAWs (Filmstreifen) und beides (Dateistapel) ausgestattet.
+  - Format-, Status- und Sortier-Dropdowns im Transfer-Tab sowie Farbschema-Auswahl in den Einstellungen mit passenden Icons verfeinert.
+
 ## [0.33.1] - 2026-11-17
 
 ### Hinzugefügt

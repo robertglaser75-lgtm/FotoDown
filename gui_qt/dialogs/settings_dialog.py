@@ -15,7 +15,7 @@ from gui_qt.key_navigation import (
     DEFAULT_NAVIGATION_SCHEME, NAVIGATION_SCHEMES, get_nav_hint
 )
 from gui_qt.styles.icons import (
-    get_culling_icon, get_folder_icon, get_gear_icon, get_import_icon, get_tag_icon
+    get_culling_icon, get_folder_icon, get_gear_icon, get_import_icon, get_tag_icon, get_theme_icon
 )
 from gui_qt.styles.theme import (
     THEME_DARK, THEME_LIGHT, THEME_SYSTEM, theme_manager
@@ -118,9 +118,9 @@ class SettingsDialog(QDialog):
         theme_row.addWidget(lbl_theme)
 
         self.combo_theme = QComboBox()
-        self.combo_theme.addItem("Dunkel (Fluent Dark)", THEME_DARK)
-        self.combo_theme.addItem("Hell (Fluent Light)", THEME_LIGHT)
-        self.combo_theme.addItem("Automatisch (Wie Betriebssystem)", THEME_SYSTEM)
+        self.combo_theme.addItem(get_theme_icon("dark"), "Dunkel (Fluent Dark)", THEME_DARK)
+        self.combo_theme.addItem(get_theme_icon("light"), "Hell (Fluent Light)", THEME_LIGHT)
+        self.combo_theme.addItem(get_theme_icon("system"), "Automatisch (Wie Betriebssystem)", THEME_SYSTEM)
         theme_row.addWidget(self.combo_theme, 1)
         layout.addWidget(box_theme)
 

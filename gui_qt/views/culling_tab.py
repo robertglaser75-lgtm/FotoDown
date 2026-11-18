@@ -625,21 +625,21 @@ class CullingTabView(QWidget):
         lbl_sec_ext.setStyleSheet("font-size: 11px; font-weight: bold;")
         layout_ext.addWidget(lbl_sec_ext)
 
-        self.btn_darktable = QPushButton("🎨 In Darktable öffnen (RAW) [Strg+D]")
+        self.btn_darktable = QPushButton("🎨 Darktable (RAW) [Strg+D]")
         self.btn_darktable.setObjectName("cullingDarktableBtn")
-        self.btn_darktable.setToolTip("Ausgewählte RAW-Dateien direkt an Darktable übergeben")
+        self.btn_darktable.setToolTip("In Darktable öffnen (RAW) [Strg+D]: Übergibt markierte RAW-Fotos an Darktable")
         self.btn_darktable.clicked.connect(self._launch_darktable)
         layout_ext.addWidget(self.btn_darktable)
 
-        self.btn_topaz = QPushButton("✨ In Topaz Photo öffnen (JPEG) [Strg+T]")
+        self.btn_topaz = QPushButton("✨ Topaz Photo (JPEG) [Strg+T]")
         self.btn_topaz.setObjectName("cullingTopazBtn")
-        self.btn_topaz.setToolTip("Ausgewählte JPEG-Dateien direkt an Topaz Photo zur KI-Optimierung übergeben")
+        self.btn_topaz.setToolTip("In Topaz Photo öffnen (JPEG) [Strg+T]: Übergibt markierte JPEGs an Topaz Photo AI")
         self.btn_topaz.clicked.connect(self._launch_topaz)
         layout_ext.addWidget(self.btn_topaz)
 
         self.btn_apply_reject = QPushButton("🗑️ Aussortierte verarbeiten")
         self.btn_apply_reject.setObjectName("cullingApplyRejectBtn")
-        self.btn_apply_reject.setToolTip("Führt die konfigurierte Aktion für alle mit [X] abgelehnten Fotos aus")
+        self.btn_apply_reject.setToolTip("Aussortierte verarbeiten: Führt die konfigurierte Aktion für alle mit [X] abgelehnten Fotos aus")
         self.btn_apply_reject.clicked.connect(self._apply_reject_action)
         layout_ext.addWidget(self.btn_apply_reject)
 
