@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.3")
+        self.assertEqual(__version__, "0.33.4")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1523,6 +1523,46 @@ class TestWorkflowStatusTracking(unittest.TestCase):
             self.assertFalse(tree.tree_view.isColumnHidden(1))
             self.assertTrue(tree.config.tree_show_col_bilder)
             tree.close()
+
+    def test_culling_tree_column_sync_and_responsive_widths(self):
+        from PySide6.QtCore import Qt
+        from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = AppConfig(culling_root_folder=tmpdir, target_dir=tmpdir)
+            cfg.save = lambda: None
+
+            tree1 = CullingDirectoryTreeWidget(cfg)
+            tree2 = CullingDirectoryTreeWidget(cfg)
+
+            # 1. Multi-tree sync: hiding col 3 in tree1 immediately hides col 3 in tree2
+            tree1.set_column_visibility(3, False)
+            self.assertTrue(tree1.tree_view.isColumnHidden(3))
+            self.assertTrue(tree2.tree_view.isColumnHidden(3))
+
+            # 2. Responsive width distribution when viewport >= total_min
+            tree1.resize(320, 400)
+            tree1.show()
+            QApplication.processEvents()
+            vp_w = tree1.tree_view.viewport().width()
+            visible_sum = sum(tree1.tree_view.columnWidth(c) for c in range(4) if not tree1.tree_view.isColumnHidden(c))
+            self.assertEqual(visible_sum, vp_w)
+            self.assertEqual(tree1.tree_view.horizontalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+            # Re-enable col 3 and ensure full width is still used cleanly
+            tree1.set_column_visibility(3, True)
+            visible_sum_all = sum(tree1.tree_view.columnWidth(c) for c in range(4))
+            self.assertEqual(visible_sum_all, vp_w)
+
+            # 3. Below minimum width: enforce MIN_COL_WIDTHS and switch to ScrollBarAsNeeded
+            tree1.tree_view.setFixedWidth(180)
+            tree1._recalculate_column_widths()
+            for c, min_w in CullingDirectoryTreeWidget.MIN_COL_WIDTHS.items():
+                self.assertGreaterEqual(tree1.tree_view.columnWidth(c), min_w)
+            self.assertEqual(tree1.tree_view.horizontalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+            tree1.close()
+            tree2.close()
 
     def test_filter_bar_selection_menu_and_vector_icons(self):
         from gui_qt.widgets.filter_bar import FilterBarWidget

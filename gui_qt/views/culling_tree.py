@@ -12,9 +12,10 @@ and one-click folder selection for culling.
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
+import weakref
 
-from PySide6.QtCore import QPoint, QSize, Qt, Signal, QUrl
+from PySide6.QtCore import QPoint, QSize, Qt, QTimer, Signal, QUrl
 from PySide6.QtGui import QBrush, QColor, QDesktopServices, QFont, QIcon, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QFileDialog, QFrame, QHBoxLayout, QHeaderView, QLabel,
@@ -41,6 +42,14 @@ class CullingDirectoryTreeWidget(QWidget):
     root_changed = Signal(Path)
     collapse_panel_requested = Signal()
 
+    _instances: "weakref.WeakSet[CullingDirectoryTreeWidget]" = weakref.WeakSet()
+    MIN_COL_WIDTHS: Dict[int, int] = {
+        0: 110,  # Ordner
+        1: 44,   # Bilder
+        2: 40,   # RAW
+        3: 40,   # JPG
+    }
+
     def __init__(
         self,
         config: AppConfig,
@@ -58,6 +67,7 @@ class CullingDirectoryTreeWidget(QWidget):
         self.show_collapse_btn = show_collapse_btn
         self.root_path: Optional[Path] = None
         self._sort_descending: bool = getattr(self.config, "tree_sort_descending", False)
+        CullingDirectoryTreeWidget._instances.add(self)
         self._init_ui()
         self._init_default_root()
         theme_manager.theme_changed.connect(self._on_theme_changed)
@@ -262,14 +272,59 @@ class CullingDirectoryTreeWidget(QWidget):
         self.refresh()
         self.root_changed.emit(path)
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._apply_column_visibility()
+        QTimer.singleShot(0, self._recalculate_column_widths)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._recalculate_column_widths()
+
     def _apply_column_visibility(self):
         """Applies persisted column visibility flags for Bilder, RAW, and JPG."""
-        self.tree_view.setColumnHidden(1, not getattr(self.config, "tree_show_col_bilder", True))
-        self.tree_view.setColumnHidden(2, not getattr(self.config, "tree_show_col_raw", True))
-        self.tree_view.setColumnHidden(3, not getattr(self.config, "tree_show_col_jpg", True))
+        self.tree_view.setColumnHidden(1, not bool(getattr(self.config, "tree_show_col_bilder", True)))
+        self.tree_view.setColumnHidden(2, not bool(getattr(self.config, "tree_show_col_raw", True)))
+        self.tree_view.setColumnHidden(3, not bool(getattr(self.config, "tree_show_col_jpg", True)))
+        self._recalculate_column_widths()
+
+    def _recalculate_column_widths(self):
+        """Distributes available viewport width across visible columns, switching to scroll only below minimum widths."""
+        available_w = self.tree_view.viewport().width()
+        if available_w <= 0:
+            return
+
+        visible_cols = [c for c in range(4) if not self.tree_view.isColumnHidden(c)]
+        if not visible_cols:
+            return
+
+        total_min = sum(self.MIN_COL_WIDTHS[c] for c in visible_cols)
+        if available_w <= total_min:
+            self.tree_view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            for col in visible_cols:
+                self.tree_view.setColumnWidth(col, self.MIN_COL_WIDTHS[col])
+            return
+
+        self.tree_view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        extra = available_w - total_min
+        count_cols = [c for c in visible_cols if c != 0]
+
+        count_widths: Dict[int, int] = {}
+        used_count_total = 0
+        for c in count_cols:
+            bonus = min(14, extra // max(1, len(count_cols) * 3))
+            w = self.MIN_COL_WIDTHS[c] + bonus
+            count_widths[c] = w
+            used_count_total += w
+
+        if 0 in visible_cols:
+            col0_w = max(self.MIN_COL_WIDTHS[0], available_w - used_count_total)
+            self.tree_view.setColumnWidth(0, col0_w)
+        for c, w in count_widths.items():
+            self.tree_view.setColumnWidth(c, w)
 
     def set_column_visibility(self, col_idx: int, visible: bool):
-        """Shows or hides a count column (1=Bilder, 2=RAW, 3=JPG) and saves config."""
+        """Shows or hides a count column (1=Bilder, 2=RAW, 3=JPG), syncs all trees, and saves config."""
         attr_map = {
             1: "tree_show_col_bilder",
             2: "tree_show_col_raw",
@@ -280,6 +335,13 @@ class CullingDirectoryTreeWidget(QWidget):
             return
         setattr(self.config, attr, bool(visible))
         self.tree_view.setColumnHidden(col_idx, not visible)
+        self._recalculate_column_widths()
+
+        # Synchronize all other live directory trees sharing this config
+        for inst in list(CullingDirectoryTreeWidget._instances):
+            if inst is not self and inst.config is self.config:
+                inst._apply_column_visibility()
+
         try:
             self.config.save()
         except Exception:
@@ -287,11 +349,12 @@ class CullingDirectoryTreeWidget(QWidget):
 
     def _show_columns_menu(self, global_pos=None):
         """Opens menu to toggle Bilder, RAW, and JPG columns on or off."""
+        self._apply_column_visibility()
         menu = QMenu(self)
         col_defs = [
-            (1, "Spalte „Bilder“ anzeigen", getattr(self.config, "tree_show_col_bilder", True)),
-            (2, "Spalte „RAW“ anzeigen", getattr(self.config, "tree_show_col_raw", True)),
-            (3, "Spalte „JPG“ anzeigen", getattr(self.config, "tree_show_col_jpg", True)),
+            (1, "Spalte „Bilder“ anzeigen", not self.tree_view.isColumnHidden(1)),
+            (2, "Spalte „RAW“ anzeigen", not self.tree_view.isColumnHidden(2)),
+            (3, "Spalte „JPG“ anzeigen", not self.tree_view.isColumnHidden(3)),
         ]
         actions = {}
         for col_idx, label, checked in col_defs:

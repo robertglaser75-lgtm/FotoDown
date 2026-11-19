@@ -3,6 +3,13 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.4] - 2026-11-19
+
+### Behoben & Verbessert
+- **Spalten-Synchronisation & Dynamische Breitenanpassung im Verzeichnisbaum (`culling_tree.py`):**
+  - Alle Verzeichnisbaum-Instanzen (Tab 2 Culling, Tab 3 Quelle/Ziel) synchronisieren ihren sichtbaren Spaltenzustand nun sofort untereinander sowie beim Anzeigen (`showEvent`) mit der Konfiguration, sodass Haken im Menü und tatsächliche Spaltenansicht stets übereinstimmen.
+  - Automatische Breitenverteilung (`_recalculate_column_widths`): Ausgeblendete Spalten geben ihren Platz nahtlos an die verbleibenden sichtbaren Spalten (insbesondere *Ordner*) ab; beim Wiedereinblenden wird stets die volle Viewport-Breite genutzt, und erst bei Unterschreiten der Mindestspaltenbreiten (`110px / 44px / 40px / 40px`) wird auf horizontales Scrollen umgeschaltet.
+
 ## [0.33.3] - 2026-11-19
 
 ### Behoben
