@@ -148,7 +148,9 @@ class MainWindow(QMainWindow):
 
         # Left Sidebar (Fixed Profile Bar at top, Scrollable Settings in middle, Fixed Action Bar at bottom)
         sidebar_container = QWidget()
-        sidebar_container.setMinimumWidth(280)
+        self.sidebar_container = sidebar_container
+        enforce_min = bool(getattr(self.config, "enforce_sidebar_min_width", True))
+        sidebar_container.setMinimumWidth(280 if enforce_min else 60)
         sidebar_container.setMaximumWidth(480)
         sidebar_layout = QVBoxLayout(sidebar_container)
         sidebar_layout.setContentsMargins(10, 8, 6, 8)
@@ -825,15 +827,27 @@ class MainWindow(QMainWindow):
         dlg.settings_saved.connect(self._on_settings_dialog_saved)
         dlg.exec()
 
+    def _apply_sidebar_min_width_policies(self):
+        """Enforces or relaxes minimum sidebar widths across all tabs based on config."""
+        enforce = bool(getattr(self.config, "enforce_sidebar_min_width", True))
+        if hasattr(self, "sidebar_container") and self.sidebar_container:
+            self.sidebar_container.setMinimumWidth(280 if enforce else 60)
+        if hasattr(self, "culling_tab") and self.culling_tab:
+            self.culling_tab._sync_sidebar_min_width()
+        if hasattr(self, "transfer_tab_view") and self.transfer_tab_view:
+            self.transfer_tab_view.apply_min_width_policy()
+
     def _on_settings_dialog_saved(self):
         self.header_banner.update_from_config(self.config)
         self.general_settings.load_config(self.config)
         self.single_view.apply_config(self.config)
         self.culling_tab.apply_config()
+        self._apply_sidebar_min_width_policies()
 
     def _on_single_view_config_changed(self):
         self.single_view.apply_config(self.config)
         self.culling_tab.apply_config()
+        self._apply_sidebar_min_width_policies()
 
     def toggle_fullscreen(self):
         """Toggles between fullscreen and normal/maximized window mode."""

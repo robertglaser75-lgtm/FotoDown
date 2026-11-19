@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.8] - 2026-11-19
+
+### Hinzugefügt
+- **Konfigurierbare Mindestbreite für Seitenleisten (`enforce_sidebar_min_width`):**
+  - Neue Option `enforce_sidebar_min_width` in `AppConfig` (Standard: `True` / *nicht unterschreiten*).
+  - Konfigurierbar im Einstellungsdialog (*„Mindestbreite für Seitenleisten erzwingen“*) sowie als Schnellschalter im Zahnrad-Menü der Kopfleiste.
+  - Bei deaktivierter Option können Seitenleisten in allen drei Tabs (Import-Sidebar, Culling-Leisten inkl. horizontalem Scrollbalken bei Bedarf, Transfer-Bereiche) flexibel unterhalb ihrer Mindestbreite zusammengeschoben werden.
+
 ## [0.33.7] - 2026-11-19
 
 ### Hinzugefügt

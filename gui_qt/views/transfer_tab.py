@@ -946,6 +946,18 @@ class TransferPaneWidget(QWidget):
             self.btn_rename.setMinimumSize(0, 0)
             self.btn_rename.setMaximumSize(16777215, 16777215)
 
+    def apply_min_width_policy(self):
+        """Enforces or relaxes minimum pane/tree widths according to config.enforce_sidebar_min_width."""
+        enforce = bool(getattr(self.config, "enforce_sidebar_min_width", True))
+        if enforce:
+            self.tree_widget.setMinimumWidth(180)
+            self.files_container.setMinimumWidth(200)
+            self.setMinimumWidth(260)
+        else:
+            self.tree_widget.setMinimumWidth(60)
+            self.files_container.setMinimumWidth(80)
+            self.setMinimumWidth(120)
+
     def _on_grid_item_changed(self, item: QListWidgetItem):
         path_str = item.data(Qt.ItemDataRole.UserRole)
         if item.checkState() == Qt.CheckState.Checked:
@@ -1324,6 +1336,7 @@ class TransferTabView(QWidget):
         self.pane_source.selection_changed.connect(self._update_action_states)
         self.pane_dest.selection_changed.connect(self._update_action_states)
         self._update_action_states()
+        self.apply_min_width_policy()
 
     def save_state(self):
         """Persists all subpane states and main transfer splitter sizes."""
@@ -1333,6 +1346,11 @@ class TransferTabView(QWidget):
             sizes = self.main_splitter.sizes()
             if len(sizes) == 3 and not any(s == 0 for s in sizes):
                 self.config.transfer_main_splitter_sizes = sizes
+
+    def apply_min_width_policy(self):
+        """Updates minimum width enforcement on both transfer panes."""
+        self.pane_source.apply_min_width_policy()
+        self.pane_dest.apply_min_width_policy()
 
     def set_compact_mode(self, compact: bool):
         """Switches transfer workspace between compact laptop (< 1180px) and standard desktop layout."""

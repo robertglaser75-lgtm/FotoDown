@@ -762,14 +762,23 @@ class CullingTabView(QWidget):
         self._sync_sidebar_min_width()
 
     def _sync_sidebar_min_width(self):
-        """Ensures the middle control sidebar cannot shrink below its buttons and borders."""
+        """Enforces or relaxes minimum sidebar widths according to config.enforce_sidebar_min_width."""
+        if hasattr(self, "left_dock") and self.left_dock:
+            self.left_dock.apply_min_width_policy()
         if not hasattr(self, "sidebar_scroll") or not hasattr(self, "sidebar_content"):
             return
+        enforce = bool(getattr(self.config, "enforce_sidebar_min_width", True))
         content_min_w = self.sidebar_content.minimumSizeHint().width()
         sb_w = self.sidebar_scroll.verticalScrollBar().sizeHint().width() or 12
-        min_w = max(250, content_min_w + sb_w + 4)
-        self.sidebar_scroll.setMinimumWidth(min_w)
-        self.sidebar_scroll.setMaximumWidth(max(440, min_w + 120))
+        enforced_min_w = max(250, content_min_w + sb_w + 4)
+        if enforce:
+            self.sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self.sidebar_scroll.setMinimumWidth(enforced_min_w)
+            self.sidebar_scroll.setMaximumWidth(max(440, enforced_min_w + 120))
+        else:
+            self.sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            self.sidebar_scroll.setMinimumWidth(60)
+            self.sidebar_scroll.setMaximumWidth(max(440, enforced_min_w + 120))
 
     def _set_photo_actions_enabled(self, enabled: bool):
         """Enables or disables photo-specific controls (culling, zoom, rating, workflow, editors)."""

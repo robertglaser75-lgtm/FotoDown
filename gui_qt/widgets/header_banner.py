@@ -201,6 +201,11 @@ class HeaderBanner(QFrame):
         act_fs.setIcon(get_fullscreen_icon())
         act_fs.triggered.connect(self.toggle_fullscreen_requested.emit)
 
+        self.act_enforce_sidebar_min = self.settings_menu.addAction("Mindestbreite für Leisten erzwingen")
+        self.act_enforce_sidebar_min.setCheckable(True)
+        self.act_enforce_sidebar_min.setChecked(True)
+        self.act_enforce_sidebar_min.toggled.connect(lambda chk: self._on_menu_sv_toggled("enforce_sidebar_min_width", chk))
+
         self.settings_menu.addSeparator()
 
         lbl_theme = self.settings_menu.addAction("── Farbschema / Theme ──")
@@ -303,6 +308,7 @@ class HeaderBanner(QFrame):
             (self.act_sv_exp, config.single_view_show_exposure),
             (self.act_sv_date, config.single_view_show_date),
             (self.act_sv_size, config.single_view_show_filesize),
+            (self.act_enforce_sidebar_min, getattr(config, "enforce_sidebar_min_width", True)),
         ]
         for act, val in actions:
             act.blockSignals(True)

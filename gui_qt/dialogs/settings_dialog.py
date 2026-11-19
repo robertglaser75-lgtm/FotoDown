@@ -110,9 +110,12 @@ class SettingsDialog(QDialog):
         layout.addWidget(lbl_desc)
 
         # Farbschema & Theme Box
-        box_theme = QGroupBox("Farbschema & Erscheinungsbild")
-        theme_row = QHBoxLayout(box_theme)
-        theme_row.setContentsMargins(12, 10, 12, 10)
+        box_theme = QGroupBox("Farbschema & Darstellung")
+        theme_vbox = QVBoxLayout(box_theme)
+        theme_vbox.setContentsMargins(12, 10, 12, 10)
+        theme_vbox.setSpacing(8)
+
+        theme_row = QHBoxLayout()
         lbl_theme = QLabel("Erscheinungsbild / Modus:")
         lbl_theme.setStyleSheet("font-weight: 600;")
         theme_row.addWidget(lbl_theme)
@@ -122,6 +125,15 @@ class SettingsDialog(QDialog):
         self.combo_theme.addItem(get_theme_icon("light"), "Hell (Fluent Light)", THEME_LIGHT)
         self.combo_theme.addItem(get_theme_icon("system"), "Automatisch (Wie Betriebssystem)", THEME_SYSTEM)
         theme_row.addWidget(self.combo_theme, 1)
+        theme_vbox.addLayout(theme_row)
+
+        self.chk_enforce_sidebar_min = QCheckBox("Mindestbreite für Seitenleisten erzwingen (verhindert Abschneiden von Buttons)")
+        self.chk_enforce_sidebar_min.setToolTip(
+            "Wenn aktiviert, können Seitenleisten nicht schmaler als ihre Steuerelemente gezogen werden. "
+            "Deaktivieren, um Leisten beliebig schmal zu schieben."
+        )
+        theme_vbox.addWidget(self.chk_enforce_sidebar_min)
+
         layout.addWidget(box_theme)
 
         box_fields = QGroupBox("Sichtbare Informationen")
@@ -520,6 +532,7 @@ class SettingsDialog(QDialog):
         curr_theme = getattr(c, "theme", THEME_DARK)
         idx_theme = self.combo_theme.findData(curr_theme)
         self.combo_theme.setCurrentIndex(max(0, idx_theme))
+        self.chk_enforce_sidebar_min.setChecked(getattr(c, "enforce_sidebar_min_width", True))
 
         # 1. Einzelansicht
         self.chk_sv_filename.setChecked(c.single_view_show_filename)
@@ -572,6 +585,7 @@ class SettingsDialog(QDialog):
         selected_theme = self.combo_theme.currentData() or THEME_DARK
         c.theme = selected_theme
         theme_manager.apply_theme(selected_theme, config=c)
+        c.enforce_sidebar_min_width = self.chk_enforce_sidebar_min.isChecked()
 
         # 1. Einzelansicht
         c.single_view_show_filename = self.chk_sv_filename.isChecked()

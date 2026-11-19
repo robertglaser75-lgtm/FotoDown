@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.7")
+        self.assertEqual(__version__, "0.33.8")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1577,6 +1577,46 @@ class TestWorkflowStatusTracking(unittest.TestCase):
             min_content_w = tab.sidebar_content.minimumSizeHint().width()
             self.assertGreaterEqual(tab.sidebar_scroll.minimumWidth(), min_content_w)
             self.assertGreaterEqual(tab.sidebar_scroll.width(), min_content_w)
+            tab.close()
+
+    def test_configurable_enforce_sidebar_min_width(self):
+        from PySide6.QtCore import Qt
+        from gui_qt.dialogs.settings_dialog import SettingsDialog
+        from gui_qt.views.culling_tab import CullingTabView
+        from gui_qt.widgets.header_banner import HeaderBanner
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = AppConfig(culling_root_folder=tmpdir, target_dir=tmpdir)
+            self.assertTrue(cfg.enforce_sidebar_min_width)
+
+            # SettingsDialog loads & saves the option
+            dlg = SettingsDialog(cfg)
+            self.assertTrue(dlg.chk_enforce_sidebar_min.isChecked())
+            dlg.chk_enforce_sidebar_min.setChecked(False)
+            dlg.save_to_config()
+            self.assertFalse(cfg.enforce_sidebar_min_width)
+            dlg.close()
+
+            # HeaderBanner action syncs with config
+            banner = HeaderBanner(cfg)
+            banner.update_from_config(cfg)
+            self.assertFalse(banner.act_enforce_sidebar_min.isChecked())
+            banner.close()
+
+            # CullingTabView allows shrinking below content min width when disabled
+            tab = CullingTabView(cfg)
+            tab.resize(1400, 800)
+            tab.show()
+            QApplication.processEvents()
+            self.assertEqual(tab.sidebar_scroll.minimumWidth(), 60)
+            self.assertEqual(tab.sidebar_scroll.horizontalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+            # Re-enable and verify enforcement returns
+            cfg.enforce_sidebar_min_width = True
+            tab._sync_sidebar_min_width()
+            min_content_w = tab.sidebar_content.minimumSizeHint().width()
+            self.assertGreaterEqual(tab.sidebar_scroll.minimumWidth(), min_content_w)
+            self.assertEqual(tab.sidebar_scroll.horizontalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             tab.close()
 
     def test_filter_bar_selection_menu_and_vector_icons(self):

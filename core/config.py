@@ -173,6 +173,8 @@ class AppConfig:
     tree_show_col_bilder: bool = True
     tree_show_col_raw: bool = True
     tree_show_col_jpg: bool = True
+    # UI Layout-Optionen
+    enforce_sidebar_min_width: bool = True
     # Einzelansicht Anzeige-Optionen
     single_view_show_filename: bool = True
     single_view_show_extension: bool = True

@@ -121,8 +121,15 @@ class CullingLeftNavigationDock(QWidget):
         if saved_tab in (0, 1):
             self.tab_widget.setCurrentIndex(saved_tab)
 
-        self.setMinimumWidth(260)
+        self.apply_min_width_policy()
         self.setMaximumWidth(480)
+
+    def apply_min_width_policy(self):
+        """Sets dock minimum width based on enforce_sidebar_min_width config."""
+        if self.is_collapsed:
+            return
+        enforce = bool(getattr(self.config, "enforce_sidebar_min_width", True))
+        self.setMinimumWidth(260 if enforce else 60)
 
     def _on_theme_changed(self, theme_name: str):
         """Updates strip and tab icons when theme switches."""
@@ -191,7 +198,7 @@ class CullingLeftNavigationDock(QWidget):
         self.collapsed_strip.setVisible(False)
         self.tab_widget.setVisible(True)
 
-        self.setMinimumWidth(260)
+        self.apply_min_width_policy()
         self.setMaximumWidth(480)
         target_w = self.expanded_width if self.expanded_width >= 260 else 330
 
