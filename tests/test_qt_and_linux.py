@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.10")
+        self.assertEqual(__version__, "0.33.11")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1628,10 +1628,11 @@ class TestWorkflowStatusTracking(unittest.TestCase):
         for _ in range(5):
             QApplication.processEvents()
 
-        # Tab 1 (Import): sidebar_container must fit action_bar, profile_bar & path_selector
+        # Tab 1 (Import): sidebar_container must fit action_bar, profile_bar & path_selector without horizontal overflow
         self.assertGreaterEqual(w.sidebar_container.minimumWidth(), w.action_bar.minimumSizeHint().width())
         self.assertGreaterEqual(w.sidebar_container.minimumWidth(), w.profile_bar.minimumSizeHint().width())
         self.assertGreaterEqual(w.sidebar_container.minimumWidth(), w.path_selector.minimumSizeHint().width())
+        self.assertLessEqual(w.sidebar_scroll_content.width(), w.sidebar_scroll.viewport().width())
 
         # Tab 2 (Culling): middle sidebar is not clipped on initial show or during scan
         ct = w.culling_tab_view
@@ -1644,16 +1645,24 @@ class TestWorkflowStatusTracking(unittest.TestCase):
         self.assertGreaterEqual(ct.sidebar_scroll.width(), ct.sidebar_content.minimumSizeHint().width())
         self.assertEqual(ct.sidebar_scroll.horizontalScrollBar().value(), 0)
 
-        # Tab 3 (Transfer): files_container & tree_widget fit their toolbars and never overlap
+        # Tab 3 (Transfer): shrinks cleanly down to icon-only with tooltips, restores labels when widened
         tt = w.transfer_tab_view
-        tt.resize(1600, 800)
+        tt.resize(1200, 800)
         tt.show()
         for _ in range(5):
             QApplication.processEvents()
         for pane in (tt.pane_source, tt.pane_dest):
             self.assertGreaterEqual(pane.files_container.minimumWidth(), pane.filter_card.minimumSizeHint().width())
-            self.assertGreaterEqual(pane.tree_widget.minimumWidth(), pane.tree_widget.card_header.minimumSizeHint().width())
+            self.assertGreaterEqual(pane.tree_widget.minimumWidth(), pane.tree_widget.header_icon_min_width())
             self.assertGreaterEqual(pane.files_container.x(), pane.tree_widget.x() + pane.tree_widget.width())
+            self.assertIn("Umbenennen", pane.btn_rename.toolTip())
+            self.assertIn("Einstiegspunkt", pane.tree_widget.btn_change_root.toolTip())
+
+        tt.resize(1900, 800)
+        for _ in range(5):
+            QApplication.processEvents()
+        for pane in (tt.pane_source, tt.pane_dest):
+            self.assertEqual(pane.btn_rename.text(), "Umbenennen")
         w.close()
 
     def test_filter_bar_selection_menu_and_vector_icons(self):

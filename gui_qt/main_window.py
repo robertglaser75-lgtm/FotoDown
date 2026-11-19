@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from PySide6.QtCore import Qt, QThreadPool, QTimer
+from PySide6.QtCore import QEvent, Qt, QThreadPool, QTimer
 from PySide6.QtGui import QIcon, QImage, QKeyEvent, QKeySequence, QPixmap, QResizeEvent, QShortcut
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
@@ -194,6 +194,7 @@ class MainWindow(QMainWindow):
         scroll_layout.addStretch()
 
         sidebar_scroll.setWidget(scroll_content)
+        sidebar_scroll.viewport().installEventFilter(self)
         sidebar_layout.addWidget(sidebar_scroll, stretch=1)
 
         # 3. Bottom Fixed: Action Buttons, Capacity Info & Progress (always reachable!)
@@ -881,6 +882,14 @@ class MainWindow(QMainWindow):
             event.accept()
             return
         super().keyPressEvent(event)
+
+    def eventFilter(self, obj, event):
+        if hasattr(self, "sidebar_scroll") and obj is self.sidebar_scroll.viewport():
+            if event.type() == QEvent.Type.Resize and hasattr(self, "sidebar_scroll_content"):
+                vp_w = self.sidebar_scroll.viewport().width()
+                if vp_w > 0:
+                    self.sidebar_scroll_content.setMaximumWidth(vp_w)
+        return super().eventFilter(obj, event)
 
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)

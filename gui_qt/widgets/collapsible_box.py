@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QWidget
 )
 
+from gui_qt.widgets.elided_label import ElidedLabel
+
 
 class ClickableHeaderFrame(QFrame):
     clicked = Signal()
@@ -47,11 +49,9 @@ class CollapsibleBox(QWidget):
         header_layout.addWidget(self.lbl_chevron)
 
         # Title
-        self.lbl_title = QLabel(title)
+        self.lbl_title = ElidedLabel(title, Qt.TextElideMode.ElideRight)
         self.lbl_title.setObjectName("sectionTitle")
-        header_layout.addWidget(self.lbl_title)
-
-        header_layout.addStretch()
+        header_layout.addWidget(self.lbl_title, stretch=1)
 
         # Trailing action hint pill
         self.btn_toggle_hint = QPushButton("Einklappen \u25B2" if is_expanded else "Ausklappen \u25BC")

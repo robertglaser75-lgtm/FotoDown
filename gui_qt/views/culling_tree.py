@@ -161,7 +161,7 @@ class CullingDirectoryTreeWidget(QWidget):
         self.btn_change_root.setObjectName("btnChangeRoot")
         self.btn_change_root.setIcon(get_folder_icon(get_icon_color("accent"), 13))
         self.btn_change_root.setIconSize(QSize(13, 13))
-        self.btn_change_root.setToolTip("Neuen Einstiegspunkt (Hauptordner) für die Navigation auswählen")
+        self.btn_change_root.setToolTip("Einstiegspunkt — Neuen Hauptordner für die Navigation auswählen")
         self.btn_change_root.clicked.connect(self._on_choose_root_clicked)
         path_box.addWidget(self.btn_change_root)
 
@@ -279,8 +279,36 @@ class CullingDirectoryTreeWidget(QWidget):
         self._apply_column_visibility()
         QTimer.singleShot(0, self._recalculate_column_widths)
 
+    def header_icon_min_width(self) -> int:
+        """Minimum width needed to display all header icon buttons without clipping."""
+        buttons = [
+            self.btn_columns, self.btn_sort, self.btn_refresh,
+            self.btn_expand_all, self.btn_collapse_all, self.btn_collapse_panel,
+        ]
+        visible_w = sum(b.width() or 24 for b in buttons if b.isVisible())
+        return max(180, visible_w + 34)
+
+    def _update_responsive_header(self):
+        if not hasattr(self, "btn_change_root"):
+            return
+        compact = 0 < self.width() < 245
+        if compact and self.btn_change_root.text() != "":
+            self.btn_change_root.setObjectName("compactToolBtn")
+            self.btn_change_root.setText("")
+            self.btn_change_root.setFixedSize(28, 24)
+            self.btn_change_root.style().unpolish(self.btn_change_root)
+            self.btn_change_root.style().polish(self.btn_change_root)
+        elif not compact and self.btn_change_root.text() == "":
+            self.btn_change_root.setObjectName("btnChangeRoot")
+            self.btn_change_root.setText("Einstiegspunkt...")
+            self.btn_change_root.setMinimumSize(0, 0)
+            self.btn_change_root.setMaximumSize(16777215, 16777215)
+            self.btn_change_root.style().unpolish(self.btn_change_root)
+            self.btn_change_root.style().polish(self.btn_change_root)
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self._update_responsive_header()
         self._recalculate_column_widths()
 
     def _apply_column_visibility(self):

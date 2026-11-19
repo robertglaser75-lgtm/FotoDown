@@ -1,3 +1,3 @@
 """Vitrina application version."""
 
-__version__ = "0.33.10"
+__version__ = "0.33.11"

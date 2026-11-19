@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.11] - 2026-11-19
+
+### Behoben
+- **Import-Sidebar-Breitenbindung & adaptives Icon/Text-Umschalten im Sichern-Tab (`main_window.py`, `collapsible_box.py`, `culling_tree.py`, `transfer_tab.py`):**
+  - **Import-Tab:** `CollapsibleBox`-Titel nutzt `ElidedLabel`; ein `eventFilter` auf dem Viewport von `sidebar_scroll` begrenzt `sidebar_scroll_content.setMaximumWidth()` exakt auf die sichtbare Viewport-Breite, sodass „Durchsuchen“-Buttons und Pfade nie mehr rechts abgeschnitten werden.
+  - **Sichern-Tab:** Beide Teilbereiche (`tree_widget` und `files_container`) lassen sich nun bis auf ihre vollständige Icon-Breite zusammenschieben (`btn_change_root`, `btn_rename` und Filter-ComboBoxen blenden Texte automatisch aus und beim Auseinanderziehen wieder ein).
+  - **Tooltips bei gekürzten/ausgeblendeten Texten:** Alle adaptiven Buttons und Filter-Dropdowns aktualisieren ihre Tooltips dynamisch mit dem vollständigen Text für Mouseover-Anzeige.
+
 ## [0.33.10] - 2026-11-19
 
 ### Behoben
