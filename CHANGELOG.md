@@ -3,6 +3,13 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.13] - 2026-11-19
+
+### Geändert
+- **Eigenes Umbenennen-Icon & einheitliche Button-Höhe (`icons.py`, `transfer_tab.py`, `dark_fluent.qss`, `light_fluent.qss`):**
+  - Neues Vektor-Icon `get_rename_icon` (Stift + Textzeile) für `btn_rename` im Sichern-Tab ergänzt, sodass es sich klar vom Tag-Icon der Sortier-Auswahl (*„Name“*) unterscheidet.
+  - `btn_rename` nutzt nun einheitlich `24` px Höhe und `11` px Schriftgröße analog zu den benachbarten Toolbar-Buttons.
+
 ## [0.33.12] - 2026-11-19
 
 ### Behoben

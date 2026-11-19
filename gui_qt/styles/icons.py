@@ -801,6 +801,39 @@ def get_tag_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     return _make_icon(_draw, size)
 
 
+def get_rename_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
+    """Renders a crisp diagonal pencil and edit baseline icon for renaming files."""
+    c = color or get_icon_color("accent")
+
+    def _draw(p: QPainter, size: int) -> None:
+        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
+
+        # Diagonal pencil body from top-right to bottom-left tip
+        tip_x, tip_y = size * 0.16, size * 0.80
+        b1_x, b1_y = size * 0.22, size * 0.56
+        t1_x, t1_y = size * 0.68, size * 0.10
+        t2_x, t2_y = size * 0.86, size * 0.28
+        b2_x, b2_y = size * 0.40, size * 0.74
+
+        pencil = QPainterPath()
+        pencil.moveTo(tip_x, tip_y)
+        pencil.lineTo(b1_x, b1_y)
+        pencil.lineTo(t1_x, t1_y)
+        pencil.lineTo(t2_x, t2_y)
+        pencil.lineTo(b2_x, b2_y)
+        pencil.closeSubpath()
+        p.drawPath(pencil)
+
+        # Eraser collar line
+        p.drawLine(QPointF(size * 0.60, size * 0.18), QPointF(size * 0.78, size * 0.36))
+
+        # Baseline underline representing text/filename
+        p.drawLine(QPointF(size * 0.16, size * 0.88), QPointF(size * 0.86, size * 0.88))
+
+    return _make_icon(_draw, size)
+
+
 def get_fullscreen_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders 4 outward-pointing corner brackets for fullscreen toggle (F11)."""
     c = color or get_icon_color("normal")

@@ -39,7 +39,7 @@ from gui_qt.styles.icons import (
     get_clear_icon, get_files_icon, get_filmstrip_icon, get_folder_icon,
     get_gear_icon, get_grid_icon, get_grid_large_icon, get_grid_small_icon,
     get_history_icon, get_invert_icon, get_list_icon, get_move_icon,
-    get_quick_icon, get_refresh_icon, get_search_icon, get_sort_icon,
+    get_quick_icon, get_refresh_icon, get_rename_icon, get_search_icon, get_sort_icon,
     get_star_icon, get_swap_icon, get_tag_icon, get_uncheck_all_icon, get_video_icon
 )
 from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
@@ -358,8 +358,8 @@ class TransferPaneWidget(QWidget):
 
         self.btn_rename = QPushButton()
         self.btn_rename.setObjectName("compactToolBtn")
-        self.btn_rename.setIcon(get_tag_icon())
-        self.btn_rename.setIconSize(QSize(13, 13))
+        self.btn_rename.setIcon(get_rename_icon(size=14))
+        self.btn_rename.setIconSize(QSize(14, 14))
         self.btn_rename.setFixedSize(28, 24)
         self.btn_rename.setToolTip("Umbenennen — Alle markierten Dateien nach Muster umbenennen (wie beim Import)")
         self.btn_rename.clicked.connect(self._open_rename_dialog)
@@ -970,8 +970,9 @@ class TransferPaneWidget(QWidget):
         elif not compact and self.btn_rename.text() == "":
             self.btn_rename.setObjectName("btnRenameTransfer")
             self.btn_rename.setText("Umbenennen")
-            self.btn_rename.setMinimumSize(0, 0)
-            self.btn_rename.setMaximumSize(16777215, 16777215)
+            self.btn_rename.setMinimumWidth(0)
+            self.btn_rename.setMaximumWidth(16777215)
+            self.btn_rename.setFixedHeight(24)
             self.btn_rename.style().unpolish(self.btn_rename)
             self.btn_rename.style().polish(self.btn_rename)
 

@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.12")
+        self.assertEqual(__version__, "0.33.13")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1665,6 +1665,7 @@ class TestWorkflowStatusTracking(unittest.TestCase):
             QApplication.processEvents()
         for pane in (tt.pane_source, tt.pane_dest):
             self.assertEqual(pane.btn_rename.text(), "Umbenennen")
+            self.assertEqual(pane.btn_rename.height(), 24)
             self.assertGreater(pane.combo_type.width(), 100)
             self.assertGreater(pane.combo_view_mode.width(), 100)
         w.close()
