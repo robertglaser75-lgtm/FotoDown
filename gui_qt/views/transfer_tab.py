@@ -65,6 +65,15 @@ def compute_file_sha256(file_path: Path, chunk_size: int = 65536) -> str:
         return ""
 
 
+class ResponsiveComboBox(QComboBox):
+    """QComboBox whose sizeHint fits full text, while minimumSizeHint allows shrinking to icon + arrow."""
+
+    def minimumSizeHint(self) -> QSize:
+        s = super().minimumSizeHint()
+        icon_w = self.iconSize().width() if not self.iconSize().isEmpty() else 12
+        return QSize(max(50, icon_w + 38), s.height())
+
+
 @dataclass
 class TransferItem:
     """Represents a single media item in the transfer view."""
@@ -276,9 +285,7 @@ class TransferPaneWidget(QWidget):
         self.edit_search.textChanged.connect(self.apply_filter)
         f_row1.addWidget(self.edit_search, 1)
 
-        self.combo_type = QComboBox()
-        self.combo_type.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.combo_type.setMinimumContentsLength(0)
+        self.combo_type = ResponsiveComboBox()
         self.combo_type.setToolTip("Dateiformat: Alle Medien")
         self.combo_type.addItem(get_files_icon(size=12), "Alle Medien")
         self.combo_type.addItem(get_filmstrip_icon("#f43f5e", 12), "Nur RAW")
@@ -290,9 +297,7 @@ class TransferPaneWidget(QWidget):
         self.combo_type.currentIndexChanged.connect(self.apply_filter)
         f_row1.addWidget(self.combo_type)
 
-        self.combo_status = QComboBox()
-        self.combo_status.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.combo_status.setMinimumContentsLength(0)
+        self.combo_status = ResponsiveComboBox()
         self.combo_status.setToolTip("Bearbeitungsstatus: Alle Status")
         self.combo_status.addItem(get_check_all_icon("#94a3b8", 12), "Alle Status")
         self.combo_status.addItem(get_check_all_icon("#10b981", 12), "Bearbeitet")
@@ -360,9 +365,7 @@ class TransferPaneWidget(QWidget):
         self.btn_rename.clicked.connect(self._open_rename_dialog)
         f_row2.addWidget(self.btn_rename)
 
-        self.combo_sort = QComboBox()
-        self.combo_sort.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.combo_sort.setMinimumContentsLength(0)
+        self.combo_sort = ResponsiveComboBox()
         self.combo_sort.setToolTip("Sortierung: Name")
         self.combo_sort.addItem(get_tag_icon(size=12), "Name", "name")
         self.combo_sort.addItem(get_history_icon(size=12), "Datum", "mtime")
@@ -385,9 +388,7 @@ class TransferPaneWidget(QWidget):
         f_row2.addWidget(self.btn_sort_dir)
 
         # Single Configurable Display Mode Dropdown (replaces multiple view/size buttons)
-        self.combo_view_mode = QComboBox()
-        self.combo_view_mode.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.combo_view_mode.setMinimumContentsLength(0)
+        self.combo_view_mode = ResponsiveComboBox()
         self.combo_view_mode.setToolTip("Ansicht: Liste")
         self.combo_view_mode.addItem(get_list_icon("#cbd5e1", 13), "Liste", "list")
         self.combo_view_mode.addItem(get_grid_small_icon("#cbd5e1", 13), "Vorschau: Klein", "grid:80")

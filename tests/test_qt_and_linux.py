@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.11")
+        self.assertEqual(__version__, "0.33.12")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1657,12 +1657,16 @@ class TestWorkflowStatusTracking(unittest.TestCase):
             self.assertGreaterEqual(pane.files_container.x(), pane.tree_widget.x() + pane.tree_widget.width())
             self.assertIn("Umbenennen", pane.btn_rename.toolTip())
             self.assertIn("Einstiegspunkt", pane.tree_widget.btn_change_root.toolTip())
+            self.assertGreaterEqual(pane.combo_type.width(), 50)
+            self.assertGreaterEqual(pane.combo_sort.width(), 50)
 
         tt.resize(1900, 800)
         for _ in range(5):
             QApplication.processEvents()
         for pane in (tt.pane_source, tt.pane_dest):
             self.assertEqual(pane.btn_rename.text(), "Umbenennen")
+            self.assertGreater(pane.combo_type.width(), 100)
+            self.assertGreater(pane.combo_view_mode.width(), 100)
         w.close()
 
     def test_filter_bar_selection_menu_and_vector_icons(self):
