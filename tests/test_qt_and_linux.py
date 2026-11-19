@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.13")
+        self.assertEqual(__version__, "0.34.0")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1669,6 +1669,57 @@ class TestWorkflowStatusTracking(unittest.TestCase):
             self.assertGreater(pane.combo_type.width(), 100)
             self.assertGreater(pane.combo_view_mode.width(), 100)
         w.close()
+
+    def test_quick_preview_initial_zoom_overlay_and_rating(self):
+        from PIL import Image
+        from core.xmp_sync import read_xmp_workflow_info
+        from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
+        from gui_qt.dialogs.settings_dialog import SettingsDialog
+        from gui_qt.views.culling_tab import CullingItem
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            img_path = Path(tmpdir) / "viewer_test.jpg"
+            Image.new("RGB", (600, 400), color=(40, 120, 200)).save(img_path, format="JPEG")
+
+            cfg = AppConfig()
+            # 1. SettingsDialog saves & loads viewer_initial_zoom
+            dlg_set = SettingsDialog(cfg)
+            idx_75 = dlg_set.combo_viewer_zoom.findData("75")
+            self.assertGreaterEqual(idx_75, 0)
+            dlg_set.combo_viewer_zoom.setCurrentIndex(idx_75)
+            dlg_set.save_to_config()
+            self.assertEqual(cfg.viewer_initial_zoom, "75")
+            dlg_set.close()
+
+            # 2. QuickPreviewDialog applies initial zoom & bottom-left overlay fields
+            cfg.single_view_show_path = False
+            cfg.single_view_show_filename = True
+            item = CullingItem(primary_path=img_path, rating=2)
+            viewer = QuickPreviewDialog([item], start_index=0, config=cfg)
+            viewer.show()
+            QApplication.processEvents()
+
+            self.assertEqual(viewer._zoom_mode, "manual")
+            self.assertAlmostEqual(viewer._zoom_factor, 0.75, places=2)
+            self.assertTrue(viewer.info_overlay.isVisible())
+            overlay_txt = viewer.lbl_overlay_info.text()
+            self.assertIn("viewer_test.jpg", overlay_txt)
+            self.assertNotIn(tmpdir, overlay_txt)
+
+            # 3. Changing star rating updates item, XMP sidecar, overlay, and emits signal
+            emitted = []
+            viewer.rating_changed.connect(lambda: emitted.append(True))
+            viewer.star_buttons[3].click()  # 4 stars
+            self.assertEqual(item.rating, 4)
+            self.assertTrue(emitted)
+            self.assertEqual(read_xmp_workflow_info(img_path).rating, 4)
+            self.assertIn("★★★★☆", viewer.lbl_overlay_info.text())
+
+            # Clicking same star again clears rating to 0
+            viewer.star_buttons[3].click()
+            self.assertEqual(item.rating, 0)
+            self.assertEqual(read_xmp_workflow_info(img_path).rating, 0)
+            viewer.close()
 
     def test_filter_bar_selection_menu_and_vector_icons(self):
         from gui_qt.widgets.filter_bar import FilterBarWidget

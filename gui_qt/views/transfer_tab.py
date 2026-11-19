@@ -1064,6 +1064,7 @@ class TransferPaneWidget(QWidget):
             fullscreen=True
         )
         dlg.selection_changed.connect(self._on_fullscreen_selection_changed)
+        dlg.rating_changed.connect(self._populate_views)
         dlg.exec()
 
     def _on_fullscreen_selection_changed(self):

@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.34.0] - 2026-11-19
+
+### Hinzugefügt
+- **Bildbetrachter – Konfigurierbare Öffnungsgröße, linke untere Bilddaten & Sterne-Bewertung (`quick_preview_dialog.py`, `settings_dialog.py`, `config.py`, `culling_tab.py`, `transfer_tab.py`):**
+  - **Konfigurierbare Bildgröße beim Öffnen (`viewer_initial_zoom`):** In den Einstellungen (*Einzelansicht & Farbschema*) wählbar zwischen *„An Fenster anpassen (Einpassen)“*, `50 %`, `75 %`, *„Originalgröße (100 %)“*, `150 %` und `200 %`.
+  - **Bilddaten-Overlay in der linken unteren Ecke:** Zeigt Dateiname/Endung, Sterne/Status, Kamera/Objektiv, Belichtungsdaten, Datum, Dateigröße/Dimensionen und Ordnerpfad genau nach den in den Einstellungen aktivierten Feldern (`single_view_show_*`).
+  - **Sterne-Bewertung direkt im Bildbetrachter:** Interaktive 5-Sterne-Leiste (sowie `Strg+0..5`) speichert Bewertungen direkt via `sync_pair_xmp` in den XMP-Sidecar und synchronisiert Änderungen zurück in Sichten- & Sichern-Tab.
+
 ## [0.33.13] - 2026-11-19
 
 ### Geändert

@@ -1314,6 +1314,7 @@ class CullingTabView(QWidget):
             fullscreen=True
         )
         dlg.selection_changed.connect(self._on_fullscreen_selection_changed)
+        dlg.rating_changed.connect(lambda: self._on_fullscreen_rating_changed(dlg.current_idx))
         dlg.exec()
         # Sync index when returning
         if 0 <= dlg.current_idx < len(self.filtered_items):
@@ -1324,6 +1325,13 @@ class CullingTabView(QWidget):
     def _on_fullscreen_selection_changed(self):
         if 0 <= self.current_idx < len(self.filtered_items):
             self.filmstrip.update_card(self.current_idx, self.filtered_items[self.current_idx])
+
+    def _on_fullscreen_rating_changed(self, idx: int):
+        if 0 <= idx < len(self.filtered_items):
+            self.filmstrip.update_card(idx, self.filtered_items[idx])
+            self._update_stats_label()
+            if idx == self.current_idx:
+                self._render_current_item()
 
     def _prev_item(self):
         if self.filtered_items and self.current_idx > 0:

@@ -102,8 +102,8 @@ class SettingsDialog(QDialog):
 
         lbl_desc = QLabel(
             "Konfigurieren Sie hier, welche Datei- und Metadaten-Felder in der <b>Einzelansicht</b> "
-            "(sowohl im Tab <i>1. Importieren</i> als auch im Fotobetrachter von Tab <i>2. Sichten</i>) "
-            "eingeblendet werden sollen:"
+            "(Tab <i>1. Importieren</i>, Tab <i>2. Sichten</i>) sowie im integrierten <b>Bildbetrachter</b> "
+            "(linke untere Ecke) eingeblendet werden sollen:"
         )
         lbl_desc.setStyleSheet("color: #cbd5e1; font-size: 12px; line-height: 1.4;")
         lbl_desc.setWordWrap(True)
@@ -133,6 +133,21 @@ class SettingsDialog(QDialog):
             "Deaktivieren, um Leisten beliebig schmal zu schieben."
         )
         theme_vbox.addWidget(self.chk_enforce_sidebar_min)
+
+        viewer_zoom_row = QHBoxLayout()
+        lbl_viewer_zoom = QLabel("Bildbetrachter – Bildgröße beim Öffnen:")
+        lbl_viewer_zoom.setStyleSheet("font-weight: 600;")
+        viewer_zoom_row.addWidget(lbl_viewer_zoom)
+
+        self.combo_viewer_zoom = QComboBox()
+        self.combo_viewer_zoom.addItem("An Fenster anpassen (Einpassen)", "fit")
+        self.combo_viewer_zoom.addItem("50 %", "50")
+        self.combo_viewer_zoom.addItem("75 %", "75")
+        self.combo_viewer_zoom.addItem("Originalgröße (100 %)", "100")
+        self.combo_viewer_zoom.addItem("150 %", "150")
+        self.combo_viewer_zoom.addItem("200 %", "200")
+        viewer_zoom_row.addWidget(self.combo_viewer_zoom, 1)
+        theme_vbox.addLayout(viewer_zoom_row)
 
         layout.addWidget(box_theme)
 
@@ -293,6 +308,8 @@ class SettingsDialog(QDialog):
         idx_def = self.combo_nav_scheme.findData(DEFAULT_NAVIGATION_SCHEME)
         self.combo_nav_scheme.setCurrentIndex(max(0, idx_def))
         self.chk_nav_mouse_wheel.setChecked(False)
+        idx_vz = self.combo_viewer_zoom.findData("fit")
+        self.combo_viewer_zoom.setCurrentIndex(max(0, idx_vz))
         self._update_live_preview()
         self._update_nav_hint()
 
@@ -533,6 +550,9 @@ class SettingsDialog(QDialog):
         idx_theme = self.combo_theme.findData(curr_theme)
         self.combo_theme.setCurrentIndex(max(0, idx_theme))
         self.chk_enforce_sidebar_min.setChecked(getattr(c, "enforce_sidebar_min_width", True))
+        vz = getattr(c, "viewer_initial_zoom", "fit")
+        idx_vz = self.combo_viewer_zoom.findData(vz)
+        self.combo_viewer_zoom.setCurrentIndex(max(0, idx_vz))
 
         # 1. Einzelansicht
         self.chk_sv_filename.setChecked(c.single_view_show_filename)
@@ -586,6 +606,7 @@ class SettingsDialog(QDialog):
         c.theme = selected_theme
         theme_manager.apply_theme(selected_theme, config=c)
         c.enforce_sidebar_min_width = self.chk_enforce_sidebar_min.isChecked()
+        c.viewer_initial_zoom = self.combo_viewer_zoom.currentData() or "fit"
 
         # 1. Einzelansicht
         c.single_view_show_filename = self.chk_sv_filename.isChecked()

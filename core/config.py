@@ -175,6 +175,7 @@ class AppConfig:
     tree_show_col_jpg: bool = True
     # UI Layout-Optionen
     enforce_sidebar_min_width: bool = True
+    viewer_initial_zoom: str = "fit"            # "fit", "50", "75", "100", "150", "200"
     # Einzelansicht Anzeige-Optionen
     single_view_show_filename: bool = True
     single_view_show_extension: bool = True
