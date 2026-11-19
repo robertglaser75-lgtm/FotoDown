@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from PySide6.QtCore import Qt, QThreadPool
+from PySide6.QtCore import Qt, QThreadPool, QTimer
 from PySide6.QtGui import QIcon, QImage, QKeyEvent, QKeySequence, QPixmap, QResizeEvent, QShortcut
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
@@ -282,6 +282,7 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.lbl_status_stats = QLabel("Bereit. Wählen Sie ein Quelllaufwerk und klicken Sie auf 'Scannen'.")
         self.status_bar.addWidget(self.lbl_status_stats, 1)
+        QTimer.singleShot(0, self._apply_sidebar_min_width_policies)
 
     def _setup_shortcuts(self):
         """Initializes global keyboard shortcuts for the main window."""
@@ -831,9 +832,17 @@ class MainWindow(QMainWindow):
         """Enforces or relaxes minimum sidebar widths across all tabs based on config."""
         enforce = bool(getattr(self.config, "enforce_sidebar_min_width", True))
         if hasattr(self, "sidebar_container") and self.sidebar_container:
-            self.sidebar_container.setMinimumWidth(280 if enforce else 60)
-        if hasattr(self, "culling_tab") and self.culling_tab:
-            self.culling_tab._sync_sidebar_min_width()
+            if enforce:
+                action_w = self.action_bar.minimumSizeHint().width() if hasattr(self, "action_bar") else 0
+                profile_w = self.profile_bar.minimumSizeHint().width() if hasattr(self, "profile_bar") else 0
+                min_w = max(280, action_w + 20, profile_w + 20)
+                self.sidebar_container.setMinimumWidth(min_w)
+                self.sidebar_container.setMaximumWidth(max(480, min_w + 120))
+            else:
+                self.sidebar_container.setMinimumWidth(60)
+                self.sidebar_container.setMaximumWidth(480)
+        if hasattr(self, "culling_tab_view") and self.culling_tab_view:
+            self.culling_tab_view._sync_sidebar_min_width()
         if hasattr(self, "transfer_tab_view") and self.transfer_tab_view:
             self.transfer_tab_view.apply_min_width_policy()
 
@@ -841,12 +850,12 @@ class MainWindow(QMainWindow):
         self.header_banner.update_from_config(self.config)
         self.general_settings.load_config(self.config)
         self.single_view.apply_config(self.config)
-        self.culling_tab.apply_config()
+        self.culling_tab_view.apply_config()
         self._apply_sidebar_min_width_policies()
 
     def _on_single_view_config_changed(self):
         self.single_view.apply_config(self.config)
-        self.culling_tab.apply_config()
+        self.culling_tab_view.apply_config()
         self._apply_sidebar_min_width_policies()
 
     def toggle_fullscreen(self):

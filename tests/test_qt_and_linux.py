@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.8")
+        self.assertEqual(__version__, "0.33.9")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1618,6 +1618,38 @@ class TestWorkflowStatusTracking(unittest.TestCase):
             self.assertGreaterEqual(tab.sidebar_scroll.minimumWidth(), min_content_w)
             self.assertEqual(tab.sidebar_scroll.horizontalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             tab.close()
+
+    def test_enforced_min_widths_across_tabs(self):
+        from gui_qt.main_window import MainWindow
+
+        w = MainWindow()
+        w.resize(1400, 900)
+        w.show()
+        for _ in range(5):
+            QApplication.processEvents()
+
+        # Tab 1 (Import): sidebar_container must fit action_bar & profile_bar
+        self.assertGreaterEqual(w.sidebar_container.minimumWidth(), w.action_bar.minimumSizeHint().width())
+        self.assertGreaterEqual(w.sidebar_container.minimumWidth(), w.profile_bar.minimumSizeHint().width())
+
+        # Tab 2 (Culling): middle sidebar is not clipped on initial show before loading an image
+        ct = w.culling_tab_view
+        ct.resize(1200, 800)
+        ct.show()
+        for _ in range(5):
+            QApplication.processEvents()
+        self.assertGreaterEqual(ct.sidebar_scroll.width(), ct.sidebar_content.minimumSizeHint().width())
+
+        # Tab 3 (Transfer): files_container minimumWidth fits filter_card and never overlaps tree_widget
+        tt = w.transfer_tab_view
+        tt.resize(1400, 800)
+        tt.show()
+        for _ in range(5):
+            QApplication.processEvents()
+        for pane in (tt.pane_source, tt.pane_dest):
+            self.assertGreaterEqual(pane.files_container.minimumWidth(), pane.filter_card.minimumSizeHint().width())
+            self.assertGreaterEqual(pane.files_container.x(), pane.tree_widget.x() + pane.tree_widget.width())
+        w.close()
 
     def test_filter_bar_selection_menu_and_vector_icons(self):
         from gui_qt.widgets.filter_bar import FilterBarWidget

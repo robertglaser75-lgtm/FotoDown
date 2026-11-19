@@ -21,7 +21,7 @@ import os
 from pathlib import Path
 from typing import Counter as CounterType, Dict, List, Optional, Set, Tuple, Union
 
-from PySide6.QtCore import Qt, Signal, QSize, QThreadPool
+from PySide6.QtCore import Qt, Signal, QSize, QThreadPool, QTimer
 from PySide6.QtGui import QColor, QFont, QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup, QComboBox, QFileDialog, QFrame, QHBoxLayout, QHeaderView,
@@ -252,12 +252,14 @@ class TransferPaneWidget(QWidget):
 
         # 2. Files Container: Compact 2-Row Filter/Sort/View Toolbar + View Stack
         self.files_container = QWidget()
+        self.files_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.files_container.setMinimumWidth(160)
         content_layout = QVBoxLayout(self.files_container)
         content_layout.setContentsMargins(2, 2, 2, 2)
         content_layout.setSpacing(4)
 
         filter_card = QFrame()
+        self.filter_card = filter_card
         filter_card.setObjectName("filterCard")
         filter_layout = QVBoxLayout(filter_card)
         filter_layout.setContentsMargins(5, 4, 5, 4)
@@ -268,11 +270,14 @@ class TransferPaneWidget(QWidget):
         f_row1.setSpacing(4)
 
         self.edit_search = QLineEdit()
+        self.edit_search.setMinimumWidth(65)
         self.edit_search.setPlaceholderText("Dateiname filtern...")
         self.edit_search.textChanged.connect(self.apply_filter)
         f_row1.addWidget(self.edit_search, 1)
 
         self.combo_type = QComboBox()
+        self.combo_type.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.combo_type.setMinimumContentsLength(5)
         self.combo_type.setToolTip("Dateiformat filtern")
         self.combo_type.addItem(get_files_icon(size=12), "Alle Medien")
         self.combo_type.addItem(get_filmstrip_icon("#f43f5e", 12), "Nur RAW")
@@ -284,6 +289,8 @@ class TransferPaneWidget(QWidget):
         f_row1.addWidget(self.combo_type)
 
         self.combo_status = QComboBox()
+        self.combo_status.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.combo_status.setMinimumContentsLength(5)
         self.combo_status.setToolTip("Bearbeitungsstatus filtern")
         self.combo_status.addItem(get_check_all_icon("#94a3b8", 12), "Alle Status")
         self.combo_status.addItem(get_check_all_icon("#10b981", 12), "Bearbeitet")
@@ -293,10 +300,11 @@ class TransferPaneWidget(QWidget):
         f_row1.addWidget(self.combo_status)
 
         btn_clear_filter = QPushButton()
+        btn_clear_filter.setObjectName("compactToolBtn")
         btn_clear_filter.setIcon(get_clear_icon("#94a3b8", 12))
         btn_clear_filter.setIconSize(QSize(12, 12))
         btn_clear_filter.setToolTip("Filter zurücksetzen")
-        btn_clear_filter.setFixedSize(24, 22)
+        btn_clear_filter.setFixedSize(28, 24)
         btn_clear_filter.clicked.connect(self._clear_filters)
         f_row1.addWidget(btn_clear_filter)
 
@@ -310,7 +318,7 @@ class TransferPaneWidget(QWidget):
         btn_sel_all.setObjectName("compactToolBtn")
         btn_sel_all.setIcon(get_check_all_icon("#38bdf8", 13))
         btn_sel_all.setIconSize(QSize(13, 13))
-        btn_sel_all.setFixedSize(26, 22)
+        btn_sel_all.setFixedSize(28, 24)
         btn_sel_all.setToolTip("Alle sichtbaren Dateien markieren")
         btn_sel_all.clicked.connect(self.select_all)
         f_row2.addWidget(btn_sel_all)
@@ -319,7 +327,7 @@ class TransferPaneWidget(QWidget):
         btn_sel_none.setObjectName("compactToolBtn")
         btn_sel_none.setIcon(get_uncheck_all_icon("#94a3b8", 13))
         btn_sel_none.setIconSize(QSize(13, 13))
-        btn_sel_none.setFixedSize(26, 22)
+        btn_sel_none.setFixedSize(28, 24)
         btn_sel_none.setToolTip("Auswahl aufheben")
         btn_sel_none.clicked.connect(self.select_none)
         f_row2.addWidget(btn_sel_none)
@@ -328,12 +336,13 @@ class TransferPaneWidget(QWidget):
         btn_sel_inv.setObjectName("compactToolBtn")
         btn_sel_inv.setIcon(get_invert_icon("#cbd5e1", 13))
         btn_sel_inv.setIconSize(QSize(13, 13))
-        btn_sel_inv.setFixedSize(26, 22)
+        btn_sel_inv.setFixedSize(28, 24)
         btn_sel_inv.setToolTip("Auswahl umkehren")
         btn_sel_inv.clicked.connect(self.invert_selection)
         f_row2.addWidget(btn_sel_inv)
 
         self.lbl_sel_count = QLabel("0/0 (0 B)")
+        self.lbl_sel_count.setMinimumWidth(45)
         self.lbl_sel_count.setToolTip("0 von 0 markiert (0 B)")
         self.lbl_sel_count.setStyleSheet("color: #94a3b8; font-size: 10px;")
         f_row2.addWidget(self.lbl_sel_count, 1)
@@ -347,6 +356,8 @@ class TransferPaneWidget(QWidget):
         f_row2.addWidget(self.btn_rename)
 
         self.combo_sort = QComboBox()
+        self.combo_sort.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.combo_sort.setMinimumContentsLength(5)
         self.combo_sort.setToolTip("Sortierkriterium wählen")
         self.combo_sort.addItem(get_tag_icon(size=12), "Name", "name")
         self.combo_sort.addItem(get_history_icon(size=12), "Datum", "mtime")
@@ -360,7 +371,7 @@ class TransferPaneWidget(QWidget):
         self.btn_sort_dir.setObjectName("compactToolBtn")
         self.btn_sort_dir.setIcon(get_sort_icon(False, "#cbd5e1", 13))
         self.btn_sort_dir.setIconSize(QSize(13, 13))
-        self.btn_sort_dir.setFixedSize(26, 22)
+        self.btn_sort_dir.setFixedSize(28, 24)
         self.btn_sort_dir.setCheckable(True)
         self.btn_sort_dir.setChecked(False)
         self.btn_sort_dir.setToolTip("Sortierung: Aufsteigend (Klicken für Absteigend)")
@@ -369,6 +380,8 @@ class TransferPaneWidget(QWidget):
 
         # Single Configurable Display Mode Dropdown (replaces multiple view/size buttons)
         self.combo_view_mode = QComboBox()
+        self.combo_view_mode.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.combo_view_mode.setMinimumContentsLength(6)
         self.combo_view_mode.setToolTip("Darstellungsart & Vorschaugröße wählen")
         self.combo_view_mode.addItem(get_list_icon("#cbd5e1", 13), "Liste", "list")
         self.combo_view_mode.addItem(get_grid_small_icon("#cbd5e1", 13), "Vorschau: Klein", "grid:80")
@@ -938,25 +951,37 @@ class TransferPaneWidget(QWidget):
         """Adapts toolbar controls for compact laptop screens (< 1180px)."""
         if compact:
             self.edit_search.setPlaceholderText("Suchen...")
+            self.btn_rename.setObjectName("compactToolBtn")
             self.btn_rename.setText("")
-            self.btn_rename.setFixedSize(26, 22)
+            self.btn_rename.setFixedSize(28, 24)
         else:
             self.edit_search.setPlaceholderText("Dateiname filtern...")
+            self.btn_rename.setObjectName("")
             self.btn_rename.setText("Umbenennen")
             self.btn_rename.setMinimumSize(0, 0)
             self.btn_rename.setMaximumSize(16777215, 16777215)
+        self.btn_rename.style().unpolish(self.btn_rename)
+        self.btn_rename.style().polish(self.btn_rename)
+        self.apply_min_width_policy()
 
     def apply_min_width_policy(self):
         """Enforces or relaxes minimum pane/tree widths according to config.enforce_sidebar_min_width."""
         enforce = bool(getattr(self.config, "enforce_sidebar_min_width", True))
         if enforce:
+            fc_min = self.filter_card.minimumSizeHint().width() if hasattr(self, "filter_card") else 240
+            files_min = max(240, fc_min + 8)
             self.tree_widget.setMinimumWidth(180)
-            self.files_container.setMinimumWidth(200)
-            self.setMinimumWidth(260)
+            self.files_container.setMinimumWidth(files_min)
+            self.setMinimumWidth(max(260, files_min + 40))
         else:
             self.tree_widget.setMinimumWidth(60)
             self.files_container.setMinimumWidth(80)
             self.setMinimumWidth(120)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.apply_min_width_policy()
+        QTimer.singleShot(0, self.apply_min_width_policy)
 
     def _on_grid_item_changed(self, item: QListWidgetItem):
         path_str = item.data(Qt.ItemDataRole.UserRole)

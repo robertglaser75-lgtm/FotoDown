@@ -760,6 +760,7 @@ class CullingTabView(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self._sync_sidebar_min_width()
+        QTimer.singleShot(0, self._sync_sidebar_min_width)
 
     def _sync_sidebar_min_width(self):
         """Enforces or relaxes minimum sidebar widths according to config.enforce_sidebar_min_width."""
@@ -775,6 +776,13 @@ class CullingTabView(QWidget):
             self.sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             self.sidebar_scroll.setMinimumWidth(enforced_min_w)
             self.sidebar_scroll.setMaximumWidth(max(440, enforced_min_w + 120))
+            if hasattr(self, "splitter") and self.splitter:
+                sizes = self.splitter.sizes()
+                if len(sizes) == 3 and sizes[1] > 0 and sizes[1] < enforced_min_w:
+                    diff = enforced_min_w - sizes[1]
+                    sizes[1] = enforced_min_w
+                    sizes[2] = max(120, sizes[2] - diff)
+                    self.splitter.setSizes(sizes)
         else:
             self.sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             self.sidebar_scroll.setMinimumWidth(60)

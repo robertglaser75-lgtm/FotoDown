@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.9] - 2026-11-19
+
+### Behoben
+- **Dynamische Mindestbreiten & vollständige Icon-Darstellung in allen drei Tabs (`main_window.py`, `culling_tab.py`, `transfer_tab.py`):**
+  - **Import-Tab:** `sidebar_container` berechnet die erzwungene Mindestbreite nun dynamisch anhand von `action_bar.minimumSizeHint()` und `profile_bar.minimumSizeHint()`, sodass keine Buttons mehr bei DPI-Skalierung abgeschnitten werden.
+  - **Sichten & Sortieren:** Tippfehler `self.culling_tab` -> `self.culling_tab_view` in `MainWindow` korrigiert sowie `QTimer.singleShot(0, ...)` und Splitter-Breitenkorrektur in `CullingTabView` ergänzt, damit die mittlere Leiste bereits beim ersten Anzeigen vor dem Laden eines Bildes vollständig unbeschnitten bleibt.
+  - **Sichern-Tab:** `files_container` richtet seine erzwungene Mindestbreite dynamisch an `filter_card.minimumSizeHint()` aus (mit `WA_StyledBackground`), sodass keine Überlappung mit der Baumleiste auftritt; kompakte Toolbar-Buttons (`btn_clear_filter`, `btn_sel_all`, `btn_sel_none`, `btn_sel_inv`, `btn_sort_dir`, `btn_rename`) auf `28x24` px mit `compactToolBtn`-Styling vereinheitlicht, damit alle Icons vollständig sichtbar bleiben.
+
 ## [0.33.8] - 2026-11-19
 
 ### Hinzugefügt
