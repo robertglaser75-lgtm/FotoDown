@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.34.0")
+        self.assertEqual(__version__, "0.34.1")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1682,16 +1682,16 @@ class TestWorkflowStatusTracking(unittest.TestCase):
             Image.new("RGB", (600, 400), color=(40, 120, 200)).save(img_path, format="JPEG")
 
             cfg = AppConfig()
-            # 1. SettingsDialog saves & loads viewer_initial_zoom
+            # 1. SettingsDialog saves & loads viewer_initial_zoom (e.g. "fit:75")
             dlg_set = SettingsDialog(cfg)
-            idx_75 = dlg_set.combo_viewer_zoom.findData("75")
+            idx_75 = dlg_set.combo_viewer_zoom.findData("fit:75")
             self.assertGreaterEqual(idx_75, 0)
             dlg_set.combo_viewer_zoom.setCurrentIndex(idx_75)
             dlg_set.save_to_config()
-            self.assertEqual(cfg.viewer_initial_zoom, "75")
+            self.assertEqual(cfg.viewer_initial_zoom, "fit:75")
             dlg_set.close()
 
-            # 2. QuickPreviewDialog applies initial zoom & bottom-left overlay fields
+            # 2. QuickPreviewDialog applies initial fit-ratio & bottom-left overlay fields
             cfg.single_view_show_path = False
             cfg.single_view_show_filename = True
             item = CullingItem(primary_path=img_path, rating=2)
@@ -1699,8 +1699,9 @@ class TestWorkflowStatusTracking(unittest.TestCase):
             viewer.show()
             QApplication.processEvents()
 
-            self.assertEqual(viewer._zoom_mode, "manual")
-            self.assertAlmostEqual(viewer._zoom_factor, 0.75, places=2)
+            self.assertEqual(viewer._zoom_mode, "fit")
+            self.assertAlmostEqual(viewer._fit_ratio, 0.75, places=2)
+            self.assertEqual(viewer.lbl_zoom.text(), "Einp. 75%")
             self.assertTrue(viewer.info_overlay.isVisible())
             overlay_txt = viewer.lbl_overlay_info.text()
             self.assertIn("viewer_test.jpg", overlay_txt)

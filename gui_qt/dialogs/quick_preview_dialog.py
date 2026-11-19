@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from PIL import Image, ImageOps
 
-from PySide6.QtCore import QPoint, QSize, Qt, Signal
+from PySide6.QtCore import QPoint, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QColor, QFont, QIcon, QImage, QImageReader, QKeyEvent,
     QMouseEvent, QPixmap, QResizeEvent, QTransform, QWheelEvent
@@ -42,6 +42,7 @@ class QuickPreviewDialog(QDialog):
         self._current_pixmap: Optional[QPixmap] = None
         self._was_maximized_before_fullscreen: bool = False
         self._zoom_mode: str = "fit"  # "fit" or "manual"
+        self._fit_ratio: float = 1.0
         self._zoom_factor: float = 1.0
         self._rotation_deg: int = 0
         self._pan_active: bool = False
@@ -442,14 +443,27 @@ class QuickPreviewDialog(QDialog):
         mode_val = str(getattr(self.config, "viewer_initial_zoom", "fit") or "fit").strip().lower()
         if mode_val == "fit":
             self._zoom_mode = "fit"
+            self._fit_ratio = 1.0
             self._zoom_factor = 1.0
+        elif mode_val.startswith("fit:"):
+            try:
+                pct = float(mode_val.split(":", 1)[1])
+                self._zoom_mode = "fit"
+                self._fit_ratio = max(0.1, min(1.0, pct / 100.0))
+                self._zoom_factor = 1.0
+            except ValueError:
+                self._zoom_mode = "fit"
+                self._fit_ratio = 1.0
+                self._zoom_factor = 1.0
         else:
             try:
                 pct = float(mode_val)
                 self._zoom_mode = "manual"
+                self._fit_ratio = 1.0
                 self._zoom_factor = max(0.1, min(5.0, pct / 100.0))
             except ValueError:
                 self._zoom_mode = "fit"
+                self._fit_ratio = 1.0
                 self._zoom_factor = 1.0
 
     def _load_image_preview(self, target_path: Optional[Path]):
@@ -558,7 +572,10 @@ class QuickPreviewDialog(QDialog):
         if not has_img:
             self.lbl_zoom.setText("—")
         elif self._zoom_mode == "fit":
-            self.lbl_zoom.setText("Einpassen")
+            if self._fit_ratio < 0.999:
+                self.lbl_zoom.setText(f"Einp. {int(round(self._fit_ratio * 100))}%")
+            else:
+                self.lbl_zoom.setText("Einpassen")
         else:
             self.lbl_zoom.setText(f"{int(round(self._zoom_factor * 100))}%")
 
@@ -589,6 +606,7 @@ class QuickPreviewDialog(QDialog):
 
     def _zoom_fit(self):
         self._zoom_mode = "fit"
+        self._fit_ratio = 1.0
         self._scale_preview()
 
     def _rotate_by(self, delta_deg: int):
@@ -615,8 +633,8 @@ class QuickPreviewDialog(QDialog):
         if self._zoom_mode == "fit":
             self.scroll_area.setWidgetResizable(True)
             avail_size = self.scroll_area.viewport().size()
-            target_w = max(10, int((avail_size.width() - 8) * dpr))
-            target_h = max(10, int((avail_size.height() - 8) * dpr))
+            target_w = max(10, int((avail_size.width() - 8) * self._fit_ratio * dpr))
+            target_h = max(10, int((avail_size.height() - 8) * self._fit_ratio * dpr))
             scaled = src.scaled(
                 target_w,
                 target_h,
@@ -810,6 +828,12 @@ class QuickPreviewDialog(QDialog):
         y = max(10, self.preview_frame.height() - h - 14)
         self.info_overlay.move(14, y)
         self.info_overlay.raise_()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self._zoom_mode == "fit":
+            QTimer.singleShot(0, self._scale_preview)
+        QTimer.singleShot(0, self._position_info_overlay)
 
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
