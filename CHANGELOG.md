@@ -3,6 +3,13 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.34.2] - 2026-11-19
+
+### Geändert
+- **Hilfeseite auf aktuellen Stand gebracht (`help_dialog.py`):**
+  - Dokumentation um alle drei Arbeitsbereiche (*1. Importieren*, *2. Sichten & Sortieren*, *3. Sichern & Archivieren*), den integrierten Bildbetrachter (Zoom, Panning, Drehung `L`/`R`, Öffnungsgröße, linke untere Bilddaten, Sterne `Strg+0..5`), Seitenleisten-Einstellungen sowie aktualisierte Tastaturkürzel (`Q`/`B`/`W` u. a.) ergänzt.
+  - Theme-abhängige Farbgebung für Dark- und Light-Mode ergänzt.
+
 ## [0.34.1] - 2026-11-19
 
 ### Behoben

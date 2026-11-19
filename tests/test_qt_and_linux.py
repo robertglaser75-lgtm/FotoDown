@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.34.1")
+        self.assertEqual(__version__, "0.34.2")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1721,6 +1721,18 @@ class TestWorkflowStatusTracking(unittest.TestCase):
             self.assertEqual(item.rating, 0)
             self.assertEqual(read_xmp_workflow_info(img_path).rating, 0)
             viewer.close()
+
+    def test_help_dialog_up_to_date(self):
+        from PySide6.QtWidgets import QTextBrowser
+        from gui_qt.dialogs.help_dialog import HelpDialog
+
+        dlg = HelpDialog()
+        browser = dlg.findChild(QTextBrowser)
+        self.assertIsNotNone(browser)
+        html = browser.toHtml()
+        for expected in ("Integrierter Bildbetrachter", "Sichern", "Strg+0", "Workflow-Status"):
+            self.assertIn(expected, html)
+        dlg.close()
 
     def test_filter_bar_selection_menu_and_vector_icons(self):
         from gui_qt.widgets.filter_bar import FilterBarWidget
