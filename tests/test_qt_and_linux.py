@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.6")
+        self.assertEqual(__version__, "0.33.7")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -3194,6 +3194,43 @@ class TestAllSettingsPersistence(unittest.TestCase):
             dlg._load_image_preview(test_file)
             self.assertEqual(len(opened), 1)
             self.assertEqual(opened[0].name, "video_clip.mp4")
+            dlg.close()
+
+    def test_quick_preview_internal_viewer_zoom_rotate_and_qt_fallback(self):
+        from gui_qt.dialogs.quick_preview_dialog import QuickPreviewDialog
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # SVG is not supported by PIL, so it exercises the built-in QImageReader fallback
+            svg_file = Path(tmpdir) / "vector_test.svg"
+            svg_file.write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80">'
+                '<rect width="120" height="80" fill="#38bdf8"/></svg>',
+                encoding="utf-8",
+            )
+            opened_ext = []
+            dlg = QuickPreviewDialog(items=[svg_file], start_index=0, fullscreen=False)
+            dlg._open_original_external = lambda p: opened_ext.append(p)
+            dlg._load_image_preview(svg_file)
+
+            # Must render internally via QImageReader without opening external viewer
+            self.assertEqual(len(opened_ext), 0)
+            self.assertIsNotNone(dlg._current_pixmap)
+            self.assertFalse(dlg._current_pixmap.isNull())
+
+            # Test built-in viewer zoom & rotation controls
+            dlg._zoom_actual()
+            self.assertEqual(dlg._zoom_mode, "manual")
+            self.assertEqual(dlg.lbl_zoom.text(), "100%")
+            dlg._zoom_in()
+            self.assertEqual(dlg.lbl_zoom.text(), "125%")
+            dlg._zoom_out()
+            self.assertEqual(dlg.lbl_zoom.text(), "100%")
+            dlg._zoom_fit()
+            self.assertEqual(dlg._zoom_mode, "fit")
+            self.assertEqual(dlg.lbl_zoom.text(), "Einpassen")
+
+            dlg._rotate_by(90)
+            self.assertEqual(dlg._rotation_deg, 90)
             dlg.close()
 
     def test_batch_rename_dialog_plan_and_execution(self):

@@ -3,6 +3,13 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.7] - 2026-11-19
+
+### Hinzugefügt
+- **Integrierter Bildbetrachter (`quick_preview_dialog.py`, `single_view.py`):**
+  - `QuickPreviewDialog` zum vollwertigen internen Bildbetrachter ausgebaut: stufenloser Zoom per Mausrad oder Buttons (`+`, `−`, `1:1`, `Einpassen`), Verschieben (Panning per Mausziehen im Zoom), `90°`-Drehung (`↺` / `↻` bzw. `L` / `R`) sowie Live-Zoom-Anzeige.
+  - Zweistufiger interner Dekodier-Fallback: Relaxtes `PIL.Image.MAX_IMAGE_PIXELS`-Limit für übergroße Panoramen sowie nativer Qt-`QImageReader`-Fallback (inkl. EXIF-Auto-Rotation) für Formate wie SVG, WebP, TIFF-Varianten, TGA, BMP, GIF, ICO u. v. m. sowohl im integrierten Betrachter als auch in der Tab-1-Einzelansicht (`MediaSingleView`), sodass kein externes Programm mehr geöffnet werden muss.
+
 ## [0.33.6] - 2026-11-19
 
 ### Behoben

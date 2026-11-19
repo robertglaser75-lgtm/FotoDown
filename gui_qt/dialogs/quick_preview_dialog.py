@@ -6,11 +6,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from PIL import Image, ImageOps
 
-from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QIcon, QImage, QKeyEvent, QPixmap, QResizeEvent
+from PySide6.QtCore import QPoint, QSize, Qt, Signal
+from PySide6.QtGui import (
+    QColor, QFont, QIcon, QImage, QImageReader, QKeyEvent,
+    QMouseEvent, QPixmap, QResizeEvent, QTransform, QWheelEvent
+)
 from PySide6.QtWidgets import (
     QCheckBox, QDialog, QFrame, QHBoxLayout, QLabel,
-    QPushButton, QSizePolicy, QVBoxLayout, QWidget
+    QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 )
 
 from core.drive_detector import format_size
@@ -18,7 +21,10 @@ from core.config import AppConfig
 from core.importer import ScanItem
 from core.thumbnail import extract_raw_embedded_jpeg, load_preview_image
 from gui_qt.key_navigation import DEFAULT_NAVIGATION_SCHEME, is_nav_next, is_nav_prev
-from gui_qt.styles.icons import get_clear_icon, get_folder_open_icon
+from gui_qt.styles.icons import (
+    get_clear_icon, get_folder_open_icon, get_minus_icon,
+    get_plus_icon, get_refresh_icon, get_zoom_fit_icon, get_zoom_icon
+)
 from gui_qt.widgets.elided_label import ElidedLabel
 
 
@@ -33,8 +39,13 @@ class QuickPreviewDialog(QDialog):
         self.current_idx = max(0, min(start_index, len(items) - 1)) if items else 0
         self._current_pixmap: Optional[QPixmap] = None
         self._was_maximized_before_fullscreen: bool = False
+        self._zoom_mode: str = "fit"  # "fit" or "manual"
+        self._zoom_factor: float = 1.0
+        self._rotation_deg: int = 0
+        self._pan_active: bool = False
+        self._pan_last_pos: Optional[QPoint] = None
 
-        self.setWindowTitle("Vitrina - Vollbildvorschau")
+        self.setWindowTitle("Vitrina - Integrierter Bildbetrachter")
         self.resize(1200, 800)
         self.setMinimumSize(640, 480)
 
@@ -49,20 +60,72 @@ class QuickPreviewDialog(QDialog):
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(10)
 
-        # 1. Top Header Bar (Title, Index & Close)
+        # 1. Top Header Bar (Title, Index, Viewer Controls & Close)
         header = QHBoxLayout()
-        header.setSpacing(12)
+        header.setSpacing(6)
 
         self.lbl_filename = ElidedLabel("")
-        self.lbl_filename.setMaximumWidth(450)
-        self.lbl_filename.setStyleSheet("font-size: 15px; font-weight: bold; color: #38bdf8;")
+        self.lbl_filename.setMaximumWidth(340)
+        self.lbl_filename.setStyleSheet("font-size: 14px; font-weight: bold; color: #38bdf8;")
         header.addWidget(self.lbl_filename)
 
         self.lbl_counter = QLabel("")
-        self.lbl_counter.setStyleSheet("color: #94a3b8; font-size: 13px;")
+        self.lbl_counter.setStyleSheet("color: #94a3b8; font-size: 12px;")
         header.addWidget(self.lbl_counter)
 
         header.addStretch()
+
+        # Built-in Viewer Zoom & Rotation Controls
+        self.btn_zoom_out = QPushButton()
+        self.btn_zoom_out.setObjectName("compactToolBtn")
+        self.btn_zoom_out.setIcon(get_minus_icon(size=13))
+        self.btn_zoom_out.setFixedSize(26, 26)
+        self.btn_zoom_out.setToolTip("Verkleinern (-)")
+        self.btn_zoom_out.clicked.connect(self._zoom_out)
+        header.addWidget(self.btn_zoom_out)
+
+        self.lbl_zoom = QLabel("Einpassen")
+        self.lbl_zoom.setStyleSheet("color: #cbd5e1; font-size: 11px; min-width: 58px;")
+        self.lbl_zoom.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        header.addWidget(self.lbl_zoom)
+
+        self.btn_zoom_in = QPushButton()
+        self.btn_zoom_in.setObjectName("compactToolBtn")
+        self.btn_zoom_in.setIcon(get_plus_icon(size=13))
+        self.btn_zoom_in.setFixedSize(26, 26)
+        self.btn_zoom_in.setToolTip("Vergrößern (+)")
+        self.btn_zoom_in.clicked.connect(self._zoom_in)
+        header.addWidget(self.btn_zoom_in)
+
+        self.btn_zoom_100 = QPushButton("1:1")
+        self.btn_zoom_100.setObjectName("secondaryBtn")
+        self.btn_zoom_100.setIcon(get_zoom_icon(size=12))
+        self.btn_zoom_100.setIconSize(QSize(12, 12))
+        self.btn_zoom_100.setToolTip("Originalgröße 100% (1)")
+        self.btn_zoom_100.clicked.connect(self._zoom_actual)
+        header.addWidget(self.btn_zoom_100)
+
+        self.btn_zoom_fit = QPushButton("Einpassen")
+        self.btn_zoom_fit.setObjectName("secondaryBtn")
+        self.btn_zoom_fit.setIcon(get_zoom_fit_icon(size=12))
+        self.btn_zoom_fit.setIconSize(QSize(12, 12))
+        self.btn_zoom_fit.setToolTip("An Fenstergröße anpassen (0)")
+        self.btn_zoom_fit.clicked.connect(self._zoom_fit)
+        header.addWidget(self.btn_zoom_fit)
+
+        self.btn_rotate_left = QPushButton("↺")
+        self.btn_rotate_left.setObjectName("compactToolBtn")
+        self.btn_rotate_left.setFixedSize(26, 26)
+        self.btn_rotate_left.setToolTip("90° nach links drehen (L)")
+        self.btn_rotate_left.clicked.connect(lambda: self._rotate_by(-90))
+        header.addWidget(self.btn_rotate_left)
+
+        self.btn_rotate_right = QPushButton("↻")
+        self.btn_rotate_right.setObjectName("compactToolBtn")
+        self.btn_rotate_right.setFixedSize(26, 26)
+        self.btn_rotate_right.setToolTip("90° nach rechts drehen (R)")
+        self.btn_rotate_right.clicked.connect(lambda: self._rotate_by(90))
+        header.addWidget(self.btn_rotate_right)
 
         self.btn_prev = QPushButton("\u25C0 Vorheriges")
         self.btn_prev.setObjectName("secondaryBtn")
@@ -74,7 +137,7 @@ class QuickPreviewDialog(QDialog):
         self.btn_next.clicked.connect(self._next_item)
         header.addWidget(self.btn_next)
 
-        self.btn_open_orig = QPushButton("Original öffnen")
+        self.btn_open_orig = QPushButton("Extern")
         self.btn_open_orig.setIcon(get_folder_open_icon())
         self.btn_open_orig.setIconSize(QSize(14, 14))
         self.btn_open_orig.setObjectName("secondaryBtn")
@@ -91,17 +154,27 @@ class QuickPreviewDialog(QDialog):
 
         layout.addLayout(header)
 
-        # 2. Main Image Preview Area
+        # 2. Main Image Preview Area (ScrollArea for smooth zooming & panning)
         self.preview_frame = QFrame()
         self.preview_frame.setObjectName("photoCanvasArea")
         pf_layout = QVBoxLayout(self.preview_frame)
-        pf_layout.setContentsMargins(8, 8, 8, 8)
+        pf_layout.setContentsMargins(4, 4, 4, 4)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_area.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.scroll_area.setStyleSheet("background: transparent;")
 
         self.lbl_image = QLabel()
         self.lbl_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_image.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.lbl_image.mouseDoubleClickEvent = self._on_image_double_clicked
-        pf_layout.addWidget(self.lbl_image)
+        self.lbl_image.mousePressEvent = self._on_image_mouse_press
+        self.lbl_image.mouseMoveEvent = self._on_image_mouse_move
+        self.lbl_image.mouseReleaseEvent = self._on_image_mouse_release
+        self.scroll_area.setWidget(self.lbl_image)
+        pf_layout.addWidget(self.scroll_area)
 
         layout.addWidget(self.preview_frame, stretch=1)
 
@@ -135,7 +208,7 @@ class QuickPreviewDialog(QDialog):
 
         bottom_bar.addStretch()
 
-        lbl_hint = QLabel("Navigation: \u25C0 / \u25B6 | F11: Vollbild | Doppelklick: Umschalten | Schließen: Leertaste / Esc")
+        lbl_hint = QLabel("Mausrad: Zoom | + / - / 0 / 1 | L / R: Drehen | \u25C0 / \u25B6 | F11: Vollbild | Esc: Schließen")
         lbl_hint.setStyleSheet("color: #64748b; font-size: 11px;")
         bottom_bar.addWidget(lbl_hint)
 
@@ -266,37 +339,62 @@ class QuickPreviewDialog(QDialog):
         self._load_image_preview(info["target_path"])
 
     def _load_image_preview(self, target_path: Optional[Path]):
+        self._zoom_mode = "fit"
+        self._zoom_factor = 1.0
+        self._rotation_deg = 0
         if not target_path or not target_path.exists():
             self._current_pixmap = None
+            self.lbl_image.setPixmap(QPixmap())
             self.lbl_image.setText("\U0001F5BC Keine Vorschau verfügbar")
             self.lbl_image.setStyleSheet("color: #64748b; font-size: 16px;")
+            self._update_zoom_controls()
             return
 
         # 1. Try high-resolution preview extractor (embedded JPEG in RAW or fast scaling up to 4K)
         pil_img = load_preview_image(target_path, max_dim=3840)
 
-        # 2. Fallback: try opening full native image directly with PIL
+        # 2. Fallback: try opening full native image directly with PIL (relaxing DecompressionBomb limit)
         if pil_img is None:
+            prev_max_px = Image.MAX_IMAGE_PIXELS
             try:
+                Image.MAX_IMAGE_PIXELS = None
                 with Image.open(target_path) as full_img:
                     pil_img = ImageOps.exif_transpose(full_img).copy()
             except Exception:
                 pil_img = None
+            finally:
+                Image.MAX_IMAGE_PIXELS = prev_max_px
 
+        pixmap: Optional[QPixmap] = None
         if pil_img:
             try:
                 if pil_img.mode != "RGB":
                     pil_img = pil_img.convert("RGB")
                 data = pil_img.tobytes("raw", "RGB")
                 qimg = QImage(data, pil_img.width, pil_img.height, pil_img.width * 3, QImage.Format.Format_RGB888)
-                self._current_pixmap = QPixmap.fromImage(qimg)
-                self._scale_preview()
-                return
+                pixmap = QPixmap.fromImage(qimg)
             except Exception:
-                pass
+                pixmap = None
 
-        # 3. If no high-res preview can be generated: automatically open the original file with system viewer
+        # 3. Fallback: Qt native QImageReader (SVG, ICO, TGA, WebP, BMP, GIF, PDF, TIFF variants, etc.)
+        if (pixmap is None or pixmap.isNull()):
+            try:
+                reader = QImageReader(str(target_path))
+                reader.setAutoTransform(True)
+                qimg = reader.read()
+                if not qimg.isNull():
+                    pixmap = QPixmap.fromImage(qimg)
+            except Exception:
+                pixmap = None
+
+        if pixmap and not pixmap.isNull():
+            self._current_pixmap = pixmap
+            self._scale_preview()
+            return
+
+        # 4. If file cannot be decoded as an image (e.g. video or unsupported format): open in system viewer
         self._current_pixmap = None
+        self._update_zoom_controls()
         self._open_original_external(target_path)
 
     def _open_original_external(self, target_path: Path):
@@ -309,6 +407,8 @@ class QuickPreviewDialog(QDialog):
             except Exception:
                 pass
 
+        self.scroll_area.setWidgetResizable(True)
+        self.lbl_image.setPixmap(QPixmap())
         self.lbl_image.setText(
             f"<div style='text-align: center; padding: 24px;'>"
             f"<div style='font-size: 42px; margin-bottom: 12px;'>📂</div>"
@@ -331,25 +431,147 @@ class QuickPreviewDialog(QDialog):
             from PySide6.QtGui import QDesktopServices
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(p.resolve())))
 
-    def _scale_preview(self):
+    def _get_rotated_pixmap(self) -> Optional[QPixmap]:
+        if not self._current_pixmap or self._current_pixmap.isNull():
+            return None
+        if self._rotation_deg % 360 == 0:
+            return self._current_pixmap
+        return self._current_pixmap.transformed(QTransform().rotate(self._rotation_deg), Qt.TransformationMode.SmoothTransformation)
+
+    def _update_zoom_controls(self):
+        has_img = bool(self._current_pixmap and not self._current_pixmap.isNull())
+        for btn in (self.btn_zoom_out, self.btn_zoom_in, self.btn_zoom_100, self.btn_zoom_fit, self.btn_rotate_left, self.btn_rotate_right):
+            btn.setEnabled(has_img)
+        if not has_img:
+            self.lbl_zoom.setText("—")
+        elif self._zoom_mode == "fit":
+            self.lbl_zoom.setText("Einpassen")
+        else:
+            self.lbl_zoom.setText(f"{int(round(self._zoom_factor * 100))}%")
+
+    def _zoom_in(self):
         if not self._current_pixmap or self._current_pixmap.isNull():
             return
-        avail_size = self.preview_frame.size() - self.preview_frame.contentsMargins().toSize()
+        if self._zoom_mode == "fit":
+            self._zoom_factor = self._estimate_fit_scale()
+            self._zoom_mode = "manual"
+        self._zoom_factor = min(5.0, self._zoom_factor * 1.25)
+        self._scale_preview()
+
+    def _zoom_out(self):
+        if not self._current_pixmap or self._current_pixmap.isNull():
+            return
+        if self._zoom_mode == "fit":
+            self._zoom_factor = self._estimate_fit_scale()
+            self._zoom_mode = "manual"
+        self._zoom_factor = max(0.1, self._zoom_factor / 1.25)
+        self._scale_preview()
+
+    def _zoom_actual(self):
+        if not self._current_pixmap or self._current_pixmap.isNull():
+            return
+        self._zoom_mode = "manual"
+        self._zoom_factor = 1.0
+        self._scale_preview()
+
+    def _zoom_fit(self):
+        self._zoom_mode = "fit"
+        self._scale_preview()
+
+    def _rotate_by(self, delta_deg: int):
+        if not self._current_pixmap or self._current_pixmap.isNull():
+            return
+        self._rotation_deg = (self._rotation_deg + delta_deg) % 360
+        self._scale_preview()
+
+    def _estimate_fit_scale(self) -> float:
+        src = self._get_rotated_pixmap()
+        if not src or src.isNull():
+            return 1.0
+        vp = self.scroll_area.viewport().size()
+        if vp.width() <= 0 or vp.height() <= 0:
+            return 1.0
+        return min(vp.width() / max(1, src.width()), vp.height() / max(1, src.height()))
+
+    def _scale_preview(self):
+        src = self._get_rotated_pixmap()
+        if not src or src.isNull():
+            self._update_zoom_controls()
+            return
         dpr = self.devicePixelRatioF() if hasattr(self, "devicePixelRatioF") else 1.0
-        target_w = max(10, int((avail_size.width() - 16) * dpr))
-        target_h = max(10, int((avail_size.height() - 16) * dpr))
-        scaled = self._current_pixmap.scaled(
-            target_w,
-            target_h,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        scaled.setDevicePixelRatio(dpr)
-        self.lbl_image.setPixmap(scaled)
+        if self._zoom_mode == "fit":
+            self.scroll_area.setWidgetResizable(True)
+            avail_size = self.scroll_area.viewport().size()
+            target_w = max(10, int((avail_size.width() - 8) * dpr))
+            target_h = max(10, int((avail_size.height() - 8) * dpr))
+            scaled = src.scaled(
+                target_w,
+                target_h,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            scaled.setDevicePixelRatio(dpr)
+            self.lbl_image.setPixmap(scaled)
+            self.lbl_image.setCursor(Qt.CursorShape.ArrowCursor)
+        else:
+            self.scroll_area.setWidgetResizable(False)
+            disp_w = max(1, int(round(src.width() * self._zoom_factor)))
+            disp_h = max(1, int(round(src.height() * self._zoom_factor)))
+            scaled = src.scaled(
+                int(disp_w * dpr),
+                int(disp_h * dpr),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            scaled.setDevicePixelRatio(dpr)
+            self.lbl_image.setPixmap(scaled)
+            self.lbl_image.resize(disp_w, disp_h)
+            self.lbl_image.setCursor(Qt.CursorShape.OpenHandCursor)
+        self._update_zoom_controls()
+
+    def wheelEvent(self, event: QWheelEvent):
+        if self._current_pixmap and not self._current_pixmap.isNull():
+            delta = event.angleDelta().y()
+            if delta > 0:
+                self._zoom_in()
+                event.accept()
+                return
+            elif delta < 0:
+                self._zoom_out()
+                event.accept()
+                return
+        super().wheelEvent(event)
+
+    def _on_image_mouse_press(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton and self._zoom_mode == "manual":
+            self._pan_active = True
+            self._pan_last_pos = event.globalPosition().toPoint()
+            self.lbl_image.setCursor(Qt.CursorShape.ClosedHandCursor)
+            event.accept()
+
+    def _on_image_mouse_move(self, event: QMouseEvent):
+        if self._pan_active and self._pan_last_pos is not None:
+            curr = event.globalPosition().toPoint()
+            delta = curr - self._pan_last_pos
+            self._pan_last_pos = curr
+            hbar = self.scroll_area.horizontalScrollBar()
+            vbar = self.scroll_area.verticalScrollBar()
+            hbar.setValue(hbar.value() - delta.x())
+            vbar.setValue(vbar.value() - delta.y())
+            event.accept()
+
+    def _on_image_mouse_release(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton and self._pan_active:
+            self._pan_active = False
+            self._pan_last_pos = None
+            if self._zoom_mode == "manual":
+                self.lbl_image.setCursor(Qt.CursorShape.OpenHandCursor)
+            event.accept()
 
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
-        self._scale_preview()
+        if self._zoom_mode == "fit":
+            self._scale_preview()
 
     def _prev_item(self):
         if self.current_idx > 0:
@@ -386,6 +608,18 @@ class QuickPreviewDialog(QDialog):
             self.accept()
         elif key == Qt.Key.Key_F11:
             self.toggle_fullscreen()
+        elif key in (Qt.Key.Key_Plus, Qt.Key.Key_Equal):
+            self._zoom_in()
+        elif key == Qt.Key.Key_Minus:
+            self._zoom_out()
+        elif key == Qt.Key.Key_0:
+            self._zoom_fit()
+        elif key == Qt.Key.Key_1:
+            self._zoom_actual()
+        elif key == Qt.Key.Key_L:
+            self._rotate_by(-90)
+        elif key == Qt.Key.Key_R:
+            self._rotate_by(90)
         elif is_nav_prev(key, scheme):
             self._prev_item()
         elif is_nav_next(key, scheme):

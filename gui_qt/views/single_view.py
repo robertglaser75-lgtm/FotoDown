@@ -6,7 +6,7 @@ from typing import List, Optional
 from PIL import Image
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QFont, QImage, QKeyEvent, QPainter, QPixmap, QResizeEvent, QWheelEvent
+from PySide6.QtGui import QColor, QFont, QImage, QImageReader, QKeyEvent, QPainter, QPixmap, QResizeEvent, QWheelEvent
 from PySide6.QtWidgets import (
     QCheckBox, QFrame, QHBoxLayout, QLabel,
     QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
@@ -321,23 +321,38 @@ class MediaSingleView(QWidget):
             return
 
         pil_img = load_preview_image(target_path, max_dim=3840)
+        pixmap: Optional[QPixmap] = None
         if pil_img:
             try:
                 if pil_img.mode != "RGB":
                     pil_img = pil_img.convert("RGB")
                 data = pil_img.tobytes("raw", "RGB")
                 qimg = QImage(data, pil_img.width, pil_img.height, pil_img.width * 3, QImage.Format.Format_RGB888)
-                self._current_pixmap = QPixmap.fromImage(qimg)
-                self._preview_cache[target_key] = self._current_pixmap
-                self._preview_cache.move_to_end(target_key)
-                while len(self._preview_cache) > self._max_cache_size:
-                    self._preview_cache.popitem(last=False)
-
-                self._update_display()
-                self.item_focused.emit(item)
-                return
+                pixmap = QPixmap.fromImage(qimg)
             except Exception:
-                pass
+                pixmap = None
+
+        # Qt native image reader fallback (SVG, ICO, TGA, WebP, TIFF variants, etc.)
+        if (pixmap is None or pixmap.isNull()) and target_path.exists():
+            try:
+                reader = QImageReader(str(target_path))
+                reader.setAutoTransform(True)
+                qimg = reader.read()
+                if not qimg.isNull():
+                    pixmap = QPixmap.fromImage(qimg)
+            except Exception:
+                pixmap = None
+
+        if pixmap and not pixmap.isNull():
+            self._current_pixmap = pixmap
+            self._preview_cache[target_key] = self._current_pixmap
+            self._preview_cache.move_to_end(target_key)
+            while len(self._preview_cache) > self._max_cache_size:
+                self._preview_cache.popitem(last=False)
+
+            self._update_display()
+            self.item_focused.emit(item)
+            return
 
         self._current_pixmap = None
         self.lbl_image.setPixmap(QPixmap())
