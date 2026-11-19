@@ -3,7 +3,7 @@
 from PySide6.QtCore import QSize, Signal
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QVBoxLayout, QWidget
+    QPushButton, QSizePolicy, QVBoxLayout, QWidget
 )
 
 from core.config import AppConfig
@@ -29,6 +29,8 @@ class GeneralSettingsWidget(QWidget):
         layout.addWidget(lbl_org)
 
         self.combo_org = QComboBox()
+        self.combo_org.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.combo_org.setMinimumContentsLength(10)
         self.combo_org.addItem("Alle Fotos gemeinsam in einem Ordner", "same")
         self.combo_org.addItem("Getrennte Unterordner (.../JPG und .../RAW)", "subfolders")
         self.combo_org.addItem("Getrennte Hauptordner (JPG/... und RAW/...)", "parent_folders")
@@ -39,11 +41,13 @@ class GeneralSettingsWidget(QWidget):
 
         # 2. Pairing & Sidecars
         self.chk_pair_raw = QCheckBox("🔗 RAW & JPG als logische Einheit koppeln")
+        self.chk_pair_raw.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         self.chk_pair_raw.setChecked(True)
         self.chk_pair_raw.toggled.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.chk_pair_raw)
 
         self.chk_sync_xmp = QCheckBox("📄 XMP-Sidecars (.xmp) synchron mitführen")
+        self.chk_sync_xmp.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         self.chk_sync_xmp.setChecked(True)
         self.chk_sync_xmp.toggled.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.chk_sync_xmp)
@@ -52,16 +56,19 @@ class GeneralSettingsWidget(QWidget):
 
         # 3. Detection & Duplicate Safety
         self.chk_auto_detect = QCheckBox("⚡ SD-Karten automatisch beim Einstecken erkennen")
+        self.chk_auto_detect.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         self.chk_auto_detect.setChecked(True)
         self.chk_auto_detect.toggled.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.chk_auto_detect)
 
         self.chk_only_new = QCheckBox("Nur neue Fotos && Videos importieren (Duplikate überspringen)")
+        self.chk_only_new.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         self.chk_only_new.setChecked(True)
         self.chk_only_new.toggled.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.chk_only_new)
 
         self.chk_verify = QCheckBox("\u2714 Bit-genaue Integritätsprüfung (SHA-256 Hashes prüfen)")
+        self.chk_verify.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         self.chk_verify.setChecked(True)
         self.chk_verify.toggled.connect(lambda *args: self.changed.emit())
         layout.addWidget(self.chk_verify)
@@ -119,6 +126,8 @@ class GeneralSettingsWidget(QWidget):
         adv_layout.addWidget(lbl_culling)
 
         self.combo_reject_action = QComboBox()
+        self.combo_reject_action.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.combo_reject_action.setMinimumContentsLength(10)
         self.combo_reject_action.addItem("In Unterordner verschieben (_Abgelehnt/)", "move_folder")
         self.combo_reject_action.addItem("In den Papierkorb / Löschen", "trash")
         self.combo_reject_action.addItem("Nur in Metadaten als abgelehnt markieren", "flag_only")
@@ -131,6 +140,8 @@ class GeneralSettingsWidget(QWidget):
         adv_layout.addWidget(lbl_nas)
 
         lbl_fa = QLabel("Familienalbum-Zielpfad (0001_Unsere_Fotos/{YYYY}/{MM}):")
+        lbl_fa.setWordWrap(True)
+        lbl_fa.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         lbl_fa.setStyleSheet("color: #94a3b8; font-size: 11px;")
         adv_layout.addWidget(lbl_fa)
 

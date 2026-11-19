@@ -30,6 +30,7 @@ from gui_qt.styles.icons import (
     get_icon_color
 )
 from gui_qt.styles.theme import theme_manager
+from gui_qt.widgets.elided_label import ElidedLabel
 from gui_qt.widgets.paired_header import PairedHeaderView
 
 
@@ -79,6 +80,7 @@ class CullingDirectoryTreeWidget(QWidget):
 
         # Header Card: Title, Einstiegspunkt, and Action Buttons
         card_header = QFrame()
+        self.card_header = card_header
         card_header.setObjectName("treeHeaderCard")
         h_layout = QVBoxLayout(card_header)
         h_layout.setContentsMargins(6, 6, 6, 6)
@@ -86,7 +88,7 @@ class CullingDirectoryTreeWidget(QWidget):
 
         title_row = QHBoxLayout()
         title_row.setSpacing(2)
-        lbl_title = QLabel(self.title_text)
+        lbl_title = ElidedLabel(self.title_text, Qt.TextElideMode.ElideRight)
         lbl_title.setObjectName("treeTitleLabel")
         title_row.addWidget(lbl_title, stretch=1)
 

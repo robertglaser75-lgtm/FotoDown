@@ -5,10 +5,11 @@ from typing import Optional, Tuple
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QProgressBar,
-    QVBoxLayout, QWidget
+    QSizePolicy, QVBoxLayout, QWidget
 )
 
 from core.drive_detector import DiskSpaceInfo, format_size, get_disk_space
+from gui_qt.widgets.elided_label import ElidedLabel
 
 
 class StorageBarWidget(QFrame):
@@ -29,15 +30,14 @@ class StorageBarWidget(QFrame):
         header = QHBoxLayout()
         header.setSpacing(8)
 
-        self.lbl_title = QLabel(self.default_title)
+        self.lbl_title = ElidedLabel(self.default_title, Qt.TextElideMode.ElideRight)
         self.lbl_title.setObjectName("storageTitle")
 
         self.lbl_pct = QLabel("")
         self.lbl_pct.setStyleSheet("font-size: 11px; font-weight: bold; color: #38bdf8;")
         self.lbl_pct.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
-        header.addWidget(self.lbl_title)
-        header.addStretch()
+        header.addWidget(self.lbl_title, stretch=1)
         header.addWidget(self.lbl_pct)
         layout.addLayout(header)
 
@@ -48,10 +48,11 @@ class StorageBarWidget(QFrame):
         self.bar.setValue(0)
         self.bar.setTextVisible(False)
         self.bar.setFixedHeight(7)
+        self.bar.setMinimumWidth(0)
         layout.addWidget(self.bar)
 
         # Sub-info row: Details (Free / Total) across full width
-        self.lbl_info = QLabel("Kein Pfad festgelegt")
+        self.lbl_info = ElidedLabel("Kein Pfad festgelegt", Qt.TextElideMode.ElideRight)
         self.lbl_info.setObjectName("storageInfo")
         layout.addWidget(self.lbl_info)
 

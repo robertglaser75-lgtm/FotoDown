@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.10] - 2026-11-19
+
+### Behoben
+- **Vollständige Behebung von Seitenleisten-Abschnitten beim Laden & in schmalen Bereichen (`main_window.py`, `culling_tab.py`, `culling_tree.py`, `transfer_tab.py`, `elided_label.py`, `storage_bar.py`, `path_selector.py`, `general_settings.py`):**
+  - **Import-Tab:** `ElidedLabel` überschreibt nun `minimumSizeHint()` (Breite `0`), `StorageBarWidget` nutzt `ElidedLabel`, `PathSelectorWidget` & `GeneralSettingsWidget` verhindern horizontales Aufblähen durch lange Checkboxen/ComboBoxen, sodass die „Durchsuchen“-Buttons vollständig in der Sidebar bleiben.
+  - **Sichten & Sortieren:** `lbl_scan_status` und `lbl_folder_path` in `CullingTabView` umbrechen und ignorieren horizontale Mindestbreiten (`setWordWrap(True)`, `setMinimumWidth(0)`, `QSizePolicy.Ignored`), sodass lange Scan-Statusmeldungen (`„Lese Fotos ein: ... – lade Vorschau...“`) die mittlere Leiste während des Einlesens nicht mehr links und rechts abschneiden.
+  - **Sichern-Tab:** `CullingDirectoryTreeWidget`-Titel nutzt `ElidedLabel`, damit alle 6 Header-Icons sichtbar bleiben; `TransferPane` setzt `btn_rename` kompakt als `28×24` Icon-Button ein und berechnet seine Gesamtmindestbreite inklusive `tree_widget` + `files_container`, um Überlappungen und abgeschnittene Filter-Controls zu verhindern.
+
 ## [0.33.9] - 2026-11-19
 
 ### Behoben

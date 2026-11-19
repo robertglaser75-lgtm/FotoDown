@@ -419,6 +419,8 @@ class CullingTabView(QWidget):
         self.lbl_folder_path = QLabel("Kein Ordner ausgewählt")
         self.lbl_folder_path.setStyleSheet("color: #0284c7; font-size: 11px; font-weight: 500;")
         self.lbl_folder_path.setWordWrap(True)
+        self.lbl_folder_path.setMinimumWidth(0)
+        self.lbl_folder_path.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         layout_folder.addWidget(self.lbl_folder_path)
 
         # Scanning Progress Frame
@@ -431,6 +433,9 @@ class CullingTabView(QWidget):
         prog_head = QHBoxLayout()
         self.lbl_scan_status = QLabel("Lese Fotos ein...")
         self.lbl_scan_status.setStyleSheet("color: #0284c7; font-weight: 600; font-size: 10px;")
+        self.lbl_scan_status.setWordWrap(True)
+        self.lbl_scan_status.setMinimumWidth(0)
+        self.lbl_scan_status.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         prog_head.addWidget(self.lbl_scan_status, stretch=1)
 
         self.btn_cancel_scan = QPushButton("✕")
@@ -774,6 +779,7 @@ class CullingTabView(QWidget):
         enforced_min_w = max(250, content_min_w + sb_w + 4)
         if enforce:
             self.sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self.sidebar_scroll.horizontalScrollBar().setValue(0)
             self.sidebar_scroll.setMinimumWidth(enforced_min_w)
             self.sidebar_scroll.setMaximumWidth(max(440, enforced_min_w + 120))
             if hasattr(self, "splitter") and self.splitter:

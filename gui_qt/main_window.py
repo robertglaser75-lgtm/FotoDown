@@ -162,12 +162,14 @@ class MainWindow(QMainWindow):
 
         # 2. Middle Scrollable Area: Collapsible Settings Sections
         sidebar_scroll = QScrollArea()
+        self.sidebar_scroll = sidebar_scroll
         sidebar_scroll.setWidgetResizable(True)
         sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
         sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         sidebar_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
         scroll_content = QWidget()
+        self.sidebar_scroll_content = scroll_content
         scroll_layout = QVBoxLayout(scroll_content)
         scroll_layout.setContentsMargins(0, 0, 4, 0)
         scroll_layout.setSpacing(8)
@@ -835,7 +837,9 @@ class MainWindow(QMainWindow):
             if enforce:
                 action_w = self.action_bar.minimumSizeHint().width() if hasattr(self, "action_bar") else 0
                 profile_w = self.profile_bar.minimumSizeHint().width() if hasattr(self, "profile_bar") else 0
-                min_w = max(280, action_w + 20, profile_w + 20)
+                path_w = (self.path_selector.minimumSizeHint().width() + 32) if hasattr(self, "path_selector") else 0
+                sb_w = (self.sidebar_scroll.verticalScrollBar().sizeHint().width() or 14) if hasattr(self, "sidebar_scroll") else 14
+                min_w = max(280, action_w + 20, profile_w + 20, path_w + sb_w + 20)
                 self.sidebar_container.setMinimumWidth(min_w)
                 self.sidebar_container.setMaximumWidth(max(480, min_w + 120))
             else:

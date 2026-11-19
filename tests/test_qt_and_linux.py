@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.9")
+        self.assertEqual(__version__, "0.33.10")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1628,26 +1628,31 @@ class TestWorkflowStatusTracking(unittest.TestCase):
         for _ in range(5):
             QApplication.processEvents()
 
-        # Tab 1 (Import): sidebar_container must fit action_bar & profile_bar
+        # Tab 1 (Import): sidebar_container must fit action_bar, profile_bar & path_selector
         self.assertGreaterEqual(w.sidebar_container.minimumWidth(), w.action_bar.minimumSizeHint().width())
         self.assertGreaterEqual(w.sidebar_container.minimumWidth(), w.profile_bar.minimumSizeHint().width())
+        self.assertGreaterEqual(w.sidebar_container.minimumWidth(), w.path_selector.minimumSizeHint().width())
 
-        # Tab 2 (Culling): middle sidebar is not clipped on initial show before loading an image
+        # Tab 2 (Culling): middle sidebar is not clipped on initial show or during scan
         ct = w.culling_tab_view
         ct.resize(1200, 800)
         ct.show()
+        ct.lbl_scan_status.setText("Lese Fotos ein: 311 Fotos gefunden – lade Vorschau...")
+        ct.progress_frame.setVisible(True)
         for _ in range(5):
             QApplication.processEvents()
         self.assertGreaterEqual(ct.sidebar_scroll.width(), ct.sidebar_content.minimumSizeHint().width())
+        self.assertEqual(ct.sidebar_scroll.horizontalScrollBar().value(), 0)
 
-        # Tab 3 (Transfer): files_container minimumWidth fits filter_card and never overlaps tree_widget
+        # Tab 3 (Transfer): files_container & tree_widget fit their toolbars and never overlap
         tt = w.transfer_tab_view
-        tt.resize(1400, 800)
+        tt.resize(1600, 800)
         tt.show()
         for _ in range(5):
             QApplication.processEvents()
         for pane in (tt.pane_source, tt.pane_dest):
             self.assertGreaterEqual(pane.files_container.minimumWidth(), pane.filter_card.minimumSizeHint().width())
+            self.assertGreaterEqual(pane.tree_widget.minimumWidth(), pane.tree_widget.card_header.minimumSizeHint().width())
             self.assertGreaterEqual(pane.files_container.x(), pane.tree_widget.x() + pane.tree_widget.width())
         w.close()
 

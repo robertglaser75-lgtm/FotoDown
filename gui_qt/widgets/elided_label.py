@@ -4,7 +4,7 @@ Prevents layout breakage and awkward clipping of long file paths and names
 on small laptop viewports and narrow splitters, while preserving tooltip inspection.
 """
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFontMetrics, QPaintEvent, QPainter
 from PySide6.QtWidgets import QLabel, QSizePolicy, QWidget
 
@@ -54,6 +54,11 @@ class ElidedLabel(QLabel):
         """Sets the eliding mode (ElideMiddle, ElideRight, ElideLeft)."""
         self._elide_mode = mode
         self.update()
+
+    def minimumSizeHint(self) -> QSize:
+        """Allows the label to shrink down to 0px width without expanding parent layouts."""
+        s = super().minimumSizeHint()
+        return QSize(0, s.height())
 
     def paintEvent(self, event: QPaintEvent) -> None:
         """Custom paint event that elides the string based on the current label width."""

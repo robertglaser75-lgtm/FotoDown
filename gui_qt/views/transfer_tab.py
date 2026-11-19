@@ -290,7 +290,7 @@ class TransferPaneWidget(QWidget):
 
         self.combo_status = QComboBox()
         self.combo_status.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.combo_status.setMinimumContentsLength(5)
+        self.combo_status.setMinimumContentsLength(3)
         self.combo_status.setToolTip("Bearbeitungsstatus filtern")
         self.combo_status.addItem(get_check_all_icon("#94a3b8", 12), "Alle Status")
         self.combo_status.addItem(get_check_all_icon("#10b981", 12), "Bearbeitet")
@@ -347,17 +347,18 @@ class TransferPaneWidget(QWidget):
         self.lbl_sel_count.setStyleSheet("color: #94a3b8; font-size: 10px;")
         f_row2.addWidget(self.lbl_sel_count, 1)
 
-        self.btn_rename = QPushButton("Umbenennen")
-        self.btn_rename.setObjectName("btnRenameTransfer")
+        self.btn_rename = QPushButton()
+        self.btn_rename.setObjectName("compactToolBtn")
         self.btn_rename.setIcon(get_tag_icon())
         self.btn_rename.setIconSize(QSize(13, 13))
+        self.btn_rename.setFixedSize(28, 24)
         self.btn_rename.setToolTip("Alle markierten Dateien nach Muster umbenennen (wie beim Import)")
         self.btn_rename.clicked.connect(self._open_rename_dialog)
         f_row2.addWidget(self.btn_rename)
 
         self.combo_sort = QComboBox()
         self.combo_sort.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.combo_sort.setMinimumContentsLength(5)
+        self.combo_sort.setMinimumContentsLength(3)
         self.combo_sort.setToolTip("Sortierkriterium wählen")
         self.combo_sort.addItem(get_tag_icon(size=12), "Name", "name")
         self.combo_sort.addItem(get_history_icon(size=12), "Datum", "mtime")
@@ -951,28 +952,26 @@ class TransferPaneWidget(QWidget):
         """Adapts toolbar controls for compact laptop screens (< 1180px)."""
         if compact:
             self.edit_search.setPlaceholderText("Suchen...")
-            self.btn_rename.setObjectName("compactToolBtn")
-            self.btn_rename.setText("")
-            self.btn_rename.setFixedSize(28, 24)
         else:
             self.edit_search.setPlaceholderText("Dateiname filtern...")
-            self.btn_rename.setObjectName("")
-            self.btn_rename.setText("Umbenennen")
-            self.btn_rename.setMinimumSize(0, 0)
-            self.btn_rename.setMaximumSize(16777215, 16777215)
-        self.btn_rename.style().unpolish(self.btn_rename)
-        self.btn_rename.style().polish(self.btn_rename)
         self.apply_min_width_policy()
 
     def apply_min_width_policy(self):
         """Enforces or relaxes minimum pane/tree widths according to config.enforce_sidebar_min_width."""
         enforce = bool(getattr(self.config, "enforce_sidebar_min_width", True))
         if enforce:
+            tree_hdr_w = self.tree_widget.card_header.minimumSizeHint().width() if hasattr(self.tree_widget, "card_header") else 180
+            tree_min = max(180, tree_hdr_w + 8)
             fc_min = self.filter_card.minimumSizeHint().width() if hasattr(self, "filter_card") else 240
             files_min = max(240, fc_min + 8)
-            self.tree_widget.setMinimumWidth(180)
+            self.tree_widget.setMinimumWidth(tree_min)
             self.files_container.setMinimumWidth(files_min)
-            self.setMinimumWidth(max(260, files_min + 40))
+            pane_min = (
+                (tree_min if self.tree_widget.isVisible() else 0)
+                + (files_min if self.files_container.isVisible() else 0)
+                + 12
+            )
+            self.setMinimumWidth(max(260, pane_min))
         else:
             self.tree_widget.setMinimumWidth(60)
             self.files_container.setMinimumWidth(80)
