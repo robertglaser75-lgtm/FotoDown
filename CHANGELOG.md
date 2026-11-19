@@ -3,6 +3,13 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.5] - 2026-11-19
+
+### Verbessert
+- **Gestochen scharfe HiDPI-Vektor-Icons (`icons.py`, `header_banner.py`):**
+  - Alle 43 programmatischen Vektor-Icons in `gui_qt/styles/icons.py` auf eine eigene `QIconEngine`-Implementierung (`_VectorIconEngine`) umgestellt. Dadurch rendert Qt jedes Icon bei jeder DPI-Skalierung (100 %, 125 %, 150 %, 200 %, 4K) nativ und ohne Bitmap-Unschärfe (inkl. automatischer Abdunkelung im `Disabled`-Status).
+  - Header-Logo in `HeaderBanner` nutzt nun die hochauflösende `vitrina.png`-Quelle mit `devicePixelRatio`-Skalierung für scharfe Darstellung auf HiDPI-Bildschirmen.
+
 ## [0.33.4] - 2026-11-19
 
 ### Behoben & Verbessert

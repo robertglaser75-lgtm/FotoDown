@@ -5,10 +5,10 @@ without missing glyphs, tofu boxes, or platform emoji differences.
 """
 
 import math
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt
-from PySide6.QtGui import QBrush, QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt
+from PySide6.QtGui import QBrush, QColor, QIcon, QIconEngine, QPainter, QPainterPath, QPen, QPixmap
 
 _CURRENT_THEME = "dark"
 
@@ -48,987 +48,888 @@ def get_icon_color(role: str = "normal") -> str:
     palette = PALETTES.get(_CURRENT_THEME, PALETTES["dark"])
     return palette.get(role, palette["normal"])
 
+class _VectorIconEngine(QIconEngine):
+    """HiDPI vector icon engine rendering crisp geometry at any display scale factor."""
+
+    def __init__(self, draw_fn: Callable[[QPainter, int], None], logical_size: int):
+        super().__init__()
+        self._draw_fn = draw_fn
+        self._logical_size = max(1, int(logical_size))
+
+    def paint(self, painter: QPainter, rect: QRect, mode: QIcon.Mode, state: QIcon.State) -> None:
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+        if mode == QIcon.Mode.Disabled:
+            painter.setOpacity(0.4)
+        painter.translate(rect.topLeft())
+        painter.scale(rect.width() / self._logical_size, rect.height() / self._logical_size)
+        self._draw_fn(painter, self._logical_size)
+        painter.restore()
+
+    def actualSize(self, size: QSize, mode: QIcon.Mode, state: QIcon.State) -> QSize:
+        return size
+
+    def pixmap(self, size: QSize, mode: QIcon.Mode, state: QIcon.State) -> QPixmap:
+        return self.scaledPixmap(size, mode, state, 1.0)
+
+    def scaledPixmap(self, size: QSize, mode: QIcon.Mode, state: QIcon.State, scale: float) -> QPixmap:
+        dpr = max(1.0, float(scale))
+        phys_w = max(1, int(round(size.width() * dpr)))
+        phys_h = max(1, int(round(size.height() * dpr)))
+        pix = QPixmap(phys_w, phys_h)
+        pix.setDevicePixelRatio(dpr)
+        pix.fill(Qt.GlobalColor.transparent)
+        p = QPainter(pix)
+        self.paint(p, QRect(0, 0, size.width(), size.height()), mode, state)
+        p.end()
+        return pix
+
+    def clone(self) -> QIconEngine:
+        return _VectorIconEngine(self._draw_fn, self._logical_size)
+
+
+def _make_icon(draw_fn: Callable[[QPainter, int], None], size: int) -> QIcon:
+    return QIcon(_VectorIconEngine(draw_fn, size))
+
+
 
 def get_refresh_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a clean circular reload/refresh icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
 
-    # 270 degree arc
-    rect = QRectF(2.5, 2.5, size - 5.0, size - 5.0)
-    p.drawArc(rect, int(45 * 16), int(270 * 16))
+        # 270 degree arc
+        rect = QRectF(2.5, 2.5, size - 5.0, size - 5.0)
+        p.drawArc(rect, int(45 * 16), int(270 * 16))
 
-    # Arrow head at top-right
-    arrow_tip_x = size - 2.5
-    arrow_tip_y = size * 0.45
-    p.drawLine(QPointF(arrow_tip_x, arrow_tip_y), QPointF(arrow_tip_x - 3.5, arrow_tip_y - 3.5))
-    p.drawLine(QPointF(arrow_tip_x, arrow_tip_y), QPointF(arrow_tip_x - 3.5, arrow_tip_y + 0.5))
+        # Arrow head at top-right
+        arrow_tip_x = size - 2.5
+        arrow_tip_y = size * 0.45
+        p.drawLine(QPointF(arrow_tip_x, arrow_tip_y), QPointF(arrow_tip_x - 3.5, arrow_tip_y - 3.5))
+        p.drawLine(QPointF(arrow_tip_x, arrow_tip_y), QPointF(arrow_tip_x - 3.5, arrow_tip_y + 0.5))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_plus_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp plus (+) icon for expanding."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
 
-    pad = size * 0.22
-    mid = size / 2.0
-    p.drawLine(QPointF(pad, mid), QPointF(size - pad, mid))
-    p.drawLine(QPointF(mid, pad), QPointF(mid, size - pad))
+        pad = size * 0.22
+        mid = size / 2.0
+        p.drawLine(QPointF(pad, mid), QPointF(size - pad, mid))
+        p.drawLine(QPointF(mid, pad), QPointF(mid, size - pad))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_minus_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp minus (−) icon for collapsing."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
 
-    pad = size * 0.22
-    mid = size / 2.0
-    p.drawLine(QPointF(pad, mid), QPointF(size - pad, mid))
+        pad = size * 0.22
+        mid = size / 2.0
+        p.drawLine(QPointF(pad, mid), QPointF(size - pad, mid))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_collapse_panel_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a left chevron (◀ / «) to collapse a side panel."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    mid_y = size / 2.0
-    left_x = size * 0.3
-    right_x = size * 0.7
-    top_y = size * 0.25
-    bottom_y = size * 0.75
+        mid_y = size / 2.0
+        left_x = size * 0.3
+        right_x = size * 0.7
+        top_y = size * 0.25
+        bottom_y = size * 0.75
 
-    path = QPainterPath()
-    path.moveTo(right_x, top_y)
-    path.lineTo(left_x, mid_y)
-    path.lineTo(right_x, bottom_y)
-    p.drawPath(path)
+        path = QPainterPath()
+        path.moveTo(right_x, top_y)
+        path.lineTo(left_x, mid_y)
+        path.lineTo(right_x, bottom_y)
+        p.drawPath(path)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_expand_panel_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a right chevron (▶ / ») to expand a side panel."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    mid_y = size / 2.0
-    left_x = size * 0.3
-    right_x = size * 0.7
-    top_y = size * 0.25
-    bottom_y = size * 0.75
+        mid_y = size / 2.0
+        left_x = size * 0.3
+        right_x = size * 0.7
+        top_y = size * 0.25
+        bottom_y = size * 0.75
 
-    path = QPainterPath()
-    path.moveTo(left_x, top_y)
-    path.lineTo(right_x, mid_y)
-    path.lineTo(left_x, bottom_y)
-    p.drawPath(path)
+        path = QPainterPath()
+        path.moveTo(left_x, top_y)
+        path.lineTo(right_x, mid_y)
+        path.lineTo(left_x, bottom_y)
+        p.drawPath(path)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_folder_icon(color: str = "#38bdf8", size: int = 16) -> QIcon:
     """Renders a crisp Fluent-style directory folder icon."""
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    p.setPen(Qt.PenStyle.NoPen)
-    p.setBrush(QBrush(QColor(color)))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(QColor(color)))
 
-    # Tab at top-left
-    tab_w = size * 0.45
-    tab_h = size * 0.3
-    p.drawRoundedRect(QRectF(1.0, 1.5, tab_w, tab_h), 1.0, 1.0)
+        # Tab at top-left
+        tab_w = size * 0.45
+        tab_h = size * 0.3
+        p.drawRoundedRect(QRectF(1.0, 1.5, tab_w, tab_h), 1.0, 1.0)
 
-    # Body
-    body_y = size * 0.32
-    body_h = size * 0.6
-    p.drawRoundedRect(QRectF(1.0, body_y, size - 2.0, body_h), 1.5, 1.5)
+        # Body
+        body_y = size * 0.32
+        body_h = size * 0.6
+        p.drawRoundedRect(QRectF(1.0, body_y, size - 2.0, body_h), 1.5, 1.5)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_filmstrip_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp filmstrip icon."""
     c = color or get_icon_color("muted")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    # Strip frame
-    pen = QPen(QColor(c), 1.5)
-    p.setPen(pen)
-    p.drawRoundedRect(QRectF(1.5, 2.5, size - 3.0, size - 5.0), 1.5, 1.5)
+        # Strip frame
+        pen = QPen(QColor(c), 1.5)
+        p.setPen(pen)
+        p.drawRoundedRect(QRectF(1.5, 2.5, size - 3.0, size - 5.0), 1.5, 1.5)
 
-    # Sprockets / frames inside
-    p.setPen(Qt.PenStyle.NoPen)
-    p.setBrush(QBrush(QColor(c)))
-    for x in [3.5, 7.5, 11.5]:
-        p.drawRect(QRectF(x, 4.0, 1.5, 2.0))
-        p.drawRect(QRectF(x, size - 6.0, 1.5, 2.0))
+        # Sprockets / frames inside
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(QColor(c)))
+        for x in [3.5, 7.5, 11.5]:
+            p.drawRect(QRectF(x, 4.0, 1.5, 2.0))
+            p.drawRect(QRectF(x, size - 6.0, 1.5, 2.0))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_filter_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp vector funnel / filter icon."""
     c = color or get_icon_color("accent")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    top_y = size * 0.22
-    neck_top_y = size * 0.54
-    neck_bot_y = size * 0.85
-    left_x = size * 0.18
-    right_x = size * 0.82
-    mid_left_x = size * 0.40
-    mid_right_x = size * 0.60
+        top_y = size * 0.22
+        neck_top_y = size * 0.54
+        neck_bot_y = size * 0.85
+        left_x = size * 0.18
+        right_x = size * 0.82
+        mid_left_x = size * 0.40
+        mid_right_x = size * 0.60
 
-    path = QPainterPath()
-    path.moveTo(left_x, top_y)
-    path.lineTo(right_x, top_y)
-    path.lineTo(mid_right_x, neck_top_y)
-    path.lineTo(mid_right_x, neck_bot_y)
-    path.lineTo(mid_left_x, neck_bot_y)
-    path.lineTo(mid_left_x, neck_top_y)
-    path.closeSubpath()
+        path = QPainterPath()
+        path.moveTo(left_x, top_y)
+        path.lineTo(right_x, top_y)
+        path.lineTo(mid_right_x, neck_top_y)
+        path.lineTo(mid_right_x, neck_bot_y)
+        path.lineTo(mid_left_x, neck_bot_y)
+        path.lineTo(mid_left_x, neck_top_y)
+        path.closeSubpath()
 
-    p.drawPath(path)
-    p.end()
-    return QIcon(pix)
+        p.drawPath(path)
+    return _make_icon(_draw, size)
 
 
 def get_gear_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp vector gear/cog settings icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    p.setPen(Qt.PenStyle.NoPen)
-    p.setBrush(QBrush(QColor(c)))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(QColor(c)))
 
-    cx, cy = size / 2.0, size / 2.0
-    r_outer = size * 0.44
-    r_teeth_in = size * 0.32
-    r_hole = size * 0.16
+        cx, cy = size / 2.0, size / 2.0
+        r_outer = size * 0.44
+        r_teeth_in = size * 0.32
+        r_hole = size * 0.16
 
-    path = QPainterPath()
-    num_teeth = 6
-    teeth_width_deg = 24.0
-    for i in range(num_teeth):
-        mid_angle = i * (360.0 / num_teeth)
-        a1 = (mid_angle - teeth_width_deg / 2) * math.pi / 180.0
-        a2 = (mid_angle + teeth_width_deg / 2) * math.pi / 180.0
-        p1 = QPointF(cx + r_teeth_in * math.cos(a1), cy + r_teeth_in * math.sin(a1))
-        p2 = QPointF(cx + r_outer * math.cos(a1), cy + r_outer * math.sin(a1))
-        p3 = QPointF(cx + r_outer * math.cos(a2), cy + r_outer * math.sin(a2))
-        p4 = QPointF(cx + r_teeth_in * math.cos(a2), cy + r_teeth_in * math.sin(a2))
-        if i == 0:
-            path.moveTo(p1)
-        else:
-            path.lineTo(p1)
-        path.lineTo(p2)
-        path.lineTo(p3)
-        path.lineTo(p4)
+        path = QPainterPath()
+        num_teeth = 6
+        teeth_width_deg = 24.0
+        for i in range(num_teeth):
+            mid_angle = i * (360.0 / num_teeth)
+            a1 = (mid_angle - teeth_width_deg / 2) * math.pi / 180.0
+            a2 = (mid_angle + teeth_width_deg / 2) * math.pi / 180.0
+            p1 = QPointF(cx + r_teeth_in * math.cos(a1), cy + r_teeth_in * math.sin(a1))
+            p2 = QPointF(cx + r_outer * math.cos(a1), cy + r_outer * math.sin(a1))
+            p3 = QPointF(cx + r_outer * math.cos(a2), cy + r_outer * math.sin(a2))
+            p4 = QPointF(cx + r_teeth_in * math.cos(a2), cy + r_teeth_in * math.sin(a2))
+            if i == 0:
+                path.moveTo(p1)
+            else:
+                path.lineTo(p1)
+            path.lineTo(p2)
+            path.lineTo(p3)
+            path.lineTo(p4)
 
-    path.closeSubpath()
+        path.closeSubpath()
 
-    hole_path = QPainterPath()
-    hole_path.addEllipse(QPointF(cx, cy), r_hole, r_hole)
-    gear_path = path.subtracted(hole_path)
+        hole_path = QPainterPath()
+        hole_path.addEllipse(QPointF(cx, cy), r_hole, r_hole)
+        gear_path = path.subtracted(hole_path)
 
-    p.drawPath(gear_path)
-    p.end()
-    return QIcon(pix)
+        p.drawPath(gear_path)
+    return _make_icon(_draw, size)
 
 
 def get_columns_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp 3-column layout icon for toggling table columns."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
-    p.drawRoundedRect(QRectF(1.5, 2.0, size - 3.0, size - 4.0), 1.5, 1.5)
+        pen = QPen(QColor(c), 1.4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
+        p.drawRoundedRect(QRectF(1.5, 2.0, size - 3.0, size - 4.0), 1.5, 1.5)
 
-    col_w = (size - 3.0) / 3.0
-    p.drawLine(QPointF(1.5 + col_w, 2.0), QPointF(1.5 + col_w, size - 2.0))
-    p.drawLine(QPointF(1.5 + col_w * 2, 2.0), QPointF(1.5 + col_w * 2, size - 2.0))
+        col_w = (size - 3.0) / 3.0
+        p.drawLine(QPointF(1.5 + col_w, 2.0), QPointF(1.5 + col_w, size - 2.0))
+        p.drawLine(QPointF(1.5 + col_w * 2, 2.0), QPointF(1.5 + col_w * 2, size - 2.0))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_sort_icon(descending: bool = False, color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a clean ascending or descending sort arrow icon with bars."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    # Vertical arrow shaft on left
-    ax = size * 0.28
-    p.drawLine(QPointF(ax, size * 0.2), QPointF(ax, size * 0.8))
-    if descending:
-        p.drawLine(QPointF(ax, size * 0.8), QPointF(ax - size * 0.14, size * 0.62))
-        p.drawLine(QPointF(ax, size * 0.8), QPointF(ax + size * 0.14, size * 0.62))
-        widths = [0.42, 0.30, 0.18]
-    else:
-        p.drawLine(QPointF(ax, size * 0.2), QPointF(ax - size * 0.14, size * 0.38))
-        p.drawLine(QPointF(ax, size * 0.2), QPointF(ax + size * 0.14, size * 0.38))
-        widths = [0.18, 0.30, 0.42]
+        # Vertical arrow shaft on left
+        ax = size * 0.28
+        p.drawLine(QPointF(ax, size * 0.2), QPointF(ax, size * 0.8))
+        if descending:
+            p.drawLine(QPointF(ax, size * 0.8), QPointF(ax - size * 0.14, size * 0.62))
+            p.drawLine(QPointF(ax, size * 0.8), QPointF(ax + size * 0.14, size * 0.62))
+            widths = [0.42, 0.30, 0.18]
+        else:
+            p.drawLine(QPointF(ax, size * 0.2), QPointF(ax - size * 0.14, size * 0.38))
+            p.drawLine(QPointF(ax, size * 0.2), QPointF(ax + size * 0.14, size * 0.38))
+            widths = [0.18, 0.30, 0.42]
 
-    # Sort bars on right
-    bx = size * 0.50
-    for idx, w in enumerate(widths):
-        by = size * (0.26 + idx * 0.24)
-        p.drawLine(QPointF(bx, by), QPointF(bx + size * w, by))
+        # Sort bars on right
+        bx = size * 0.50
+        for idx, w in enumerate(widths):
+            by = size * (0.26 + idx * 0.24)
+            p.drawLine(QPointF(bx, by), QPointF(bx + size * w, by))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_files_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp document/photo sheet icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    path = QPainterPath()
-    fold = size * 0.25
-    l_x, t_y, r_x, b_y = size * 0.2, size * 0.12, size * 0.8, size * 0.88
-    path.moveTo(l_x, t_y)
-    path.lineTo(r_x - fold, t_y)
-    path.lineTo(r_x, t_y + fold)
-    path.lineTo(r_x, b_y)
-    path.lineTo(l_x, b_y)
-    path.closeSubpath()
-    p.drawPath(path)
+        path = QPainterPath()
+        fold = size * 0.25
+        l_x, t_y, r_x, b_y = size * 0.2, size * 0.12, size * 0.8, size * 0.88
+        path.moveTo(l_x, t_y)
+        path.lineTo(r_x - fold, t_y)
+        path.lineTo(r_x, t_y + fold)
+        path.lineTo(r_x, b_y)
+        path.lineTo(l_x, b_y)
+        path.closeSubpath()
+        p.drawPath(path)
 
-    # Lines inside document
-    p.drawLine(QPointF(l_x + 2.5, size * 0.48), QPointF(r_x - 2.5, size * 0.48))
-    p.drawLine(QPointF(l_x + 2.5, size * 0.68), QPointF(r_x - 2.5, size * 0.68))
+        # Lines inside document
+        p.drawLine(QPointF(l_x + 2.5, size * 0.48), QPointF(r_x - 2.5, size * 0.48))
+        p.drawLine(QPointF(l_x + 2.5, size * 0.68), QPointF(r_x - 2.5, size * 0.68))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_list_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp bulleted list view icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
-    for idx in range(3):
-        y = size * (0.25 + idx * 0.25)
-        p.drawPoint(QPointF(size * 0.20, y))
-        p.drawLine(QPointF(size * 0.36, y), QPointF(size * 0.84, y))
+        pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
+        for idx in range(3):
+            y = size * (0.25 + idx * 0.25)
+            p.drawPoint(QPointF(size * 0.20, y))
+            p.drawLine(QPointF(size * 0.36, y), QPointF(size * 0.84, y))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_grid_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp 2x2 thumbnail grid icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.4)
-    p.setPen(pen)
-    p.setBrush(QBrush(QColor(c)))
-    pad = size * 0.16
-    cell = size * 0.28
-    gap = size * 0.12
-    for row in range(2):
-        for col in range(2):
-            x = pad + col * (cell + gap)
-            y = pad + row * (cell + gap)
-            p.drawRoundedRect(QRectF(x, y, cell, cell), 1.2, 1.2)
+        pen = QPen(QColor(c), 1.4)
+        p.setPen(pen)
+        p.setBrush(QBrush(QColor(c)))
+        pad = size * 0.16
+        cell = size * 0.28
+        gap = size * 0.12
+        for row in range(2):
+            for col in range(2):
+                x = pad + col * (cell + gap)
+                y = pad + row * (cell + gap)
+                p.drawRoundedRect(QRectF(x, y, cell, cell), 1.2, 1.2)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_grid_small_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a 3x3 small/dense thumbnail grid icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    p.setPen(Qt.PenStyle.NoPen)
-    p.setBrush(QBrush(QColor(c)))
-    pad = size * 0.12
-    avail = size - (2 * pad)
-    gap = size * 0.08
-    cell = (avail - 2 * gap) / 3.0
-    for row in range(3):
-        for col in range(3):
-            x = pad + col * (cell + gap)
-            y = pad + row * (cell + gap)
-            p.drawRoundedRect(QRectF(x, y, cell, cell), 0.8, 0.8)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(QColor(c)))
+        pad = size * 0.12
+        avail = size - (2 * pad)
+        gap = size * 0.08
+        cell = (avail - 2 * gap) / 3.0
+        for row in range(3):
+            for col in range(3):
+                x = pad + col * (cell + gap)
+                y = pad + row * (cell + gap)
+                p.drawRoundedRect(QRectF(x, y, cell, cell), 0.8, 0.8)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_grid_large_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a single large thumbnail/preview card icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.4)
-    p.setPen(pen)
-    p.setBrush(Qt.BrushStyle.NoBrush)
-    pad = size * 0.14
-    frame_w = size - 2 * pad
-    p.drawRoundedRect(QRectF(pad, pad, frame_w, frame_w), 2.0, 2.0)
+        pen = QPen(QColor(c), 1.4)
+        p.setPen(pen)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        pad = size * 0.14
+        frame_w = size - 2 * pad
+        p.drawRoundedRect(QRectF(pad, pad, frame_w, frame_w), 2.0, 2.0)
 
-    p.setBrush(QBrush(QColor(c)))
-    p.setPen(Qt.PenStyle.NoPen)
-    sun_r = size * 0.08
-    p.drawEllipse(QPointF(pad + frame_w * 0.3, pad + frame_w * 0.35), sun_r, sun_r)
-    path = QPainterPath()
-    path.moveTo(pad + 2, pad + frame_w - 2)
-    path.lineTo(pad + frame_w * 0.45, pad + frame_w * 0.5)
-    path.lineTo(pad + frame_w * 0.7, pad + frame_w * 0.65)
-    path.lineTo(pad + frame_w - 2, pad + frame_w - 2)
-    path.closeSubpath()
-    p.drawPath(path)
+        p.setBrush(QBrush(QColor(c)))
+        p.setPen(Qt.PenStyle.NoPen)
+        sun_r = size * 0.08
+        p.drawEllipse(QPointF(pad + frame_w * 0.3, pad + frame_w * 0.35), sun_r, sun_r)
+        path = QPainterPath()
+        path.moveTo(pad + 2, pad + frame_w - 2)
+        path.lineTo(pad + frame_w * 0.45, pad + frame_w * 0.5)
+        path.lineTo(pad + frame_w * 0.7, pad + frame_w * 0.65)
+        path.lineTo(pad + frame_w - 2, pad + frame_w - 2)
+        path.closeSubpath()
+        p.drawPath(path)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_video_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a video camera / movie media player icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.4)
-    p.setPen(pen)
-    p.setBrush(Qt.BrushStyle.NoBrush)
-    pad = size * 0.16
-    rect_w = size * 0.52
-    rect_h = size * 0.6
-    p.drawRoundedRect(QRectF(pad, pad + (size - 2 * pad - rect_h) / 2, rect_w, rect_h), 1.5, 1.5)
+        pen = QPen(QColor(c), 1.4)
+        p.setPen(pen)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        pad = size * 0.16
+        rect_w = size * 0.52
+        rect_h = size * 0.6
+        p.drawRoundedRect(QRectF(pad, pad + (size - 2 * pad - rect_h) / 2, rect_w, rect_h), 1.5, 1.5)
 
-    lens = QPainterPath()
-    lx = pad + rect_w + 1
-    cy = size / 2.0
-    lens.moveTo(lx, cy - size * 0.18)
-    lens.lineTo(size - pad, cy - size * 0.28)
-    lens.lineTo(size - pad, cy + size * 0.28)
-    lens.lineTo(lx, cy + size * 0.18)
-    lens.closeSubpath()
-    p.setBrush(QBrush(QColor(c)))
-    p.setPen(Qt.PenStyle.NoPen)
-    p.drawPath(lens)
+        lens = QPainterPath()
+        lx = pad + rect_w + 1
+        cy = size / 2.0
+        lens.moveTo(lx, cy - size * 0.18)
+        lens.lineTo(size - pad, cy - size * 0.28)
+        lens.lineTo(size - pad, cy + size * 0.28)
+        lens.lineTo(lx, cy + size * 0.18)
+        lens.closeSubpath()
+        p.setBrush(QBrush(QColor(c)))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawPath(lens)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_check_all_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a checked checkbox icon."""
     c = color or get_icon_color("accent")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
-    p.drawRoundedRect(QRectF(2.0, 2.0, size - 4.0, size - 4.0), 2.0, 2.0)
-    p.drawLine(QPointF(size * 0.28, size * 0.52), QPointF(size * 0.45, size * 0.70))
-    p.drawLine(QPointF(size * 0.45, size * 0.70), QPointF(size * 0.74, size * 0.34))
+        pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
+        p.drawRoundedRect(QRectF(2.0, 2.0, size - 4.0, size - 4.0), 2.0, 2.0)
+        p.drawLine(QPointF(size * 0.28, size * 0.52), QPointF(size * 0.45, size * 0.70))
+        p.drawLine(QPointF(size * 0.45, size * 0.70), QPointF(size * 0.74, size * 0.34))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_uncheck_all_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders an empty checkbox icon."""
     c = color or get_icon_color("muted")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
-    p.drawRoundedRect(QRectF(2.0, 2.0, size - 4.0, size - 4.0), 2.0, 2.0)
+        pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
+        p.drawRoundedRect(QRectF(2.0, 2.0, size - 4.0, size - 4.0), 2.0, 2.0)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_invert_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders an invert-selection diagonal split box icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
-    p.drawRoundedRect(QRectF(2.0, 2.0, size - 4.0, size - 4.0), 2.0, 2.0)
+        pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
+        p.drawRoundedRect(QRectF(2.0, 2.0, size - 4.0, size - 4.0), 2.0, 2.0)
 
-    tri = QPainterPath()
-    tri.moveTo(2.5, size - 2.5)
-    tri.lineTo(size - 2.5, 2.5)
-    tri.lineTo(size - 2.5, size - 2.5)
-    tri.closeSubpath()
-    p.fillPath(tri, QBrush(QColor(c)))
+        tri = QPainterPath()
+        tri.moveTo(2.5, size - 2.5)
+        tri.lineTo(size - 2.5, 2.5)
+        tri.lineTo(size - 2.5, size - 2.5)
+        tri.closeSubpath()
+        p.fillPath(tri, QBrush(QColor(c)))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_quick_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp lightning bolt icon for quick access."""
     c = color or get_icon_color("warning")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    path = QPainterPath()
-    path.moveTo(size * 0.58, size * 0.10)
-    path.lineTo(size * 0.24, size * 0.56)
-    path.lineTo(size * 0.48, size * 0.56)
-    path.lineTo(size * 0.40, size * 0.90)
-    path.lineTo(size * 0.76, size * 0.44)
-    path.lineTo(size * 0.52, size * 0.44)
-    path.closeSubpath()
-    p.fillPath(path, QBrush(QColor(c)))
+        path = QPainterPath()
+        path.moveTo(size * 0.58, size * 0.10)
+        path.lineTo(size * 0.24, size * 0.56)
+        path.lineTo(size * 0.48, size * 0.56)
+        path.lineTo(size * 0.40, size * 0.90)
+        path.lineTo(size * 0.76, size * 0.44)
+        path.lineTo(size * 0.52, size * 0.44)
+        path.closeSubpath()
+        p.fillPath(path, QBrush(QColor(c)))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_clear_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp X / clear icon."""
     c = color or get_icon_color("muted")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
-    pad = size * 0.26
-    p.drawLine(QPointF(pad, pad), QPointF(size - pad, size - pad))
-    p.drawLine(QPointF(size - pad, pad), QPointF(pad, size - pad))
+        pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
+        pad = size * 0.26
+        p.drawLine(QPointF(pad, pad), QPointF(size - pad, size - pad))
+        p.drawLine(QPointF(size - pad, pad), QPointF(pad, size - pad))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_arrow_right_icon(color: Optional[str] = None, size: int = 16, double: bool = False) -> QIcon:
     """Renders single or double right-pointing chevron/arrow icons for Copy/Move."""
     c = color or get_icon_color("contrast")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    offsets = [size * 0.26, size * 0.54] if double else [size * 0.40]
-    span = size * 0.22
-    mid_y = size * 0.5
-    top_y = size * 0.24
-    bot_y = size * 0.76
-    for ox in offsets:
-        path = QPainterPath()
-        path.moveTo(ox, top_y)
-        path.lineTo(ox + span, mid_y)
-        path.lineTo(ox, bot_y)
-        p.drawPath(path)
+        offsets = [size * 0.26, size * 0.54] if double else [size * 0.40]
+        span = size * 0.22
+        mid_y = size * 0.5
+        top_y = size * 0.24
+        bot_y = size * 0.76
+        for ox in offsets:
+            path = QPainterPath()
+            path.moveTo(ox, top_y)
+            path.lineTo(ox + span, mid_y)
+            path.lineTo(ox, bot_y)
+            p.drawPath(path)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_move_icon(color: Optional[str] = None, size: int = 16, double: bool = False) -> QIcon:
     """Renders a move arrow icon (horizontal arrow shaft + tip)."""
     c = color or get_icon_color("contrast")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    mid_y = size * 0.5
-    p.drawLine(QPointF(size * 0.14, mid_y), QPointF(size * 0.84, mid_y))
-    tips = [size * 0.62, size * 0.86] if double else [size * 0.86]
-    for tip_x in tips:
-        p.drawLine(QPointF(tip_x - size * 0.22, mid_y - size * 0.22), QPointF(tip_x, mid_y))
-        p.drawLine(QPointF(tip_x - size * 0.22, mid_y + size * 0.22), QPointF(tip_x, mid_y))
+        mid_y = size * 0.5
+        p.drawLine(QPointF(size * 0.14, mid_y), QPointF(size * 0.84, mid_y))
+        tips = [size * 0.62, size * 0.86] if double else [size * 0.86]
+        for tip_x in tips:
+            p.drawLine(QPointF(tip_x - size * 0.22, mid_y - size * 0.22), QPointF(tip_x, mid_y))
+            p.drawLine(QPointF(tip_x - size * 0.22, mid_y + size * 0.22), QPointF(tip_x, mid_y))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_swap_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders left/right swap arrows icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    # Top arrow right
-    y1 = size * 0.32
-    p.drawLine(QPointF(size * 0.18, y1), QPointF(size * 0.82, y1))
-    p.drawLine(QPointF(size * 0.64, y1 - size * 0.15), QPointF(size * 0.82, y1))
-    p.drawLine(QPointF(size * 0.64, y1 + size * 0.15), QPointF(size * 0.82, y1))
+        # Top arrow right
+        y1 = size * 0.32
+        p.drawLine(QPointF(size * 0.18, y1), QPointF(size * 0.82, y1))
+        p.drawLine(QPointF(size * 0.64, y1 - size * 0.15), QPointF(size * 0.82, y1))
+        p.drawLine(QPointF(size * 0.64, y1 + size * 0.15), QPointF(size * 0.82, y1))
 
-    # Bottom arrow left
-    y2 = size * 0.68
-    p.drawLine(QPointF(size * 0.18, y2), QPointF(size * 0.82, y2))
-    p.drawLine(QPointF(size * 0.36, y2 - size * 0.15), QPointF(size * 0.18, y2))
-    p.drawLine(QPointF(size * 0.36, y2 + size * 0.15), QPointF(size * 0.18, y2))
+        # Bottom arrow left
+        y2 = size * 0.68
+        p.drawLine(QPointF(size * 0.18, y2), QPointF(size * 0.82, y2))
+        p.drawLine(QPointF(size * 0.36, y2 - size * 0.15), QPointF(size * 0.18, y2))
+        p.drawLine(QPointF(size * 0.36, y2 + size * 0.15), QPointF(size * 0.18, y2))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_search_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp magnifying glass (search/reconcile/compare) icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
 
-    # Circle (magnifying glass lens)
-    radius = size * 0.28
-    center_x = size * 0.42
-    center_y = size * 0.42
-    p.drawEllipse(QPointF(center_x, center_y), radius, radius)
+        # Circle (magnifying glass lens)
+        radius = size * 0.28
+        center_x = size * 0.42
+        center_y = size * 0.42
+        p.drawEllipse(QPointF(center_x, center_y), radius, radius)
 
-    # Handle angled down-right
-    start_x = center_x + radius * 0.707
-    start_y = center_y + radius * 0.707
-    end_x = size * 0.86
-    end_y = size * 0.86
-    p.drawLine(QPointF(start_x, start_y), QPointF(end_x, end_y))
+        # Handle angled down-right
+        start_x = center_x + radius * 0.707
+        start_y = center_y + radius * 0.707
+        end_x = size * 0.86
+        end_y = size * 0.86
+        p.drawLine(QPointF(start_x, start_y), QPointF(end_x, end_y))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_camera_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a modern photo camera vector icon."""
     c = color or get_icon_color("accent")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    stroke = max(1.5, size * 0.08)
-    pen = QPen(QColor(c), stroke, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        stroke = max(1.5, size * 0.08)
+        pen = QPen(QColor(c), stroke, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    # Body
-    body_x = size * 0.12
-    body_y = size * 0.32
-    body_w = size * 0.76
-    body_h = size * 0.54
-    p.drawRoundedRect(QRectF(body_x, body_y, body_w, body_h), size * 0.1, size * 0.1)
+        # Body
+        body_x = size * 0.12
+        body_y = size * 0.32
+        body_w = size * 0.76
+        body_h = size * 0.54
+        p.drawRoundedRect(QRectF(body_x, body_y, body_w, body_h), size * 0.1, size * 0.1)
 
-    # Top viewfinder bump
-    top_path = QPainterPath()
-    top_path.moveTo(size * 0.32, body_y)
-    top_path.lineTo(size * 0.38, size * 0.20)
-    top_path.lineTo(size * 0.62, size * 0.20)
-    top_path.lineTo(size * 0.68, body_y)
-    p.drawPath(top_path)
+        # Top viewfinder bump
+        top_path = QPainterPath()
+        top_path.moveTo(size * 0.32, body_y)
+        top_path.lineTo(size * 0.38, size * 0.20)
+        top_path.lineTo(size * 0.62, size * 0.20)
+        top_path.lineTo(size * 0.68, body_y)
+        p.drawPath(top_path)
 
-    # Lens circle
-    cx = size * 0.50
-    cy = body_y + body_h * 0.50
-    r = size * 0.18
-    p.drawEllipse(QPointF(cx, cy), r, r)
+        # Lens circle
+        cx = size * 0.50
+        cy = body_y + body_h * 0.50
+        r = size * 0.18
+        p.drawEllipse(QPointF(cx, cy), r, r)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_import_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a modern download / import tray vector icon."""
     c = color or get_icon_color("accent")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    mid = size / 2.0
-    bot = size - 2.5
-    tray_top = size * 0.58
+        mid = size / 2.0
+        bot = size - 2.5
+        tray_top = size * 0.58
 
-    # Tray
-    tray = QPainterPath()
-    tray.moveTo(size * 0.16, tray_top)
-    tray.lineTo(size * 0.16, bot)
-    tray.lineTo(size * 0.84, bot)
-    tray.lineTo(size * 0.84, tray_top)
-    p.drawPath(tray)
+        # Tray
+        tray = QPainterPath()
+        tray.moveTo(size * 0.16, tray_top)
+        tray.lineTo(size * 0.16, bot)
+        tray.lineTo(size * 0.84, bot)
+        tray.lineTo(size * 0.84, tray_top)
+        p.drawPath(tray)
 
-    # Downward arrow
-    arrow_tip = size * 0.68
-    p.drawLine(QPointF(mid, size * 0.16), QPointF(mid, arrow_tip))
-    p.drawLine(QPointF(mid - size * 0.20, arrow_tip - size * 0.20), QPointF(mid, arrow_tip))
-    p.drawLine(QPointF(mid + size * 0.20, arrow_tip - size * 0.20), QPointF(mid, arrow_tip))
+        # Downward arrow
+        arrow_tip = size * 0.68
+        p.drawLine(QPointF(mid, size * 0.16), QPointF(mid, arrow_tip))
+        p.drawLine(QPointF(mid - size * 0.20, arrow_tip - size * 0.20), QPointF(mid, arrow_tip))
+        p.drawLine(QPointF(mid + size * 0.20, arrow_tip - size * 0.20), QPointF(mid, arrow_tip))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_culling_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a clean modern eye / viewing loupe icon for visual culling."""
     c = color or get_icon_color("accent")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    mid_y = size / 2.0
-    mid_x = size / 2.0
+        mid_y = size / 2.0
+        mid_x = size / 2.0
 
-    # Eye eyelids (two symmetric cubic bezier curves)
-    path = QPainterPath()
-    left_x = size * 0.12
-    right_x = size * 0.88
-    path.moveTo(left_x, mid_y)
-    path.cubicTo(size * 0.32, size * 0.18, size * 0.68, size * 0.18, right_x, mid_y)
-    path.cubicTo(size * 0.68, size * 0.82, size * 0.32, size * 0.82, left_x, mid_y)
-    p.drawPath(path)
+        # Eye eyelids (two symmetric cubic bezier curves)
+        path = QPainterPath()
+        left_x = size * 0.12
+        right_x = size * 0.88
+        path.moveTo(left_x, mid_y)
+        path.cubicTo(size * 0.32, size * 0.18, size * 0.68, size * 0.18, right_x, mid_y)
+        path.cubicTo(size * 0.68, size * 0.82, size * 0.32, size * 0.82, left_x, mid_y)
+        p.drawPath(path)
 
-    # Pupil in center
-    p.setPen(Qt.PenStyle.NoPen)
-    p.setBrush(QBrush(QColor(c)))
-    p.drawEllipse(QPointF(mid_x, mid_y), size * 0.18, size * 0.18)
+        # Pupil in center
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(QColor(c)))
+        p.drawEllipse(QPointF(mid_x, mid_y), size * 0.18, size * 0.18)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_archive_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a reliable backup / archive 3.5-inch floppy disk vector icon."""
     c = color or get_icon_color("accent")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    # Disk body with beveled top-right corner
-    l_x, t_y = size * 0.16, size * 0.16
-    r_x, b_y = size * 0.84, size * 0.84
-    bevel = size * 0.18
+        # Disk body with beveled top-right corner
+        l_x, t_y = size * 0.16, size * 0.16
+        r_x, b_y = size * 0.84, size * 0.84
+        bevel = size * 0.18
 
-    body = QPainterPath()
-    body.moveTo(l_x, t_y)
-    body.lineTo(r_x - bevel, t_y)
-    body.lineTo(r_x, t_y + bevel)
-    body.lineTo(r_x, b_y)
-    body.lineTo(l_x, b_y)
-    body.closeSubpath()
-    p.drawPath(body)
+        body = QPainterPath()
+        body.moveTo(l_x, t_y)
+        body.lineTo(r_x - bevel, t_y)
+        body.lineTo(r_x, t_y + bevel)
+        body.lineTo(r_x, b_y)
+        body.lineTo(l_x, b_y)
+        body.closeSubpath()
+        p.drawPath(body)
 
-    # Slider shutter at top
-    p.drawRect(QRectF(size * 0.30, t_y, size * 0.38, size * 0.28))
+        # Slider shutter at top
+        p.drawRect(QRectF(size * 0.30, t_y, size * 0.38, size * 0.28))
 
-    # Label area at bottom
-    p.drawRoundedRect(QRectF(size * 0.26, size * 0.52, size * 0.48, size * 0.32), 1.0, 1.0)
+        # Label area at bottom
+        p.drawRoundedRect(QRectF(size * 0.26, size * 0.52, size * 0.48, size * 0.32), 1.0, 1.0)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_tag_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp price tag / label vector icon for batch renaming."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    # Angled tag body
-    mid_y = size / 2.0
-    tip_x = size * 0.15
-    notch_x = size * 0.42
-    top_y = size * 0.22
-    bot_y = size * 0.78
-    right_x = size * 0.85
+        # Angled tag body
+        mid_y = size / 2.0
+        tip_x = size * 0.15
+        notch_x = size * 0.42
+        top_y = size * 0.22
+        bot_y = size * 0.78
+        right_x = size * 0.85
 
-    tag = QPainterPath()
-    tag.moveTo(tip_x, mid_y)
-    tag.lineTo(notch_x, top_y)
-    tag.lineTo(right_x, top_y)
-    tag.lineTo(right_x, bot_y)
-    tag.lineTo(notch_x, bot_y)
-    tag.closeSubpath()
-    p.drawPath(tag)
+        tag = QPainterPath()
+        tag.moveTo(tip_x, mid_y)
+        tag.lineTo(notch_x, top_y)
+        tag.lineTo(right_x, top_y)
+        tag.lineTo(right_x, bot_y)
+        tag.lineTo(notch_x, bot_y)
+        tag.closeSubpath()
+        p.drawPath(tag)
 
-    # Small circular hole near the tip
-    p.drawEllipse(QPointF(size * 0.32, mid_y), 1.6, 1.6)
+        # Small circular hole near the tip
+        p.drawEllipse(QPointF(size * 0.32, mid_y), 1.6, 1.6)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_fullscreen_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders 4 outward-pointing corner brackets for fullscreen toggle (F11)."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    pad = size * 0.18
-    arm = size * 0.24
-    end = size - pad
+        pad = size * 0.18
+        arm = size * 0.24
+        end = size - pad
 
-    # Top-Left ┌
-    p.drawLine(QPointF(pad, pad + arm), QPointF(pad, pad))
-    p.drawLine(QPointF(pad, pad), QPointF(pad + arm, pad))
+        # Top-Left ┌
+        p.drawLine(QPointF(pad, pad + arm), QPointF(pad, pad))
+        p.drawLine(QPointF(pad, pad), QPointF(pad + arm, pad))
 
-    # Top-Right ┐
-    p.drawLine(QPointF(end - arm, pad), QPointF(end, pad))
-    p.drawLine(QPointF(end, pad), QPointF(end, pad + arm))
+        # Top-Right ┐
+        p.drawLine(QPointF(end - arm, pad), QPointF(end, pad))
+        p.drawLine(QPointF(end, pad), QPointF(end, pad + arm))
 
-    # Bottom-Left └
-    p.drawLine(QPointF(pad, end - arm), QPointF(pad, end))
-    p.drawLine(QPointF(pad, end), QPointF(pad + arm, end))
+        # Bottom-Left └
+        p.drawLine(QPointF(pad, end - arm), QPointF(pad, end))
+        p.drawLine(QPointF(pad, end), QPointF(pad + arm, end))
 
-    # Bottom-Right ┘
-    p.drawLine(QPointF(end - arm, end), QPointF(end, end))
-    p.drawLine(QPointF(end, end), QPointF(end, end - arm))
+        # Bottom-Right ┘
+        p.drawLine(QPointF(end - arm, end), QPointF(end, end))
+        p.drawLine(QPointF(end, end), QPointF(end, end - arm))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_fullscreen_exit_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders 4 inward-pointing corner brackets for exiting fullscreen."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    center = size / 2.0
-    gap = size * 0.12
-    arm = size * 0.22
+        center = size / 2.0
+        gap = size * 0.12
+        arm = size * 0.22
 
-    # Top-Left pointing inward ┘
-    p.drawLine(QPointF(center - gap - arm, center - gap), QPointF(center - gap, center - gap))
-    p.drawLine(QPointF(center - gap, center - gap - arm), QPointF(center - gap, center - gap))
+        # Top-Left pointing inward ┘
+        p.drawLine(QPointF(center - gap - arm, center - gap), QPointF(center - gap, center - gap))
+        p.drawLine(QPointF(center - gap, center - gap - arm), QPointF(center - gap, center - gap))
 
-    # Top-Right pointing inward └
-    p.drawLine(QPointF(center + gap + arm, center - gap), QPointF(center + gap, center - gap))
-    p.drawLine(QPointF(center + gap, center - gap - arm), QPointF(center + gap, center - gap))
+        # Top-Right pointing inward └
+        p.drawLine(QPointF(center + gap + arm, center - gap), QPointF(center + gap, center - gap))
+        p.drawLine(QPointF(center + gap, center - gap - arm), QPointF(center + gap, center - gap))
 
-    # Bottom-Left pointing inward ┐
-    p.drawLine(QPointF(center - gap - arm, center + gap), QPointF(center - gap, center + gap))
-    p.drawLine(QPointF(center - gap, center + gap + arm), QPointF(center - gap, center + gap))
+        # Bottom-Left pointing inward ┐
+        p.drawLine(QPointF(center - gap - arm, center + gap), QPointF(center - gap, center + gap))
+        p.drawLine(QPointF(center - gap, center + gap + arm), QPointF(center - gap, center + gap))
 
-    # Bottom-Right pointing inward ┌
-    p.drawLine(QPointF(center + gap + arm, center + gap), QPointF(center + gap, center + gap))
-    p.drawLine(QPointF(center + gap, center + gap + arm), QPointF(center + gap, center + gap))
+        # Bottom-Right pointing inward ┌
+        p.drawLine(QPointF(center + gap + arm, center + gap), QPointF(center + gap, center + gap))
+        p.drawLine(QPointF(center + gap, center + gap + arm), QPointF(center + gap, center + gap))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_zoom_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a magnifying glass with a plus (+) sign for 100% / zoom in."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
 
-    radius = size * 0.28
-    cx, cy = size * 0.42, size * 0.42
-    p.drawEllipse(QPointF(cx, cy), radius, radius)
+        radius = size * 0.28
+        cx, cy = size * 0.42, size * 0.42
+        p.drawEllipse(QPointF(cx, cy), radius, radius)
 
-    # Handle
-    start_x = cx + radius * 0.707
-    start_y = cy + radius * 0.707
-    p.drawLine(QPointF(start_x, start_y), QPointF(size * 0.86, size * 0.86))
+        # Handle
+        start_x = cx + radius * 0.707
+        start_y = cy + radius * 0.707
+        p.drawLine(QPointF(start_x, start_y), QPointF(size * 0.86, size * 0.86))
 
-    # Plus sign inside lens
-    arm = radius * 0.55
-    p.drawLine(QPointF(cx - arm, cy), QPointF(cx + arm, cy))
-    p.drawLine(QPointF(cx, cy - arm), QPointF(cx, cy + arm))
+        # Plus sign inside lens
+        arm = radius * 0.55
+        p.drawLine(QPointF(cx - arm, cy), QPointF(cx + arm, cy))
+        p.drawLine(QPointF(cx, cy - arm), QPointF(cx, cy + arm))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_zoom_fit_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a magnifying glass with a fit frame inside."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
 
-    radius = size * 0.28
-    cx, cy = size * 0.42, size * 0.42
-    p.drawEllipse(QPointF(cx, cy), radius, radius)
+        radius = size * 0.28
+        cx, cy = size * 0.42, size * 0.42
+        p.drawEllipse(QPointF(cx, cy), radius, radius)
 
-    # Handle
-    start_x = cx + radius * 0.707
-    start_y = cy + radius * 0.707
-    p.drawLine(QPointF(start_x, start_y), QPointF(size * 0.86, size * 0.86))
+        # Handle
+        start_x = cx + radius * 0.707
+        start_y = cy + radius * 0.707
+        p.drawLine(QPointF(start_x, start_y), QPointF(size * 0.86, size * 0.86))
 
-    # Inner fit frame
-    p.setPen(QPen(QColor(c), 1.3))
-    p.drawRect(QRectF(cx - radius * 0.5, cy - radius * 0.5, radius, radius))
+        # Inner fit frame
+        p.setPen(QPen(QColor(c), 1.3))
+        p.drawRect(QRectF(cx - radius * 0.5, cy - radius * 0.5, radius, radius))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_info_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a crisp circle-information (EXIF) icon."""
     c = color or get_icon_color("accent")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
 
-    mid = size / 2.0
-    p.drawEllipse(QPointF(mid, mid), size * 0.42, size * 0.42)
+        mid = size / 2.0
+        p.drawEllipse(QPointF(mid, mid), size * 0.42, size * 0.42)
 
-    # Dot of the 'i'
-    p.drawPoint(QPointF(mid, size * 0.32))
+        # Dot of the 'i'
+        p.drawPoint(QPointF(mid, size * 0.32))
 
-    # Stem of the 'i'
-    p.drawLine(QPointF(mid, size * 0.46), QPointF(mid, size * 0.72))
+        # Stem of the 'i'
+        p.drawLine(QPointF(mid, size * 0.46), QPointF(mid, size * 0.72))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_save_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
@@ -1039,224 +940,196 @@ def get_save_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
 def get_trash_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a wastebasket / delete icon."""
     c = color or get_icon_color("danger")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    # Top handle
-    p.drawLine(QPointF(size * 0.40, size * 0.18), QPointF(size * 0.60, size * 0.18))
+        # Top handle
+        p.drawLine(QPointF(size * 0.40, size * 0.18), QPointF(size * 0.60, size * 0.18))
 
-    # Lid line
-    p.drawLine(QPointF(size * 0.18, size * 0.28), QPointF(size * 0.82, size * 0.28))
+        # Lid line
+        p.drawLine(QPointF(size * 0.18, size * 0.28), QPointF(size * 0.82, size * 0.28))
 
-    # Bin body
-    body = QPainterPath()
-    body.moveTo(size * 0.26, size * 0.32)
-    body.lineTo(size * 0.32, size * 0.84)
-    body.lineTo(size * 0.68, size * 0.84)
-    body.lineTo(size * 0.74, size * 0.32)
-    p.drawPath(body)
+        # Bin body
+        body = QPainterPath()
+        body.moveTo(size * 0.26, size * 0.32)
+        body.lineTo(size * 0.32, size * 0.84)
+        body.lineTo(size * 0.68, size * 0.84)
+        body.lineTo(size * 0.74, size * 0.32)
+        p.drawPath(body)
 
-    # Vertical ribs
-    p.drawLine(QPointF(size * 0.42, size * 0.42), QPointF(size * 0.42, size * 0.74))
-    p.drawLine(QPointF(size * 0.58, size * 0.42), QPointF(size * 0.58, size * 0.74))
+        # Vertical ribs
+        p.drawLine(QPointF(size * 0.42, size * 0.42), QPointF(size * 0.42, size * 0.74))
+        p.drawLine(QPointF(size * 0.58, size * 0.42), QPointF(size * 0.58, size * 0.74))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_folder_open_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders an open folder icon."""
     c = color or get_icon_color("accent")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    # Back folder body
-    p.drawRoundedRect(QRectF(size * 0.12, size * 0.20, size * 0.50, size * 0.30), 1.0, 1.0)
+        # Back folder body
+        p.drawRoundedRect(QRectF(size * 0.12, size * 0.20, size * 0.50, size * 0.30), 1.0, 1.0)
 
-    # Front open flap
-    flap = QPainterPath()
-    flap.moveTo(size * 0.10, size * 0.82)
-    flap.lineTo(size * 0.26, size * 0.42)
-    flap.lineTo(size * 0.90, size * 0.42)
-    flap.lineTo(size * 0.74, size * 0.82)
-    flap.closeSubpath()
-    p.drawPath(flap)
+        # Front open flap
+        flap = QPainterPath()
+        flap.moveTo(size * 0.10, size * 0.82)
+        flap.lineTo(size * 0.26, size * 0.42)
+        flap.lineTo(size * 0.90, size * 0.42)
+        flap.lineTo(size * 0.74, size * 0.82)
+        flap.closeSubpath()
+        p.drawPath(flap)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_eject_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders an eject symbol (upward triangle over horizontal bar)."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.7, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
 
-    mid = size / 2.0
-    tri = QPainterPath()
-    tri.moveTo(mid, size * 0.20)
-    tri.lineTo(size * 0.80, size * 0.60)
-    tri.lineTo(size * 0.20, size * 0.60)
-    tri.closeSubpath()
-    p.drawPath(tri)
+        mid = size / 2.0
+        tri = QPainterPath()
+        tri.moveTo(mid, size * 0.20)
+        tri.lineTo(size * 0.80, size * 0.60)
+        tri.lineTo(size * 0.20, size * 0.60)
+        tri.closeSubpath()
+        p.drawPath(tri)
 
-    # Bar underneath
-    p.drawLine(QPointF(size * 0.20, size * 0.78), QPointF(size * 0.80, size * 0.78))
+        # Bar underneath
+        p.drawLine(QPointF(size * 0.20, size * 0.78), QPointF(size * 0.80, size * 0.78))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_history_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a clock / history icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
 
-    mid = size / 2.0
-    p.drawEllipse(QPointF(mid, mid), size * 0.40, size * 0.40)
+        mid = size / 2.0
+        p.drawEllipse(QPointF(mid, mid), size * 0.40, size * 0.40)
 
-    # Clock hands
-    p.drawLine(QPointF(mid, mid), QPointF(mid, size * 0.26))
-    p.drawLine(QPointF(mid, mid), QPointF(size * 0.72, mid))
+        # Clock hands
+        p.drawLine(QPointF(mid, mid), QPointF(mid, size * 0.26))
+        p.drawLine(QPointF(mid, mid), QPointF(size * 0.72, mid))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_help_icon(color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a clean question mark / help vector icon."""
     c = color or get_icon_color("normal")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
+        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
 
-    mid = size / 2.0
-    p.drawEllipse(QPointF(mid, mid), size * 0.42, size * 0.42)
+        mid = size / 2.0
+        p.drawEllipse(QPointF(mid, mid), size * 0.42, size * 0.42)
 
-    # Question mark curve
-    q = QPainterPath()
-    q.moveTo(size * 0.38, size * 0.36)
-    q.cubicTo(size * 0.38, size * 0.24, size * 0.62, size * 0.24, size * 0.62, size * 0.36)
-    q.cubicTo(size * 0.62, size * 0.48, mid, size * 0.46, mid, size * 0.58)
-    p.drawPath(q)
+        # Question mark curve
+        q = QPainterPath()
+        q.moveTo(size * 0.38, size * 0.36)
+        q.cubicTo(size * 0.38, size * 0.24, size * 0.62, size * 0.24, size * 0.62, size * 0.36)
+        q.cubicTo(size * 0.62, size * 0.48, mid, size * 0.46, mid, size * 0.58)
+        p.drawPath(q)
 
-    # Dot of ?
-    p.drawPoint(QPointF(mid, size * 0.72))
+        # Dot of ?
+        p.drawPoint(QPointF(mid, size * 0.72))
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_theme_icon(theme_mode: str = "dark", color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a theme icon (crescent moon for dark, sun for light, monitor for system)."""
     c = color or get_icon_color("accent")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    mid = size / 2.0
+        mid = size / 2.0
 
-    if theme_mode == "light":
-        # Sun with rays
-        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-        p.setPen(pen)
-        r_inner = size * 0.22
-        r_ray_in = size * 0.30
-        r_ray_out = size * 0.44
-        p.drawEllipse(QPointF(mid, mid), r_inner, r_inner)
+        if theme_mode == "light":
+            # Sun with rays
+            pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+            p.setPen(pen)
+            r_inner = size * 0.22
+            r_ray_in = size * 0.30
+            r_ray_out = size * 0.44
+            p.drawEllipse(QPointF(mid, mid), r_inner, r_inner)
 
-        for i in range(8):
-            ang = i * (math.pi / 4.0)
-            p1 = QPointF(mid + r_ray_in * math.cos(ang), mid + r_ray_in * math.sin(ang))
-            p2 = QPointF(mid + r_ray_out * math.cos(ang), mid + r_ray_out * math.sin(ang))
-            p.drawLine(p1, p2)
+            for i in range(8):
+                ang = i * (math.pi / 4.0)
+                p1 = QPointF(mid + r_ray_in * math.cos(ang), mid + r_ray_in * math.sin(ang))
+                p2 = QPointF(mid + r_ray_out * math.cos(ang), mid + r_ray_out * math.sin(ang))
+                p.drawLine(p1, p2)
 
-    elif theme_mode == "system":
-        # Monitor display
-        pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-        p.setPen(pen)
-        # Screen
-        p.drawRoundedRect(QRectF(size * 0.16, size * 0.18, size * 0.68, size * 0.50), 1.5, 1.5)
-        # Stand stem & foot
-        p.drawLine(QPointF(mid, size * 0.68), QPointF(mid, size * 0.82))
-        p.drawLine(QPointF(size * 0.32, size * 0.82), QPointF(size * 0.68, size * 0.82))
+        elif theme_mode == "system":
+            # Monitor display
+            pen = QPen(QColor(c), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+            p.setPen(pen)
+            # Screen
+            p.drawRoundedRect(QRectF(size * 0.16, size * 0.18, size * 0.68, size * 0.50), 1.5, 1.5)
+            # Stand stem & foot
+            p.drawLine(QPointF(mid, size * 0.68), QPointF(mid, size * 0.82))
+            p.drawLine(QPointF(size * 0.32, size * 0.82), QPointF(size * 0.68, size * 0.82))
 
-    else:
-        # Crescent Moon
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QBrush(QColor(c)))
+        else:
+            # Crescent Moon
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QBrush(QColor(c)))
 
-        outer = QPainterPath()
-        outer.addEllipse(QRectF(size * 0.16, size * 0.16, size * 0.68, size * 0.68))
+            outer = QPainterPath()
+            outer.addEllipse(QRectF(size * 0.16, size * 0.16, size * 0.68, size * 0.68))
 
-        inner = QPainterPath()
-        inner.addEllipse(QRectF(size * 0.34, size * 0.10, size * 0.56, size * 0.56))
+            inner = QPainterPath()
+            inner.addEllipse(QRectF(size * 0.34, size * 0.10, size * 0.56, size * 0.56))
 
-        crescent = outer.subtracted(inner)
-        p.drawPath(crescent)
+            crescent = outer.subtracted(inner)
+            p.drawPath(crescent)
 
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 def get_star_icon(filled: bool = True, color: Optional[str] = None, size: int = 16) -> QIcon:
     """Renders a 5-pointed star icon."""
     c = color or get_icon_color("warning")
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _draw(p: QPainter, size: int) -> None:
 
-    cx, cy = size / 2.0, size / 2.0
-    r_outer = size * 0.42
-    r_inner = size * 0.19
+        cx, cy = size / 2.0, size / 2.0
+        r_outer = size * 0.42
+        r_inner = size * 0.19
 
-    star = QPainterPath()
-    for i in range(10):
-        r = r_outer if i % 2 == 0 else r_inner
-        ang = (i * 36 - 90) * math.pi / 180.0
-        pt = QPointF(cx + r * math.cos(ang), cy + r * math.sin(ang))
-        if i == 0:
-            star.moveTo(pt)
+        star = QPainterPath()
+        for i in range(10):
+            r = r_outer if i % 2 == 0 else r_inner
+            ang = (i * 36 - 90) * math.pi / 180.0
+            pt = QPointF(cx + r * math.cos(ang), cy + r * math.sin(ang))
+            if i == 0:
+                star.moveTo(pt)
+            else:
+                star.lineTo(pt)
+        star.closeSubpath()
+
+        if filled:
+            p.setPen(Qt.PenStyle.NoPen)
+            p.fillPath(star, QBrush(QColor(c)))
         else:
-            star.lineTo(pt)
-    star.closeSubpath()
+            p.setPen(QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+            p.drawPath(star)
 
-    if filled:
-        p.setPen(Qt.PenStyle.NoPen)
-        p.fillPath(star, QBrush(QColor(c)))
-    else:
-        p.setPen(QPen(QColor(c), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
-        p.drawPath(star)
-
-    p.end()
-    return QIcon(pix)
+    return _make_icon(_draw, size)
 
 
 

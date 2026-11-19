@@ -68,11 +68,21 @@ class HeaderBanner(QFrame):
 
         lbl_logo = QLabel()
         lbl_logo.setObjectName("logoIcon")
-        icon_path = Path("assets") / "icon_32.png"
+        icon_path = Path("assets") / "vitrina.png"
         if not icon_path.exists():
-            icon_path = Path("assets") / "vitrina.png"
+            icon_path = Path("assets") / "icon_128.png"
+        if not icon_path.exists():
+            icon_path = Path("assets") / "icon_32.png"
         if icon_path.exists():
-            lbl_logo.setPixmap(QPixmap(str(icon_path)).scaled(20, 20, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            dpr = max(1.0, float(self.devicePixelRatioF()))
+            target_px = max(20, int(round(20 * dpr)))
+            pix = QPixmap(str(icon_path)).scaled(
+                target_px, target_px,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            pix.setDevicePixelRatio(dpr)
+            lbl_logo.setPixmap(pix)
         else:
             lbl_logo.setText("\U0001F4F8")
 

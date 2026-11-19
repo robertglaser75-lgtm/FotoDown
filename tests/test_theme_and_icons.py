@@ -99,10 +99,15 @@ class TestVectorIcons(unittest.TestCase):
             icon = factory()
             self.assertIsInstance(icon, QIcon, f"Icon {name} must be a QIcon")
             self.assertFalse(icon.isNull(), f"Icon {name} must not be null")
-            pix = icon.pixmap(QSize(20, 20))
+            pix = icon.pixmap(QSize(20, 20), 1.0)
             self.assertFalse(pix.isNull(), f"Icon {name} pixmap must not be null")
             self.assertEqual(pix.width(), 20, f"Icon {name} width mismatch")
             self.assertEqual(pix.height(), 20, f"Icon {name} height mismatch")
+
+            pix_hidpi = icon.pixmap(QSize(20, 20), 2.0)
+            self.assertEqual(pix_hidpi.width(), 40, f"Icon {name} HiDPI 2x physical width mismatch")
+            self.assertEqual(pix_hidpi.height(), 40, f"Icon {name} HiDPI 2x physical height mismatch")
+            self.assertEqual(pix_hidpi.devicePixelRatio(), 2.0)
 
     def test_icon_theme_color_palette(self):
         """Verifies that switching icon theme changes the resolved palette colors."""

@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.4")
+        self.assertEqual(__version__, "0.33.5")
 
 
 class TestDiskSpace(unittest.TestCase):
