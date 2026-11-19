@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.5")
+        self.assertEqual(__version__, "0.33.6")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1563,6 +1563,21 @@ class TestWorkflowStatusTracking(unittest.TestCase):
 
             tree1.close()
             tree2.close()
+
+    def test_culling_tab_sidebar_minimum_width_prevents_clipping(self):
+        from gui_qt.views.culling_tab import CullingTabView
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = AppConfig(culling_root_folder=tmpdir, target_dir=tmpdir, culling_splitter_sizes=[250, 120, 900])
+            tab = CullingTabView(cfg)
+            tab.resize(1400, 800)
+            tab.show()
+            QApplication.processEvents()
+
+            min_content_w = tab.sidebar_content.minimumSizeHint().width()
+            self.assertGreaterEqual(tab.sidebar_scroll.minimumWidth(), min_content_w)
+            self.assertGreaterEqual(tab.sidebar_scroll.width(), min_content_w)
+            tab.close()
 
     def test_filter_bar_selection_menu_and_vector_icons(self):
         from gui_qt.widgets.filter_bar import FilterBarWidget

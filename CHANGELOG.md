@@ -3,6 +3,13 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.6] - 2026-11-19
+
+### Behoben
+- **Mindestbreite der mittleren Aktionsleiste in „Sichten & Sortieren“ (`culling_tab.py`):**
+  - Dynamische Mindestbreiten-Synchronisation (`_sync_sidebar_min_width`) ergänzt, die `sidebar_scroll.setMinimumWidth()` exakt an das tatsächliche `minimumSizeHint()` der enthaltenen Buttons und Karten (inkl. Scrollbar-Abstand) koppelt.
+  - Gespeicherte Splitter-Größen (`culling_splitter_sizes`) werden beim Laden auf dieses Mindestmaß begrenzt, sodass Buttons und Rahmen der mittleren Leiste nicht mehr abgeschnitten werden können.
+
 ## [0.33.5] - 2026-11-19
 
 ### Verbessert

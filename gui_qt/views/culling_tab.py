@@ -381,17 +381,17 @@ class CullingTabView(QWidget):
         # -------------------------------------------------------------
         # PANE 2: CONTROLS SIDEBAR (Ratings, Editors, Stats)
         # -------------------------------------------------------------
-        sidebar_scroll = QScrollArea()
-        sidebar_scroll.setWidgetResizable(True)
-        sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        sidebar_scroll.setMinimumWidth(260)
-        sidebar_scroll.setMaximumWidth(420)
+        self.sidebar_scroll = QScrollArea()
+        self.sidebar_scroll.setWidgetResizable(True)
+        self.sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        sidebar_scroll = self.sidebar_scroll
 
-        sidebar_content = QWidget()
+        self.sidebar_content = QWidget()
+        sidebar_content = self.sidebar_content
         sidebar_layout = QVBoxLayout(sidebar_content)
         sidebar_layout.setContentsMargins(4, 4, 6, 4)
-        sidebar_layout.setSpacing(8)
+        sidebar_layout.setSpacing(6)
 
         # 1. Compact Current Folder Bar
         card_folder = QFrame()
@@ -741,17 +741,35 @@ class CullingTabView(QWidget):
 
         self.splitter.addWidget(workspace_container)
 
-        # Splitter sizing: Directory tree ~280px, Controls ~320px, Right canvas gets rest
+        self._sync_sidebar_min_width()
+
+        # Splitter sizing: Directory tree ~280px, Controls >= min width, Right canvas gets rest
         if getattr(self.config, "culling_splitter_sizes", None) and len(self.config.culling_splitter_sizes) == 3:
-            self.splitter.setSizes(self.config.culling_splitter_sizes)
+            sizes = list(self.config.culling_splitter_sizes)
+            sizes[1] = max(sizes[1], self.sidebar_scroll.minimumWidth())
+            self.splitter.setSizes(sizes)
         else:
-            self.splitter.setSizes([280, 320, 1800])
+            self.splitter.setSizes([280, max(320, self.sidebar_scroll.minimumWidth()), 1800])
         self.splitter.setStretchFactor(0, 0)
         self.splitter.setStretchFactor(1, 0)
         self.splitter.setStretchFactor(2, 1)
 
         main_layout.addWidget(self.splitter)
         self._set_photo_actions_enabled(False)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._sync_sidebar_min_width()
+
+    def _sync_sidebar_min_width(self):
+        """Ensures the middle control sidebar cannot shrink below its buttons and borders."""
+        if not hasattr(self, "sidebar_scroll") or not hasattr(self, "sidebar_content"):
+            return
+        content_min_w = self.sidebar_content.minimumSizeHint().width()
+        sb_w = self.sidebar_scroll.verticalScrollBar().sizeHint().width() or 12
+        min_w = max(250, content_min_w + sb_w + 4)
+        self.sidebar_scroll.setMinimumWidth(min_w)
+        self.sidebar_scroll.setMaximumWidth(max(440, min_w + 120))
 
     def _set_photo_actions_enabled(self, enabled: bool):
         """Enables or disables photo-specific controls (culling, zoom, rating, workflow, editors)."""
