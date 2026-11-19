@@ -48,7 +48,7 @@ class TestVersion(unittest.TestCase):
     def test_version_format(self):
         parts = __version__.split(".")
         self.assertGreaterEqual(len(parts), 3)
-        self.assertEqual(__version__, "0.33.2")
+        self.assertEqual(__version__, "0.33.3")
 
 
 class TestDiskSpace(unittest.TestCase):
@@ -1489,6 +1489,67 @@ class TestWorkflowStatusTracking(unittest.TestCase):
         widget.sync_to_config(cfg_new)
         self.assertEqual(cfg_new.family_album_dir, "//new_nas/0001_Unsere_Fotos")
         self.assertEqual(cfg_new.nas_archive_dir, "//new_nas/archive")
+        self.assertFalse(widget._advanced_container.isVisible())
+        self.assertTrue(hasattr(widget, "btn_more_settings"))
+
+    def test_culling_tree_columns_button_click_opens_menu_with_qpoint(self):
+        from unittest.mock import patch
+        from PySide6.QtCore import QPoint
+        from PySide6.QtWidgets import QMenu
+        from gui_qt.views.culling_tree import CullingDirectoryTreeWidget
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = AppConfig(culling_root_folder=tmpdir, target_dir=tmpdir)
+            cfg.save = lambda: None
+            tree = CullingDirectoryTreeWidget(cfg)
+            called_positions = []
+
+            class FakeMenu(QMenu):
+                def exec(self, pos=None, *args, **kwargs):
+                    called_positions.append(pos)
+                    return None
+
+            with patch("gui_qt.views.culling_tree.QMenu", FakeMenu):
+                tree.btn_columns.click()
+
+            self.assertEqual(len(called_positions), 1)
+            self.assertIsInstance(called_positions[0], QPoint)
+
+            # Verify column visibility toggle works and persists in config
+            tree.set_column_visibility(1, False)
+            self.assertTrue(tree.tree_view.isColumnHidden(1))
+            self.assertFalse(tree.config.tree_show_col_bilder)
+            tree.set_column_visibility(1, True)
+            self.assertFalse(tree.tree_view.isColumnHidden(1))
+            self.assertTrue(tree.config.tree_show_col_bilder)
+            tree.close()
+
+    def test_filter_bar_selection_menu_and_vector_icons(self):
+        from gui_qt.widgets.filter_bar import FilterBarWidget
+
+        bar = FilterBarWidget()
+        # Ensure combos use non-null vector icons
+        for i in range(bar.combo_view.count()):
+            self.assertFalse(bar.combo_view.itemIcon(i).isNull())
+        for i in range(bar.combo_status.count()):
+            self.assertFalse(bar.combo_status.itemIcon(i).isNull())
+        for i in range(bar.combo_type.count()):
+            self.assertFalse(bar.combo_type.itemIcon(i).isNull())
+
+        # Ensure bundled selection menu emits signals cleanly
+        events = []
+        bar.select_all_clicked.connect(lambda: events.append("all"))
+        bar.deselect_all_clicked.connect(lambda: events.append("none"))
+        bar.select_new_clicked.connect(lambda: events.append("new"))
+
+        menu = bar.btn_selection_menu.menu()
+        self.assertIsNotNone(menu)
+        actions = menu.actions()
+        self.assertEqual(len(actions), 3)
+        for act in actions:
+            act.trigger()
+        self.assertEqual(events, ["all", "none", "new"])
+        bar.close()
 
 
 class TestSettingsAndSingleViewConfig(unittest.TestCase):

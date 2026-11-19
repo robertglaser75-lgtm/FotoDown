@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from gui_qt.models.culling_model import CullingItem
-from gui_qt.styles.icons import get_collapse_panel_icon, get_filter_icon, get_refresh_icon
+from gui_qt.styles.icons import get_collapse_panel_icon, get_filter_icon, get_refresh_icon, get_search_icon
 
 
 @dataclass
@@ -226,7 +226,7 @@ class CullingFilterWidget(QWidget):
         lt_type.setContentsMargins(6, 6, 6, 6)
         lt_type.setSpacing(4)
 
-        lbl_type = QLabel("📷 Dateityp (RAW / JPEG)")
+        lbl_type = QLabel("Dateityp (RAW / JPEG)")
         lbl_type.setStyleSheet(label_head_style)
         lt_type.addWidget(lbl_type)
 
@@ -251,7 +251,7 @@ class CullingFilterWidget(QWidget):
         lt_tags.setContentsMargins(6, 6, 6, 6)
         lt_tags.setSpacing(6)
 
-        lbl_tags = QLabel("⭐ Bewertung & Status / Tags")
+        lbl_tags = QLabel("Bewertung & Status / Tags")
         lbl_tags.setStyleSheet(label_head_style)
         lt_tags.addWidget(lbl_tags)
 
@@ -299,7 +299,7 @@ class CullingFilterWidget(QWidget):
         lt_wf.setContentsMargins(6, 6, 6, 6)
         lt_wf.setSpacing(4)
 
-        lbl_wf = QLabel("📋 Workflow-Stand")
+        lbl_wf = QLabel("Workflow-Stand")
         lbl_wf.setStyleSheet(label_head_style)
         lt_wf.addWidget(lbl_wf)
 
@@ -324,7 +324,7 @@ class CullingFilterWidget(QWidget):
         lt_cam.setContentsMargins(6, 6, 6, 6)
         lt_cam.setSpacing(4)
 
-        lbl_cam = QLabel("🎥 Kamera (Camera)")
+        lbl_cam = QLabel("Kamera (Camera)")
         lbl_cam.setStyleSheet(label_head_style)
         lt_cam.addWidget(lbl_cam)
 
@@ -344,13 +344,14 @@ class CullingFilterWidget(QWidget):
         lt_exif.setContentsMargins(6, 6, 6, 6)
         lt_exif.setSpacing(6)
 
-        lbl_exif = QLabel("🔍 Erweiterte EXIF & Suche")
+        lbl_exif = QLabel("Erweiterte EXIF & Suche")
         lbl_exif.setStyleSheet(label_head_style)
         lt_exif.addWidget(lbl_exif)
 
         # Search field
         self.txt_search = QLineEdit()
         self.txt_search.setPlaceholderText("Dateiname / Suche...")
+        self.txt_search.addAction(get_search_icon("#94a3b8", 12), QLineEdit.ActionPosition.LeadingPosition)
         self.txt_search.textChanged.connect(self._emit_change)
         lt_exif.addWidget(self.txt_search)
 

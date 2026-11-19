@@ -314,6 +314,7 @@ class MainWindow(QMainWindow):
         self.path_selector.changed.connect(self._on_settings_changed)
         self.pattern_editor.changed.connect(self._on_settings_changed)
         self.general_settings.changed.connect(self._on_settings_changed)
+        self.general_settings.open_settings_requested.connect(lambda: self._open_settings_dialog(2))
 
         # Collapsible boxes persistence
         self.box_paths.toggled.connect(lambda exp: self._save_box_state("import_sidebar_paths_expanded", exp))
@@ -857,7 +858,7 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
         w = event.size().width()
-        is_compact = w < 1180
+        is_compact = w < 1280
         if hasattr(self, "header_banner") and self.header_banner:
             self.header_banner.set_compact_mode(is_compact)
         if hasattr(self, "transfer_tab_view") and self.transfer_tab_view:

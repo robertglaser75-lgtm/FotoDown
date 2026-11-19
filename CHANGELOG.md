@@ -3,6 +3,23 @@
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.3] - 2026-11-19
+
+### Behoben
+- **Spalten-Menü im Verzeichnisbaum (`culling_tree.py`):**
+  - Fehler behoben, bei dem ein Klick auf den Button *„Spalten ein-/ausblenden (Bilder, RAW, JPG)“* das Auswahlmenü nicht öffnete (`QPushButton.clicked(bool)` übergab `False` als `global_pos`, was zu einem `TypeError` in `QMenu.exec` führte).
+
+### Verbessert & Aufgeräumt
+- **Import-Sidebar entschlackt (`general_settings.py`, `main_window.py`):**
+  - Tab-fremde Optionen (Culling-Aussortier-Aktion, NAS-/Familienalbum-Pfade) aus der Tab-1-Sidebar entfernt und durch einen direkten Link *„Weitere Einstellungen (NAS, Culling, Editoren)…“* zum zentralen Einstellungsdialog ersetzt.
+- **Culling-Sidebar gestrafft (`culling_tab.py`):**
+  - Permanente Tastaturkürzel-Karte entfernt und Statistik-Anzeige kompakt zusammengefasst, sodass alle Aktionen auch auf kleineren Bildschirmen ohne Scrollen erreichbar sind.
+- **Header- & Filterleiste aufgeräumt (`header_banner.py`, `filter_bar.py`):**
+  - Kompaktmodus-Schwelle auf `< 1280px` erweitert sowie Tooltips für *Historie* und *Hilfe* ergänzt.
+  - Auswahl-Buttons (*Alle*, *Keine*, *Neue*) in der Filterleiste in ein kompaktes Dropdown-Menü *„Auswahl ▾“* gebündelt, um dem Suchfeld mehr Platz zu geben.
+- **Einheitliche Vektor-Icons statt System-Emojis (`filter_bar.py`, `culling_tab.py`, `culling_filter.py`):**
+  - System-Emojis in Dropdowns, Buttons, Suchfeldern und Sektions-Überschriften durch einheitliche Fluent-Vektor-Icons ersetzt.
+
 ## [0.33.2] - 2026-11-18
 
 ### Behoben & Verbessert

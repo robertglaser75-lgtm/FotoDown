@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from PySide6.QtCore import QSize, Qt, Signal, QUrl
+from PySide6.QtCore import QPoint, QSize, Qt, Signal, QUrl
 from PySide6.QtGui import QBrush, QColor, QDesktopServices, QFont, QIcon, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QFileDialog, QFrame, QHBoxLayout, QHeaderView, QLabel,
@@ -86,7 +86,7 @@ class CullingDirectoryTreeWidget(QWidget):
         self.btn_columns.setIconSize(QSize(13, 13))
         self.btn_columns.setFixedSize(24, 22)
         self.btn_columns.setToolTip("Spalten ein-/ausblenden (Bilder, RAW, JPG)")
-        self.btn_columns.clicked.connect(self._show_columns_menu)
+        self.btn_columns.clicked.connect(lambda _=False: self._show_columns_menu())
         title_row.addWidget(self.btn_columns)
 
         self.btn_sort = QPushButton()
@@ -300,7 +300,11 @@ class CullingDirectoryTreeWidget(QWidget):
             act.setChecked(checked)
             actions[act] = col_idx
 
-        pos = global_pos if global_pos is not None else self.btn_columns.mapToGlobal(self.btn_columns.rect().bottomLeft())
+        pos = (
+            global_pos
+            if isinstance(global_pos, QPoint)
+            else self.btn_columns.mapToGlobal(self.btn_columns.rect().bottomLeft())
+        )
         chosen = menu.exec(pos)
         if chosen in actions:
             self.set_column_visibility(actions[chosen], chosen.isChecked())

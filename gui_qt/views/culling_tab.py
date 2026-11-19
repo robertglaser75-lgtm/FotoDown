@@ -32,8 +32,9 @@ from gui_qt.key_navigation import (
 )
 from gui_qt.models.culling_model import CullingItem, execute_reject_action, scan_culling_folder
 from gui_qt.styles.icons import (
-    get_collapse_panel_icon, get_expand_panel_icon, get_filmstrip_icon,
-    get_folder_icon, get_refresh_icon, get_zoom_fit_icon, get_zoom_icon
+    get_camera_icon, get_check_all_icon, get_clear_icon, get_collapse_panel_icon,
+    get_expand_panel_icon, get_filmstrip_icon, get_folder_icon, get_refresh_icon,
+    get_tag_icon, get_trash_icon, get_zoom_fit_icon, get_zoom_icon
 )
 from gui_qt.views.culling_filter import CullingFilterCriteria
 from gui_qt.views.culling_left_dock import CullingLeftNavigationDock
@@ -461,7 +462,7 @@ class CullingTabView(QWidget):
         layout_photo.setContentsMargins(6, 6, 6, 6)
         layout_photo.setSpacing(6)
 
-        lbl_sec_photo = QLabel("📷 AKTIVES FOTO")
+        lbl_sec_photo = QLabel("AKTIVES FOTO")
         lbl_sec_photo.setObjectName("sectionSubTitle")
         lbl_sec_photo.setStyleSheet("font-size: 11px; font-weight: bold;")
         layout_photo.addWidget(lbl_sec_photo)
@@ -529,7 +530,7 @@ class CullingTabView(QWidget):
         layout_rating.setContentsMargins(6, 6, 6, 6)
         layout_rating.setSpacing(6)
 
-        lbl_sec_rating = QLabel("⭐ BEWERTUNG & CULLING")
+        lbl_sec_rating = QLabel("BEWERTUNG & CULLING")
         lbl_sec_rating.setObjectName("sectionSubTitle")
         lbl_sec_rating.setStyleSheet("font-size: 11px; font-weight: bold;")
         layout_rating.addWidget(lbl_sec_rating)
@@ -558,13 +559,17 @@ class CullingTabView(QWidget):
         # Pick & Reject row
         pick_rej_layout = QHBoxLayout()
         pick_rej_layout.setSpacing(6)
-        self.btn_pick = QPushButton("✔ Behalten [P]")
+        self.btn_pick = QPushButton("Behalten [P]")
         self.btn_pick.setObjectName("cullingPickBtn")
+        self.btn_pick.setIcon(get_check_all_icon("#4ade80", 13))
+        self.btn_pick.setIconSize(QSize(13, 13))
         self.btn_pick.clicked.connect(self._toggle_pick)
         pick_rej_layout.addWidget(self.btn_pick)
 
-        self.btn_reject = QPushButton("✖ Ablehnen [X]")
+        self.btn_reject = QPushButton("Ablehnen [X]")
         self.btn_reject.setObjectName("cullingRejectBtn")
+        self.btn_reject.setIcon(get_clear_icon("#f87171", 13))
+        self.btn_reject.setIconSize(QSize(13, 13))
         self.btn_reject.clicked.connect(self._toggle_reject)
         pick_rej_layout.addWidget(self.btn_reject)
         layout_rating.addLayout(pick_rej_layout)
@@ -579,12 +584,12 @@ class CullingTabView(QWidget):
         layout_wf.setSpacing(6)
 
         wf_head = QHBoxLayout()
-        lbl_sec_wf = QLabel("📋 WORKFLOW-STAND")
+        lbl_sec_wf = QLabel("WORKFLOW-STAND")
         lbl_sec_wf.setObjectName("sectionSubTitle")
         lbl_sec_wf.setStyleSheet("font-size: 11px; font-weight: bold;")
         wf_head.addWidget(lbl_sec_wf, stretch=1)
 
-        self.lbl_wf_badge = QLabel("⚪ Ungeprüft")
+        self.lbl_wf_badge = QLabel("Ungeprüft")
         self.lbl_wf_badge.setObjectName("cullingWfBadge")
         wf_head.addWidget(self.lbl_wf_badge)
         layout_wf.addLayout(wf_head)
@@ -592,20 +597,26 @@ class CullingTabView(QWidget):
         wf_btn_layout = QHBoxLayout()
         wf_btn_layout.setSpacing(4)
 
-        self.btn_wf_sooc = QPushButton("📸 SOOC [Q]")
+        self.btn_wf_sooc = QPushButton("SOOC [Q]")
         self.btn_wf_sooc.setObjectName("cullingWfBtn")
+        self.btn_wf_sooc.setIcon(get_camera_icon("#38bdf8", 12))
+        self.btn_wf_sooc.setIconSize(QSize(12, 12))
         self.btn_wf_sooc.setToolTip("Qualität passt direkt aus Kamera (Taste Q)")
         self.btn_wf_sooc.clicked.connect(lambda: self.set_workflow_status("SOOC_OK"))
         wf_btn_layout.addWidget(self.btn_wf_sooc)
 
-        self.btn_wf_to_edit = QPushButton("🎨 Bearb. [B]")
+        self.btn_wf_to_edit = QPushButton("Bearb. [B]")
         self.btn_wf_to_edit.setObjectName("cullingWfBtn")
+        self.btn_wf_to_edit.setIcon(get_tag_icon("#fbbf24", 12))
+        self.btn_wf_to_edit.setIconSize(QSize(12, 12))
         self.btn_wf_to_edit.setToolTip("Soll noch nachbearbeitet werden (Taste B)")
         self.btn_wf_to_edit.clicked.connect(lambda: self.set_workflow_status("TO_EDIT"))
         wf_btn_layout.addWidget(self.btn_wf_to_edit)
 
-        self.btn_wf_done = QPushButton("✔ Fertig [E]")
+        self.btn_wf_done = QPushButton("Fertig [E]")
         self.btn_wf_done.setObjectName("cullingWfBtn")
+        self.btn_wf_done.setIcon(get_check_all_icon("#4ade80", 12))
+        self.btn_wf_done.setIconSize(QSize(12, 12))
         self.btn_wf_done.setToolTip("Bearbeitung abgeschlossen / Exportiert (Taste E)")
         self.btn_wf_done.clicked.connect(lambda: self.set_workflow_status("EDITED"))
         wf_btn_layout.addWidget(self.btn_wf_done)
@@ -620,42 +631,43 @@ class CullingTabView(QWidget):
         layout_ext.setContentsMargins(6, 6, 6, 6)
         layout_ext.setSpacing(6)
 
-        lbl_sec_ext = QLabel("🚀 EXTERNE EDITOREN")
+        lbl_sec_ext = QLabel("EXTERNE EDITOREN")
         lbl_sec_ext.setObjectName("sectionSubTitle")
         lbl_sec_ext.setStyleSheet("font-size: 11px; font-weight: bold;")
         layout_ext.addWidget(lbl_sec_ext)
 
-        self.btn_darktable = QPushButton("🎨 Darktable (RAW) [Strg+D]")
+        self.btn_darktable = QPushButton("Darktable (RAW) [Strg+D]")
         self.btn_darktable.setObjectName("cullingDarktableBtn")
+        self.btn_darktable.setIcon(get_filmstrip_icon("#f472b6", 13))
+        self.btn_darktable.setIconSize(QSize(13, 13))
         self.btn_darktable.setToolTip("In Darktable öffnen (RAW) [Strg+D]: Übergibt markierte RAW-Fotos an Darktable")
         self.btn_darktable.clicked.connect(self._launch_darktable)
         layout_ext.addWidget(self.btn_darktable)
 
-        self.btn_topaz = QPushButton("✨ Topaz Photo (JPEG) [Strg+T]")
+        self.btn_topaz = QPushButton("Topaz Photo (JPEG) [Strg+T]")
         self.btn_topaz.setObjectName("cullingTopazBtn")
+        self.btn_topaz.setIcon(get_camera_icon("#38bdf8", 13))
+        self.btn_topaz.setIconSize(QSize(13, 13))
         self.btn_topaz.setToolTip("In Topaz Photo öffnen (JPEG) [Strg+T]: Übergibt markierte JPEGs an Topaz Photo AI")
         self.btn_topaz.clicked.connect(self._launch_topaz)
         layout_ext.addWidget(self.btn_topaz)
 
-        self.btn_apply_reject = QPushButton("🗑️ Aussortierte verarbeiten")
+        self.btn_apply_reject = QPushButton("Aussortierte verarbeiten")
         self.btn_apply_reject.setObjectName("cullingApplyRejectBtn")
+        self.btn_apply_reject.setIcon(get_trash_icon("#f87171", 13))
+        self.btn_apply_reject.setIconSize(QSize(13, 13))
         self.btn_apply_reject.setToolTip("Aussortierte verarbeiten: Führt die konfigurierte Aktion für alle mit [X] abgelehnten Fotos aus")
         self.btn_apply_reject.clicked.connect(self._apply_reject_action)
         layout_ext.addWidget(self.btn_apply_reject)
 
         sidebar_layout.addWidget(card_external)
 
-        # 5. Card: Statistics
+        # 5. Card: Compact Statistics Summary
         card_stats = QFrame()
         card_stats.setObjectName("cullingSidebarCard")
         layout_stats = QVBoxLayout(card_stats)
-        layout_stats.setContentsMargins(6, 6, 6, 6)
-        layout_stats.setSpacing(4)
-
-        lbl_sec_stats = QLabel("📊 STATISTIK")
-        lbl_sec_stats.setObjectName("sectionSubTitle")
-        lbl_sec_stats.setStyleSheet("font-size: 11px; font-weight: bold;")
-        layout_stats.addWidget(lbl_sec_stats)
+        layout_stats.setContentsMargins(6, 5, 6, 5)
+        layout_stats.setSpacing(2)
 
         self.lbl_stats = QLabel("Kein Ordner geöffnet")
         self.lbl_stats.setStyleSheet("color: #64748b; font-size: 11px;")
@@ -663,39 +675,6 @@ class CullingTabView(QWidget):
         layout_stats.addWidget(self.lbl_stats)
 
         sidebar_layout.addWidget(card_stats)
-
-        # 6. Card: Keyboard Shortcuts
-        card_keys = QFrame()
-        card_keys.setObjectName("cullingSidebarCard")
-        layout_keys = QVBoxLayout(card_keys)
-        layout_keys.setContentsMargins(6, 6, 6, 6)
-        layout_keys.setSpacing(3)
-
-        lbl_sec_keys = QLabel("⌨️ SCHNELLZUGRIFF")
-        lbl_sec_keys.setObjectName("sectionSubTitle")
-        lbl_sec_keys.setStyleSheet("font-size: 11px; font-weight: bold;")
-        layout_keys.addWidget(lbl_sec_keys)
-
-        shortcuts_text = (
-            "<span style='color:#0284c7;'>A / D</span> Blättern &nbsp;|&nbsp; "
-            "<span style='color:#0284c7;'>1 - 5</span> Sterne &nbsp;|&nbsp; "
-            "<span style='color:#0284c7;'>0</span> Reset<br>"
-            "<span style='color:#0284c7;'>Q</span> SOOC &nbsp;|&nbsp; "
-            "<span style='color:#0284c7;'>B</span> Bearbeiten &nbsp;|&nbsp; "
-            "<span style='color:#0284c7;'>E</span> Fertig<br>"
-            "<span style='color:#0284c7;'>P</span> Behalten &nbsp;|&nbsp; "
-            "<span style='color:#0284c7;'>X</span> Ablehnen &nbsp;|&nbsp; "
-            "<span style='color:#0284c7;'>J / R</span> RAW/JPG<br>"
-            "<span style='color:#0284c7;'>F</span> 100% Zoom &nbsp;|&nbsp; "
-            "<span style='color:#0284c7;'>V</span> Baum &nbsp;|&nbsp; "
-            "<span style='color:#0284c7;'>T</span> Filmstreifen &nbsp;|&nbsp; "
-            "<span style='color:#0284c7;'>Strg+D/T</span> Editoren"
-        )
-        lbl_keys_desc = QLabel(shortcuts_text)
-        lbl_keys_desc.setStyleSheet("color: #64748b; font-size: 10px; line-height: 1.4;")
-        layout_keys.addWidget(lbl_keys_desc)
-
-        sidebar_layout.addWidget(card_keys)
         sidebar_layout.addStretch()
 
         sidebar_scroll.setWidget(sidebar_content)

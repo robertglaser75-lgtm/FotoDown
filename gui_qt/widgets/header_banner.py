@@ -160,6 +160,7 @@ class HeaderBanner(QFrame):
         self.btn_history.setObjectName("secondaryBtn")
         self.btn_history.setIcon(get_history_icon())
         self.btn_history.setIconSize(QSize(14, 14))
+        self.btn_history.setToolTip("Import-Historie & Verlauf anzeigen")
         self.btn_history.clicked.connect(self.open_history.emit)
         layout.addWidget(self.btn_history, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -167,6 +168,7 @@ class HeaderBanner(QFrame):
         self.btn_help.setObjectName("secondaryBtn")
         self.btn_help.setIcon(get_help_icon())
         self.btn_help.setIconSize(QSize(14, 14))
+        self.btn_help.setToolTip("Hilfe & Dokumentation öffnen")
         self.btn_help.clicked.connect(self.open_help.emit)
         layout.addWidget(self.btn_help, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -356,7 +358,7 @@ class HeaderBanner(QFrame):
         self.tab_changed.emit(tab_idx)
 
     def set_compact_mode(self, compact: bool):
-        """Toggles compact responsive mode on smaller viewports (< 1180px)."""
+        """Toggles compact responsive mode on smaller viewports (< 1280px)."""
         if self._is_compact == compact:
             return
         self._is_compact = compact
@@ -367,7 +369,7 @@ class HeaderBanner(QFrame):
             self.btn_tab_transfer.setText("3. Sichern")
             for btn in [self.btn_refresh, self.btn_eject, self.btn_history, self.btn_help]:
                 btn.setText("")
-                btn.setFixedSize(28, 26)
+                btn.setFixedSize(30, 26)
         else:
             self.lbl_drive.setText("Speicherkarte / Laufwerk:")
             self.btn_tab_import.setText("1. Importieren")

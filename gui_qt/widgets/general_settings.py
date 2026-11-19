@@ -1,16 +1,18 @@
 """General application settings widget with JPG/RAW organization, pairing, and verification options."""
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QSize, Signal
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QVBoxLayout, QWidget
 )
 
 from core.config import AppConfig
+from gui_qt.styles.icons import get_gear_icon
 
 
 class GeneralSettingsWidget(QWidget):
     changed = Signal()
+    open_settings_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -95,60 +97,74 @@ class GeneralSettingsWidget(QWidget):
 
         layout.addSpacing(6)
 
+        # Link button to central settings dialog (avoids duplicating Tab 2 & Tab 3 settings in Tab 1 sidebar)
+        self.btn_more_settings = QPushButton("Weitere Einstellungen (NAS, Culling, Editoren)…")
+        self.btn_more_settings.setObjectName("secondaryBtn")
+        self.btn_more_settings.setIcon(get_gear_icon(size=13))
+        self.btn_more_settings.setIconSize(QSize(13, 13))
+        self.btn_more_settings.setToolTip("Öffnet den zentralen Einstellungsdialog für Culling, NAS-Pfade und externe Editoren")
+        self.btn_more_settings.clicked.connect(self.open_settings_requested.emit)
+        layout.addWidget(self.btn_more_settings)
+
+        # Hidden container keeping Tab 2/3 fields in sync for config & legacy compatibility
+        self._advanced_container = QWidget()
+        self._advanced_container.setVisible(False)
+        adv_layout = QVBoxLayout(self._advanced_container)
+        adv_layout.setContentsMargins(0, 0, 0, 0)
+        adv_layout.setSpacing(6)
+
         # 5. Culling & Reject Action Settings
-        lbl_culling = QLabel("👁️ Sichten & Aussortieren:")
+        lbl_culling = QLabel("Sichten & Aussortieren:")
         lbl_culling.setObjectName("sectionSubTitle")
-        layout.addWidget(lbl_culling)
+        adv_layout.addWidget(lbl_culling)
 
         self.combo_reject_action = QComboBox()
         self.combo_reject_action.addItem("In Unterordner verschieben (_Abgelehnt/)", "move_folder")
         self.combo_reject_action.addItem("In den Papierkorb / Löschen", "trash")
         self.combo_reject_action.addItem("Nur in Metadaten als abgelehnt markieren", "flag_only")
         self.combo_reject_action.currentIndexChanged.connect(lambda *args: self.changed.emit())
-        layout.addWidget(self.combo_reject_action)
-
-        layout.addSpacing(6)
+        adv_layout.addWidget(self.combo_reject_action)
 
         # 6. NAS & Family Album Paths
-        lbl_nas = QLabel("🏠 NAS-Archiv & Familienalbum:")
+        lbl_nas = QLabel("NAS-Archiv & Familienalbum:")
         lbl_nas.setObjectName("sectionSubTitle")
-        layout.addWidget(lbl_nas)
+        adv_layout.addWidget(lbl_nas)
 
-        # Family Album
         lbl_fa = QLabel("Familienalbum-Zielpfad (0001_Unsere_Fotos/{YYYY}/{MM}):")
         lbl_fa.setStyleSheet("color: #94a3b8; font-size: 11px;")
-        layout.addWidget(lbl_fa)
+        adv_layout.addWidget(lbl_fa)
 
         row_fa = QHBoxLayout()
         row_fa.setSpacing(6)
         self.edit_family_album = QLineEdit()
-        self.edit_family_album.setPlaceholderText("Pfad zum Familienalbum (z.B. \\\\192.168.1.20\\...\\0001_Unsere_Fotos)...")
+        self.edit_family_album.setPlaceholderText("Pfad zum Familienalbum...")
         self.edit_family_album.textChanged.connect(lambda *args: self.changed.emit())
         row_fa.addWidget(self.edit_family_album, stretch=1)
 
-        btn_browse_fa = QPushButton("📁 Durchsuchen")
+        btn_browse_fa = QPushButton("Durchsuchen")
         btn_browse_fa.setObjectName("secondaryBtn")
         btn_browse_fa.clicked.connect(self._browse_family_album)
         row_fa.addWidget(btn_browse_fa)
-        layout.addLayout(row_fa)
+        adv_layout.addLayout(row_fa)
 
-        # NAS Archive
         lbl_na = QLabel("Allgemeines NAS-Archiv:")
         lbl_na.setStyleSheet("color: #94a3b8; font-size: 11px;")
-        layout.addWidget(lbl_na)
+        adv_layout.addWidget(lbl_na)
 
         row_na = QHBoxLayout()
         row_na.setSpacing(6)
         self.edit_nas_archive = QLineEdit()
-        self.edit_nas_archive.setPlaceholderText("Pfad zum NAS-Archiv (z.B. \\\\192.168.1.20\\...\\Archiv)...")
+        self.edit_nas_archive.setPlaceholderText("Pfad zum NAS-Archiv...")
         self.edit_nas_archive.textChanged.connect(lambda *args: self.changed.emit())
         row_na.addWidget(self.edit_nas_archive, stretch=1)
 
-        btn_browse_na = QPushButton("📁 Durchsuchen")
+        btn_browse_na = QPushButton("Durchsuchen")
         btn_browse_na.setObjectName("secondaryBtn")
         btn_browse_na.clicked.connect(self._browse_nas_archive)
         row_na.addWidget(btn_browse_na)
-        layout.addLayout(row_na)
+        adv_layout.addLayout(row_na)
+
+        layout.addWidget(self._advanced_container)
 
     def _browse_family_album(self):
         curr = self.edit_family_album.text().strip()
